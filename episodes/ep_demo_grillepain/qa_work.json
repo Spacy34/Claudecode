@@ -1,0 +1,207 @@
+{
+  "contract": "qa_report",
+  "contract_version": "1.0",
+  "episode_id": "ep_demo_grillepain",
+  "status": "generated",
+  "provenance": {
+    "created_by": "studio qa",
+    "created_at": "2026-11-10T09:40:06+00:00",
+    "tool": "ffprobe/ffmpeg"
+  },
+  "target": {
+    "path": "/home/user/Claudecode/episodes/ep_demo_grillepain/renders/work.mp4",
+    "sha256": "973edd09f4d36ec72385421a91f55b0e584d00000d089aec7f255380c17a19b5",
+    "kind": "work"
+  },
+  "checks": [
+    {
+      "id": "container_mp4",
+      "category": "technical",
+      "severity": "blocker",
+      "status": "pass",
+      "message": "conteneur mov,mp4,m4a,3gp,3g2,mj2",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "resolution",
+      "category": "technical",
+      "severity": "blocker",
+      "status": "pass",
+      "message": "360x640 (attendu 360x640)",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "video_codec",
+      "category": "technical",
+      "severity": "blocker",
+      "status": "pass",
+      "message": "codec h264 profil High",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "pix_fmt",
+      "category": "technical",
+      "severity": "major",
+      "status": "pass",
+      "message": "pix_fmt yuv420p",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "framerate",
+      "category": "technical",
+      "severity": "blocker",
+      "status": "pass",
+      "message": "fps 30/1",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "audio_codec",
+      "category": "audio",
+      "severity": "blocker",
+      "status": "pass",
+      "message": "audio aac 48000 Hz 2 canaux",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "audio_format",
+      "category": "audio",
+      "severity": "major",
+      "status": "pass",
+      "message": "48000 Hz / 2 canaux",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "av_start_sync",
+      "category": "sync",
+      "severity": "blocker",
+      "status": "pass",
+      "message": "décalage de départ audio/vidéo +0.000s",
+      "method": "ffprobe",
+      "evidence": {
+        "video_start": 0.0,
+        "audio_start": 0.0
+      }
+    },
+    {
+      "id": "av_duration_match",
+      "category": "sync",
+      "severity": "major",
+      "status": "pass",
+      "message": "durées vidéo 3.87s / audio 3.87s",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "duration",
+      "category": "technical",
+      "severity": "major",
+      "status": "pass",
+      "message": "durée 3.87s (attendu 3.87s)",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "frame_count",
+      "category": "technical",
+      "severity": "major",
+      "status": "pass",
+      "message": "116 images (attendu 116)",
+      "method": "ffprobe",
+      "evidence": {}
+    },
+    {
+      "id": "black_frames",
+      "category": "technical",
+      "severity": "blocker",
+      "status": "pass",
+      "message": "aucun segment noir non prévu",
+      "method": "ffmpeg_filter",
+      "evidence": {
+        "segments": []
+      }
+    },
+    {
+      "id": "frozen_video",
+      "category": "technical",
+      "severity": "major",
+      "status": "pass",
+      "message": "aucune image figée > 2,5 s",
+      "method": "ffmpeg_filter",
+      "evidence": {
+        "starts": []
+      }
+    },
+    {
+      "id": "loudness",
+      "category": "audio",
+      "severity": "major",
+      "status": "pass",
+      "message": "loudness intégrée -14.4 LUFS (cible -14.0)",
+      "method": "ffmpeg_filter",
+      "evidence": {
+        "lufs": -14.4
+      }
+    },
+    {
+      "id": "true_peak",
+      "category": "audio",
+      "severity": "major",
+      "status": "pass",
+      "message": "true peak -1.5 dBTP",
+      "method": "ffmpeg_filter",
+      "evidence": {
+        "true_peak": -1.5
+      }
+    },
+    {
+      "id": "long_silence",
+      "category": "audio",
+      "severity": "minor",
+      "status": "pass",
+      "message": "pas de silence long",
+      "method": "ffmpeg_filter",
+      "evidence": {}
+    },
+    {
+      "id": "subtitles_present",
+      "category": "subtitles",
+      "severity": "major",
+      "status": "pass",
+      "message": "11 évènements de sous-titres",
+      "method": "python",
+      "evidence": {}
+    },
+    {
+      "id": "subtitles_within_video",
+      "category": "subtitles",
+      "severity": "minor",
+      "status": "pass",
+      "message": "dernier sous-titre à 3.87s / vidéo 3.87s",
+      "method": "python",
+      "evidence": {}
+    },
+    {
+      "id": "sh_001:scene_ok",
+      "category": "scene",
+      "severity": "info",
+      "status": "pass",
+      "message": "sh_001 : aucun défaut géométrique détecté",
+      "method": "blender_scene_check",
+      "evidence": {}
+    }
+  ],
+  "summary": {
+    "passed": 19,
+    "failed": 0,
+    "warnings": 0,
+    "skipped": 0,
+    "blocking": false
+  }
+}

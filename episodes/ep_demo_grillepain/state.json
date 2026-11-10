@@ -3,30 +3,14 @@
   "state_version": 1,
   "stages": {
     "brief": {
-      "status": "completed",
+      "status": "pending",
       "attempts": 0,
-      "revision_rounds": 0,
-      "pid": null,
-      "finished_at": "2026-11-10T09:17:40+00:00",
-      "inputs": {},
-      "outputs": {
-        "episode_brief.json": "06e4dd79ba7b8e45b3604b8b4bf8e6d80363f7e7f7a4a4d7cc6ea88f69d77ed9"
-      },
-      "note": null
+      "revision_rounds": 0
     },
     "script": {
-      "status": "completed",
+      "status": "pending",
       "attempts": 0,
-      "revision_rounds": 0,
-      "pid": null,
-      "finished_at": "2026-11-10T09:17:40+00:00",
-      "inputs": {
-        "episode_brief.json": "06e4dd79ba7b8e45b3604b8b4bf8e6d80363f7e7f7a4a4d7cc6ea88f69d77ed9"
-      },
-      "outputs": {
-        "story_script.json": "0d4e0595c185eda40396cf34dcce9d6236097f606bd4d3ebea1a25ffc0effb2a"
-      },
-      "note": null
+      "revision_rounds": 0
     },
     "script_review": {
       "status": "pending",
@@ -108,11 +92,19 @@
     },
     "prototype": {
       "status": "running",
-      "attempts": 1,
+      "attempts": 2,
       "revision_rounds": 0,
-      "pid": 3901,
-      "started_at": "2026-11-10T09:07:37+00:00",
-      "error": null
+      "pid": 7668,
+      "started_at": "2026-11-10T09:40:16+00:00",
+      "error": null,
+      "finished_at": "2026-11-10T09:37:28+00:00",
+      "inputs": {
+        "shot_manifest.json": "30eac8312cb0146d69f17167142ec7c7a775e7c753c22aaefe55f0d3dad12ad7"
+      },
+      "outputs": {
+        "renders/prototype.mp4": "87929bc62ebba3bd1992f5dde2f6018260dd772ededaae8a470a6367a7036a9c"
+      },
+      "note": null
     },
     "gate_prototype": {
       "status": "pending",
@@ -306,16 +298,25 @@
       "stage": "prototype"
     },
     {
-      "at": "2026-11-10T09:17:40+00:00",
+      "at": "2026-11-10T09:37:28+00:00",
       "event": "finish",
-      "stage": "brief",
+      "stage": "prototype",
       "status": "completed"
     },
     {
-      "at": "2026-11-10T09:17:40+00:00",
-      "event": "finish",
-      "stage": "script",
-      "status": "completed"
+      "at": "2026-11-10T09:40:16+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "prototype",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-10T09:40:16+00:00",
+      "event": "start",
+      "stage": "prototype"
     }
   ],
   "cost_log": []

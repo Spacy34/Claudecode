@@ -23,3 +23,9 @@ date: 2026-11-10
 
 L'azimut était recalculé à chaque clé à partir de l'orientation du sujet (qui pointe un objet). Correctif :
 azimut figé à la 1re évaluation du plan (CameraRig.base_az).
+
+## Geste vers une cible : le personnage tournait le dos à la caméra
+tags: animation, point, throw, camera, dos
+date: 2026-11-10
+
+Constaté au prototype (QA 20/20 mais personnage de dos pendant 1,5 s). point/throw faisaient pivoter tout le corps vers la cible. Correctif : face_to(max_turn) limite la rotation (50° pour point, 70° pour throw) ; le bras fait le reste.

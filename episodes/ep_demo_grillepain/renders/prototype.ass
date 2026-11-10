@@ -1,0 +1,39 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: TT,Inter ExtraBold,96,&H00FFFFFF,&H0000E5FF,&H00000000,&H80000000,-1,0,0,0,100,100,1,0,1,6,3,5,60,60,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.25,0:00:00.45,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}MON{\c&H00FFFFFF\fscx100\fscy100} COLOC A
+Dialogue: 0,0:00:00.45,0:00:00.85,TT,,0,0,0,,{\pos(540,1305)}MON {\c&H0000E5FF\fscx112\fscy112}COLOC{\c&H00FFFFFF\fscx100\fscy100} A
+Dialogue: 0,0:00:00.85,0:00:01.05,TT,,0,0,0,,{\pos(540,1305)}MON COLOC {\c&H0000E5FF\fscx112\fscy112}A{\c&H00FFFFFF\fscx100\fscy100}
+Dialogue: 0,0:00:01.05,0:00:01.45,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}ESSAYÉ{\c&H00FFFFFF\fscx100\fscy100} DE RENDRE
+Dialogue: 0,0:00:01.45,0:00:01.65,TT,,0,0,0,,{\pos(540,1305)}ESSAYÉ {\c&H0000E5FF\fscx112\fscy112}DE{\c&H00FFFFFF\fscx100\fscy100} RENDRE
+Dialogue: 0,0:00:01.65,0:00:01.85,TT,,0,0,0,,{\pos(540,1305)}ESSAYÉ DE {\c&H0000E5FF\fscx112\fscy112}RENDRE{\c&H00FFFFFF\fscx100\fscy100}
+Dialogue: 0,0:00:01.85,0:00:02.05,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}NOTRE{\c&H00FFFFFF\fscx100\fscy100} GRILLE-PAIN CÉLÈBRE
+Dialogue: 0,0:00:02.05,0:00:02.65,TT,,0,0,0,,{\pos(540,1305)}NOTRE {\c&H0000E5FF\fscx112\fscy112}GRILLE-PAIN{\c&H00FFFFFF\fscx100\fscy100} CÉLÈBRE
+Dialogue: 0,0:00:02.65,0:00:03.05,TT,,0,0,0,,{\pos(540,1305)}NOTRE GRILLE-PAIN {\c&H0000E5FF\fscx112\fscy112}CÉLÈBRE{\c&H00FFFFFF\fscx100\fscy100}
+Dialogue: 0,0:00:03.05,0:00:03.25,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}SUR{\c&H00FFFFFF\fscx100\fscy100} TIKTOK.
+Dialogue: 0,0:00:03.25,0:00:03.98,TT,,0,0,0,,{\pos(540,1305)}SUR {\c&H0000E5FF\fscx112\fscy112}TIKTOK.{\c&H00FFFFFF\fscx100\fscy100}
+Dialogue: 0,0:00:03.98,0:00:04.39,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}KEVIN{\c&H00FFFFFF\fscx100\fscy100} A VINGT-HUIT
+Dialogue: 0,0:00:04.39,0:00:04.60,TT,,0,0,0,,{\pos(540,1305)}KEVIN {\c&H0000E5FF\fscx112\fscy112}A{\c&H00FFFFFF\fscx100\fscy100} VINGT-HUIT
+Dialogue: 0,0:00:04.60,0:00:05.02,TT,,0,0,0,,{\pos(540,1305)}KEVIN A {\c&H0000E5FF\fscx112\fscy112}VINGT-HUIT{\c&H00FFFFFF\fscx100\fscy100}
+Dialogue: 0,0:00:05.02,0:00:05.29,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}ANS,{\c&H00FFFFFF\fscx100\fscy100}
+Dialogue: 0,0:00:05.29,0:00:05.71,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}AUCUN{\c&H00FFFFFF\fscx100\fscy100} EMPLOI,
+Dialogue: 0,0:00:05.71,0:00:06.19,TT,,0,0,0,,{\pos(540,1305)}AUCUN {\c&H0000E5FF\fscx112\fscy112}EMPLOI,{\c&H00FFFFFF\fscx100\fscy100}
+Dialogue: 0,0:00:06.19,0:00:06.40,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}ET{\c&H00FFFFFF\fscx100\fscy100} UNE RING
+Dialogue: 0,0:00:06.40,0:00:06.61,TT,,0,0,0,,{\pos(540,1305)}ET {\c&H0000E5FF\fscx112\fscy112}UNE{\c&H00FFFFFF\fscx100\fscy100} RING
+Dialogue: 0,0:00:06.61,0:00:06.82,TT,,0,0,0,,{\pos(540,1305)}ET UNE {\c&H0000E5FF\fscx112\fscy112}RING{\c&H00FFFFFF\fscx100\fscy100}
+Dialogue: 0,0:00:06.82,0:00:07.03,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}LIGHT{\c&H00FFFFFF\fscx100\fscy100} PLUS CHÈRE
+Dialogue: 0,0:00:07.03,0:00:07.24,TT,,0,0,0,,{\pos(540,1305)}LIGHT {\c&H0000E5FF\fscx112\fscy112}PLUS{\c&H00FFFFFF\fscx100\fscy100} CHÈRE
+Dialogue: 0,0:00:07.24,0:00:07.45,TT,,0,0,0,,{\pos(540,1305)}LIGHT PLUS {\c&H0000E5FF\fscx112\fscy112}CHÈRE{\c&H00FFFFFF\fscx100\fscy100}
+Dialogue: 0,0:00:07.45,0:00:07.66,TT,,0,0,0,,{\pos(540,1305)}{\fad(40,0)}{\c&H0000E5FF\fscx112\fscy112}QUE{\c&H00FFFFFF\fscx100\fscy100} LE LOYER.
+Dialogue: 0,0:00:07.66,0:00:07.86,TT,,0,0,0,,{\pos(540,1305)}QUE {\c&H0000E5FF\fscx112\fscy112}LE{\c&H00FFFFFF\fscx100\fscy100} LOYER.
+Dialogue: 0,0:00:07.86,0:00:08.27,TT,,0,0,0,,{\pos(540,1305)}QUE LE {\c&H0000E5FF\fscx112\fscy112}LOYER.{\c&H00FFFFFF\fscx100\fscy100}

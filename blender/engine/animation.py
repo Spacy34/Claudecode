@@ -193,7 +193,7 @@ class CharAnim:
     def root_rz(self, f):
         return self.a.value_at(self.j("root"), 'rotation_euler', 2, f)
 
-    def face_to(self, f, target_xy, frames=6):
+    def face_to(self, f, target_xy, frames=6, max_turn=None):
         p = self.root_xy(f)
         d = Vector(target_xy) - p
         if d.length < 1e-3:
@@ -204,6 +204,8 @@ class CharAnim:
             ang -= 2 * math.pi
         while ang - cur < -math.pi:
             ang += 2 * math.pi
+        if max_turn is not None:   # geste vers une cible : ne jamais tourner le dos à la caméra
+            ang = cur + max(-max_turn, min(max_turn, ang - cur))
         root = self.j("root")
         self.a.key(root, 'rotation_euler', 2, f, cur)
         self.a.key(root, 'rotation_euler', 2, f + frames, ang)
@@ -320,7 +322,7 @@ class CharAnim:
 
     def act_point(self, f0, dur, k, target, world):
         if target is not None:
-            self.face_to(f0, target, 5)
+            self.face_to(f0, target, 5, max_turn=D(50))
         self._hold_pose("point", f0, dur, k)
 
     def act_shrug(self, f0, dur, k, target, world):
@@ -512,7 +514,7 @@ class CharAnim:
 
     def act_throw(self, f0, dur, k, target, world):
         if target is not None:
-            self.face_to(f0, target, 4)
+            self.face_to(f0, target, 4, max_turn=D(70))
         self.hold_current(f0)
         self.claim(f0 + 1, f0 + 26, loc=True)
         self.pose("throw_back", f0 + 7, blend=k)
