@@ -1,0 +1,828 @@
+{
+  "contract": "audio_timeline",
+  "contract_version": "1.0",
+  "episode_id": "ep_demo_grillepain",
+  "status": "generated",
+  "provenance": {
+    "created_by": "studio voice",
+    "created_at": "2026-11-10T09:00:52+00:00",
+    "tool": "tts:espeak",
+    "depends_on": [
+      {
+        "path": "story_script.json",
+        "sha256": "0d4e0595c185eda40396cf34dcce9d6236097f606bd4d3ebea1a25ffc0effb2a"
+      },
+      {
+        "path": "cast_bible.json",
+        "sha256": "8645d6ff1d7ee4f5ec2d0364cd509a2d93975f64a0fde735da86f5d413c25b09"
+      }
+    ]
+  },
+  "sample_rate": 48000,
+  "duration_s": 34.524,
+  "narration_wav": "audio/narration.wav",
+  "tts": {
+    "backend": "espeak",
+    "voice": "fr+m3",
+    "license": "espeak-ng GPL-3.0 (outil) ; audio généré utilisable",
+    "alignment": "proportional_syllables"
+  },
+  "segments": [
+    {
+      "line_id": "l001",
+      "speaker": "narrator",
+      "wav": "audio/lines/l001_81e056fb837f7e01.wav",
+      "text_sha256": "67e18e65c8321f79bb3cf885d4fc9e232d8963725a24f43c9eb8e6b5a484811f",
+      "start_s": 0.25,
+      "end_s": 3.755,
+      "words": [
+        {
+          "i": 0,
+          "text": "Mon",
+          "start_s": 0.25,
+          "end_s": 0.434
+        },
+        {
+          "i": 1,
+          "text": "coloc",
+          "start_s": 0.45,
+          "end_s": 0.819
+        },
+        {
+          "i": 2,
+          "text": "a",
+          "start_s": 0.851,
+          "end_s": 1.035
+        },
+        {
+          "i": 3,
+          "text": "essayé",
+          "start_s": 1.051,
+          "end_s": 1.42
+        },
+        {
+          "i": 4,
+          "text": "de",
+          "start_s": 1.452,
+          "end_s": 1.636
+        },
+        {
+          "i": 5,
+          "text": "rendre",
+          "start_s": 1.652,
+          "end_s": 1.836
+        },
+        {
+          "i": 6,
+          "text": "notre",
+          "start_s": 1.852,
+          "end_s": 2.036
+        },
+        {
+          "i": 7,
+          "text": "grille-pain",
+          "start_s": 2.052,
+          "end_s": 2.605
+        },
+        {
+          "i": 8,
+          "text": "célèbre",
+          "start_s": 2.653,
+          "end_s": 3.022
+        },
+        {
+          "i": 9,
+          "text": "sur",
+          "start_s": 3.054,
+          "end_s": 3.238
+        },
+        {
+          "i": 10,
+          "text": "TikTok.",
+          "start_s": 3.254,
+          "end_s": 3.715
+        }
+      ]
+    },
+    {
+      "line_id": "l002",
+      "speaker": "narrator",
+      "wav": "audio/lines/l002_2996e54509264fb6.wav",
+      "text_sha256": "6f399eea40bba99770329f86b3491ea9083b8fe2a299cb1b17c42d727f72d795",
+      "start_s": 3.975,
+      "end_s": 8.178,
+      "words": [
+        {
+          "i": 0,
+          "text": "Kevin",
+          "start_s": 3.975,
+          "end_s": 4.359
+        },
+        {
+          "i": 1,
+          "text": "a",
+          "start_s": 4.393,
+          "end_s": 4.585
+        },
+        {
+          "i": 2,
+          "text": "vingt-huit",
+          "start_s": 4.602,
+          "end_s": 4.987
+        },
+        {
+          "i": 3,
+          "text": "ans,",
+          "start_s": 5.02,
+          "end_s": 5.27
+        },
+        {
+          "i": 4,
+          "text": "aucun",
+          "start_s": 5.292,
+          "end_s": 5.677
+        },
+        {
+          "i": 5,
+          "text": "emploi,",
+          "start_s": 5.71,
+          "end_s": 6.153
+        },
+        {
+          "i": 6,
+          "text": "et",
+          "start_s": 6.191,
+          "end_s": 6.384
+        },
+        {
+          "i": 7,
+          "text": "une",
+          "start_s": 6.4,
+          "end_s": 6.593
+        },
+        {
+          "i": 8,
+          "text": "ring",
+          "start_s": 6.609,
+          "end_s": 6.802
+        },
+        {
+          "i": 9,
+          "text": "light",
+          "start_s": 6.818,
+          "end_s": 7.011
+        },
+        {
+          "i": 10,
+          "text": "plus",
+          "start_s": 7.028,
+          "end_s": 7.22
+        },
+        {
+          "i": 11,
+          "text": "chère",
+          "start_s": 7.237,
+          "end_s": 7.429
+        },
+        {
+          "i": 12,
+          "text": "que",
+          "start_s": 7.446,
+          "end_s": 7.638
+        },
+        {
+          "i": 13,
+          "text": "le",
+          "start_s": 7.655,
+          "end_s": 7.847
+        },
+        {
+          "i": 14,
+          "text": "loyer.",
+          "start_s": 7.864,
+          "end_s": 8.152
+        }
+      ]
+    },
+    {
+      "line_id": "l003",
+      "speaker": "ch_kevin",
+      "wav": "audio/lines/l003_86187c19a3cd3608.wav",
+      "text_sha256": "3de8933f9a168602c5aa5a8460b43f7773416e7681363392c518fb720ac63d4b",
+      "start_s": 8.398,
+      "end_s": 10.401,
+      "words": [
+        {
+          "i": 0,
+          "text": "Les",
+          "start_s": 8.398,
+          "end_s": 8.55
+        },
+        {
+          "i": 1,
+          "text": "gars,",
+          "start_s": 8.563,
+          "end_s": 8.761
+        },
+        {
+          "i": 2,
+          "text": "aujourd'hui,",
+          "start_s": 8.778,
+          "end_s": 9.281
+        },
+        {
+          "i": 3,
+          "text": "Toasty",
+          "start_s": 9.325,
+          "end_s": 9.629
+        },
+        {
+          "i": 4,
+          "text": "va",
+          "start_s": 9.656,
+          "end_s": 9.808
+        },
+        {
+          "i": 5,
+          "text": "faire",
+          "start_s": 9.821,
+          "end_s": 9.974
+        },
+        {
+          "i": 6,
+          "text": "une",
+          "start_s": 9.987,
+          "end_s": 10.139
+        },
+        {
+          "i": 7,
+          "text": "danse!",
+          "start_s": 10.153,
+          "end_s": 10.381
+        }
+      ]
+    },
+    {
+      "line_id": "l004",
+      "speaker": "narrator",
+      "wav": "audio/lines/l004_6e36d1aed67d00ea.wav",
+      "text_sha256": "9e871b5cc5548181b5da2fb240abf968abccf5e79182410257eb9c90eb54768a",
+      "start_s": 10.751,
+      "end_s": 15.155,
+      "words": [
+        {
+          "i": 0,
+          "text": "Toasty,",
+          "start_s": 10.751,
+          "end_s": 11.247
+        },
+        {
+          "i": 1,
+          "text": "c'est",
+          "start_s": 11.29,
+          "end_s": 11.505
+        },
+        {
+          "i": 2,
+          "text": "le",
+          "start_s": 11.524,
+          "end_s": 11.739
+        },
+        {
+          "i": 3,
+          "text": "grille-pain.",
+          "start_s": 11.758,
+          "end_s": 12.512
+        },
+        {
+          "i": 4,
+          "text": "Toasty",
+          "start_s": 12.578,
+          "end_s": 13.009
+        },
+        {
+          "i": 5,
+          "text": "ne",
+          "start_s": 13.046,
+          "end_s": 13.262
+        },
+        {
+          "i": 6,
+          "text": "danse",
+          "start_s": 13.281,
+          "end_s": 13.496
+        },
+        {
+          "i": 7,
+          "text": "pas.",
+          "start_s": 13.515,
+          "end_s": 13.838
+        },
+        {
+          "i": 8,
+          "text": "Toasty",
+          "start_s": 13.866,
+          "end_s": 14.297
+        },
+        {
+          "i": 9,
+          "text": "grille",
+          "start_s": 14.335,
+          "end_s": 14.55
+        },
+        {
+          "i": 10,
+          "text": "du",
+          "start_s": 14.569,
+          "end_s": 14.784
+        },
+        {
+          "i": 11,
+          "text": "pain.",
+          "start_s": 14.803,
+          "end_s": 15.126
+        }
+      ]
+    },
+    {
+      "line_id": "l005",
+      "speaker": "narrator",
+      "wav": "audio/lines/l005_92ee854f816a2ccb.wav",
+      "text_sha256": "42efd09195146ffa54128a450234e9458c51c5b05f6fc52a9ec4787ee6d4f9ae",
+      "start_s": 15.555,
+      "end_s": 19.869,
+      "words": [
+        {
+          "i": 0,
+          "text": "Alors",
+          "start_s": 15.555,
+          "end_s": 15.898
+        },
+        {
+          "i": 1,
+          "text": "Kevin",
+          "start_s": 15.928,
+          "end_s": 16.272
+        },
+        {
+          "i": 2,
+          "text": "l'a",
+          "start_s": 16.302,
+          "end_s": 16.473
+        },
+        {
+          "i": 3,
+          "text": "posé",
+          "start_s": 16.488,
+          "end_s": 16.832
+        },
+        {
+          "i": 4,
+          "text": "sur",
+          "start_s": 16.862,
+          "end_s": 17.034
+        },
+        {
+          "i": 5,
+          "text": "une",
+          "start_s": 17.049,
+          "end_s": 17.221
+        },
+        {
+          "i": 6,
+          "text": "enceinte,",
+          "start_s": 17.235,
+          "end_s": 17.631
+        },
+        {
+          "i": 7,
+          "text": "volume",
+          "start_s": 17.665,
+          "end_s": 18.009
+        },
+        {
+          "i": 8,
+          "text": "à",
+          "start_s": 18.039,
+          "end_s": 18.21
+        },
+        {
+          "i": 9,
+          "text": "fond,",
+          "start_s": 18.225,
+          "end_s": 18.449
+        },
+        {
+          "i": 10,
+          "text": "avec",
+          "start_s": 18.468,
+          "end_s": 18.812
+        },
+        {
+          "i": 11,
+          "text": "quatre",
+          "start_s": 18.842,
+          "end_s": 19.013
+        },
+        {
+          "i": 12,
+          "text": "tartines",
+          "start_s": 19.028,
+          "end_s": 19.372
+        },
+        {
+          "i": 13,
+          "text": "dedans.",
+          "start_s": 19.402,
+          "end_s": 19.832
+        }
+      ]
+    },
+    {
+      "line_id": "l006",
+      "speaker": "narrator",
+      "wav": "audio/lines/l006_8755855689d2a9f8.wav",
+      "text_sha256": "e615a59c3491355407a32abcee158ce7982ce42dc4cc65a14824118b73b5f087",
+      "start_s": 20.089,
+      "end_s": 24.145,
+      "words": [
+        {
+          "i": 0,
+          "text": "Le",
+          "start_s": 20.089,
+          "end_s": 20.262
+        },
+        {
+          "i": 1,
+          "text": "grille-pain",
+          "start_s": 20.278,
+          "end_s": 20.798
+        },
+        {
+          "i": 2,
+          "text": "a",
+          "start_s": 20.844,
+          "end_s": 21.017
+        },
+        {
+          "i": 3,
+          "text": "commencé",
+          "start_s": 21.032,
+          "end_s": 21.553
+        },
+        {
+          "i": 4,
+          "text": "à",
+          "start_s": 21.598,
+          "end_s": 21.772
+        },
+        {
+          "i": 5,
+          "text": "vibrer.",
+          "start_s": 21.787,
+          "end_s": 22.221
+        },
+        {
+          "i": 6,
+          "text": "Puis",
+          "start_s": 22.258,
+          "end_s": 22.432
+        },
+        {
+          "i": 7,
+          "text": "à",
+          "start_s": 22.447,
+          "end_s": 22.621
+        },
+        {
+          "i": 8,
+          "text": "fumer.",
+          "start_s": 22.636,
+          "end_s": 23.07
+        },
+        {
+          "i": 9,
+          "text": "Puis",
+          "start_s": 23.107,
+          "end_s": 23.281
+        },
+        {
+          "i": 10,
+          "text": "à",
+          "start_s": 23.296,
+          "end_s": 23.47
+        },
+        {
+          "i": 11,
+          "text": "sautiller.",
+          "start_s": 23.485,
+          "end_s": 24.092
+        }
+      ]
+    },
+    {
+      "line_id": "l007",
+      "speaker": "narrator",
+      "wav": "audio/lines/l007_0ba35a3032e80667.wav",
+      "text_sha256": "ba78e85df36a2c7e24208a618464ef74c2420ab455c6c89babd4ece153226614",
+      "start_s": 24.365,
+      "end_s": 27.18,
+      "words": [
+        {
+          "i": 0,
+          "text": "Et",
+          "start_s": 24.365,
+          "end_s": 24.503
+        },
+        {
+          "i": 1,
+          "text": "là,",
+          "start_s": 24.515,
+          "end_s": 24.694
+        },
+        {
+          "i": 2,
+          "text": "il",
+          "start_s": 24.709,
+          "end_s": 24.847
+        },
+        {
+          "i": 3,
+          "text": "a",
+          "start_s": 24.859,
+          "end_s": 24.997
+        },
+        {
+          "i": 4,
+          "text": "éjecté",
+          "start_s": 25.009,
+          "end_s": 25.422
+        },
+        {
+          "i": 5,
+          "text": "une",
+          "start_s": 25.458,
+          "end_s": 25.596
+        },
+        {
+          "i": 6,
+          "text": "tartine",
+          "start_s": 25.608,
+          "end_s": 25.884
+        },
+        {
+          "i": 7,
+          "text": "en",
+          "start_s": 25.908,
+          "end_s": 26.045
+        },
+        {
+          "i": 8,
+          "text": "plein",
+          "start_s": 26.057,
+          "end_s": 26.195
+        },
+        {
+          "i": 9,
+          "text": "dans",
+          "start_s": 26.207,
+          "end_s": 26.345
+        },
+        {
+          "i": 10,
+          "text": "la",
+          "start_s": 26.357,
+          "end_s": 26.495
+        },
+        {
+          "i": 11,
+          "text": "tête",
+          "start_s": 26.507,
+          "end_s": 26.644
+        },
+        {
+          "i": 12,
+          "text": "du",
+          "start_s": 26.656,
+          "end_s": 26.794
+        },
+        {
+          "i": 13,
+          "text": "proprio.",
+          "start_s": 26.806,
+          "end_s": 27.151
+        }
+      ]
+    },
+    {
+      "line_id": "l008",
+      "speaker": "narrator",
+      "wav": "audio/lines/l008_c5504522a80aff5b.wav",
+      "text_sha256": "057324883f9bb51ee9409fbb6f4cbfb851655c700ecea25090cf32715a314991",
+      "start_s": 27.401,
+      "end_s": 29.274,
+      "words": [
+        {
+          "i": 0,
+          "text": "La",
+          "start_s": 27.401,
+          "end_s": 27.565
+        },
+        {
+          "i": 1,
+          "text": "vidéo",
+          "start_s": 27.579,
+          "end_s": 27.907
+        },
+        {
+          "i": 2,
+          "text": "a",
+          "start_s": 27.936,
+          "end_s": 28.1
+        },
+        {
+          "i": 3,
+          "text": "fait",
+          "start_s": 28.114,
+          "end_s": 28.278
+        },
+        {
+          "i": 4,
+          "text": "trois",
+          "start_s": 28.293,
+          "end_s": 28.457
+        },
+        {
+          "i": 5,
+          "text": "millions",
+          "start_s": 28.471,
+          "end_s": 28.8
+        },
+        {
+          "i": 6,
+          "text": "de",
+          "start_s": 28.828,
+          "end_s": 28.992
+        },
+        {
+          "i": 7,
+          "text": "vues.",
+          "start_s": 29.007,
+          "end_s": 29.253
+        }
+      ]
+    },
+    {
+      "line_id": "l009",
+      "speaker": "narrator",
+      "wav": "audio/lines/l009_7bd80ef4bbe83c89.wav",
+      "text_sha256": "2fd10f4458b56656e4fcc4d147abeebdfdd595bf57b58eb941cddac1854e8c96",
+      "start_s": 29.494,
+      "end_s": 33.504,
+      "words": [
+        {
+          "i": 0,
+          "text": "On",
+          "start_s": 29.494,
+          "end_s": 29.67
+        },
+        {
+          "i": 1,
+          "text": "a",
+          "start_s": 29.685,
+          "end_s": 29.861
+        },
+        {
+          "i": 2,
+          "text": "été",
+          "start_s": 29.876,
+          "end_s": 30.227
+        },
+        {
+          "i": 3,
+          "text": "expulsés.",
+          "start_s": 30.258,
+          "end_s": 30.873
+        },
+        {
+          "i": 4,
+          "text": "Toasty",
+          "start_s": 30.926,
+          "end_s": 31.278
+        },
+        {
+          "i": 5,
+          "text": "a",
+          "start_s": 31.308,
+          "end_s": 31.484
+        },
+        {
+          "i": 6,
+          "text": "maintenant",
+          "start_s": 31.499,
+          "end_s": 32.026
+        },
+        {
+          "i": 7,
+          "text": "plus",
+          "start_s": 32.072,
+          "end_s": 32.248
+        },
+        {
+          "i": 8,
+          "text": "d'abonnés",
+          "start_s": 32.263,
+          "end_s": 32.79
+        },
+        {
+          "i": 9,
+          "text": "que",
+          "start_s": 32.836,
+          "end_s": 33.011
+        },
+        {
+          "i": 10,
+          "text": "nous",
+          "start_s": 33.027,
+          "end_s": 33.202
+        },
+        {
+          "i": 11,
+          "text": "deux.",
+          "start_s": 33.218,
+          "end_s": 33.481
+        }
+      ]
+    }
+  ],
+  "sfx": [
+    {
+      "name": "whoosh",
+      "file": "assets/sfx/whoosh.wav",
+      "start_s": 0.25,
+      "gain_db": -8.0,
+      "source": "script"
+    },
+    {
+      "name": "ding",
+      "file": "assets/sfx/ding.wav",
+      "start_s": 14.803,
+      "gain_db": -8.0,
+      "source": "script"
+    },
+    {
+      "name": "pop",
+      "file": "assets/sfx/pop.wav",
+      "start_s": 22.636,
+      "gain_db": -8.0,
+      "source": "script"
+    },
+    {
+      "name": "boing",
+      "file": "assets/sfx/boing.wav",
+      "start_s": 23.485,
+      "gain_db": -8.0,
+      "source": "script"
+    },
+    {
+      "name": "slide_whistle",
+      "file": "assets/sfx/slide_whistle.wav",
+      "start_s": 25.009,
+      "gain_db": -8.0,
+      "source": "script"
+    },
+    {
+      "name": "thud",
+      "file": "assets/sfx/thud.wav",
+      "start_s": 26.507,
+      "gain_db": -8.0,
+      "source": "script"
+    },
+    {
+      "name": "sparkle",
+      "file": "assets/sfx/sparkle.wav",
+      "start_s": 28.471,
+      "gain_db": -8.0,
+      "source": "script"
+    },
+    {
+      "name": "record_scratch",
+      "file": "assets/sfx/record_scratch.wav",
+      "start_s": 30.258,
+      "gain_db": -8.0,
+      "source": "script"
+    },
+    {
+      "name": "ding",
+      "file": "assets/sfx/ding.wav",
+      "start_s": 33.218,
+      "gain_db": -8.0,
+      "source": "script"
+    }
+  ],
+  "music": {
+    "file": "assets/music/goofy_bounce.wav",
+    "gain_db": -24.0,
+    "license": "original (synthèse procédurale)"
+  }
+}

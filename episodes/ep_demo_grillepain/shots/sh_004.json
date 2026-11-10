@@ -1,0 +1,88 @@
+{
+  "shot_id": "sh_004",
+  "episode_id": "ep_demo_grillepain",
+  "fps": 30,
+  "frames": 144,
+  "engine_version": "0.3.0",
+  "set": {
+    "id": "set_cuisine",
+    "kit": "kitchen",
+    "description": "Cuisine de coloc, murs vert menthe, carrelage crème.",
+    "size": [
+      8,
+      6
+    ],
+    "palette": {
+      "wall": "#B8E0D2",
+      "floor": "#EAE2B7",
+      "accent": "#F77F00"
+    },
+    "use_kit_dressing": true,
+    "marks": {
+      "kevin_spot": [
+        0.6,
+        1.6
+      ],
+      "action_center": [
+        0.3,
+        1.7
+      ],
+      "lea_spot": [
+        -1.3,
+        1.1
+      ]
+    },
+    "source": "procedural",
+    "license": {
+      "spdx": "original",
+      "commercial_use": true
+    },
+    "seed": 5
+  },
+  "mood": "dramatic",
+  "characters": [],
+  "props": [
+    {
+      "id": "pr_toaster",
+      "type": "toaster",
+      "color": "#C9CED6",
+      "scale": 1.4,
+      "label": null,
+      "pos": [
+        -0.35,
+        2.45
+      ],
+      "height": 0.92,
+      "held_by": null,
+      "hand": "R",
+      "rot_deg": 0.0
+    }
+  ],
+  "camera": {
+    "framing": "insert",
+    "subject": {
+      "kind": "prop",
+      "id": "pr_toaster"
+    },
+    "angle": "low",
+    "move": "static",
+    "motivation": "Le grille-pain filmé comme une star, immobile : comique de contraste."
+  },
+  "actions": [],
+  "expressions": [],
+  "prop_actions": [
+    {
+      "prop": "pr_toaster",
+      "action": "shake",
+      "frame": 112,
+      "duration_frames": 9,
+      "char": null,
+      "hand": "R",
+      "target": null
+    }
+  ],
+  "fx": [],
+  "talk": [],
+  "auto_idle": true,
+  "transition_out": "cut"
+}

@@ -1,0 +1,122 @@
+{
+  "shot_id": "sh_006",
+  "episode_id": "ep_demo_grillepain",
+  "fps": 30,
+  "frames": 128,
+  "engine_version": "0.3.0",
+  "set": {
+    "id": "set_cuisine",
+    "kit": "kitchen",
+    "description": "Cuisine de coloc, murs vert menthe, carrelage crème.",
+    "size": [
+      8,
+      6
+    ],
+    "palette": {
+      "wall": "#B8E0D2",
+      "floor": "#EAE2B7",
+      "accent": "#F77F00"
+    },
+    "use_kit_dressing": true,
+    "marks": {
+      "kevin_spot": [
+        0.6,
+        1.6
+      ],
+      "action_center": [
+        0.3,
+        1.7
+      ],
+      "lea_spot": [
+        -1.3,
+        1.1
+      ]
+    },
+    "source": "procedural",
+    "license": {
+      "spdx": "original",
+      "commercial_use": true
+    },
+    "seed": 5
+  },
+  "mood": "interior_warm",
+  "characters": [],
+  "props": [
+    {
+      "id": "pr_speaker",
+      "type": "box",
+      "color": "#222222",
+      "scale": 0.8,
+      "label": "BASS",
+      "pos": [
+        -0.35,
+        2.45
+      ],
+      "height": 0.92,
+      "held_by": null,
+      "hand": "R",
+      "rot_deg": 0.0
+    },
+    {
+      "id": "pr_toaster",
+      "type": "toaster",
+      "color": "#C9CED6",
+      "scale": 1.4,
+      "label": null,
+      "pos": [
+        -0.35,
+        2.45
+      ],
+      "height": 1.24,
+      "held_by": null,
+      "hand": "R",
+      "rot_deg": 0.0
+    }
+  ],
+  "camera": {
+    "framing": "insert",
+    "subject": {
+      "kind": "prop",
+      "id": "pr_toaster"
+    },
+    "angle": "eye",
+    "move": "shake",
+    "motivation": "Tremblement caméra = tension, le grille-pain s'emballe."
+  },
+  "actions": [],
+  "expressions": [],
+  "prop_actions": [
+    {
+      "prop": "pr_toaster",
+      "action": "shake",
+      "frame": 33,
+      "duration_frames": 36,
+      "char": null,
+      "hand": "R",
+      "target": null
+    },
+    {
+      "prop": "pr_toaster",
+      "action": "shake",
+      "frame": 101,
+      "duration_frames": 24,
+      "char": null,
+      "hand": "R",
+      "target": null
+    }
+  ],
+  "fx": [
+    {
+      "type": "smoke_puff",
+      "frame": 81,
+      "scale": 0.6,
+      "target": {
+        "kind": "prop",
+        "id": "pr_toaster"
+      }
+    }
+  ],
+  "talk": [],
+  "auto_idle": true,
+  "transition_out": "smash_cut"
+}

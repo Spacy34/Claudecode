@@ -1,0 +1,214 @@
+{
+  "contract": "story_script",
+  "contract_version": "1.0",
+  "episode_id": "ep_demo_grillepain",
+  "status": "approved",
+  "provenance": {
+    "created_by": "story-architect",
+    "created_at": "2026-11-10T09:00:00+00:00",
+    "revision": 1
+  },
+  "title": "Toasty, le grille-pain influenceur",
+  "logline": "Un coloc chômeur tente de rendre son grille-pain viral ; le grille-pain devient célèbre, eux deviennent SDF.",
+  "language": "fr-FR",
+  "target_duration_s": 40,
+  "hook": {
+    "line_id": "l001",
+    "technique": "absurd_claim",
+    "why_it_works": "Promesse absurde et concrète dès la 1re seconde : un objet banal veut devenir star."
+  },
+  "beats": [
+    {
+      "id": "b01",
+      "role": "hook",
+      "summary": "Le projet absurde est annoncé."
+    },
+    {
+      "id": "b02",
+      "role": "setup",
+      "summary": "Portrait de Kevin, influenceur raté.",
+      "comic_device": "contraste ring light / loyer"
+    },
+    {
+      "id": "b03",
+      "role": "escalation",
+      "summary": "Le grille-pain ne danse pas ; Kevin force le destin.",
+      "comic_device": "règle de trois (Toasty...)"
+    },
+    {
+      "id": "b04",
+      "role": "escalation",
+      "summary": "Le grille-pain s'emballe.",
+      "comic_device": "règle de trois (vibrer/fumer/sautiller)"
+    },
+    {
+      "id": "b05",
+      "role": "climax",
+      "summary": "La tartine frappe le propriétaire."
+    },
+    {
+      "id": "b06",
+      "role": "twist",
+      "summary": "Succès viral."
+    },
+    {
+      "id": "b07",
+      "role": "payoff",
+      "summary": "Expulsés, battus en popularité par leur grille-pain."
+    }
+  ],
+  "lines": [
+    {
+      "id": "l001",
+      "beat_id": "b01",
+      "speaker": "narrator",
+      "text": "Mon coloc a essayé de rendre notre grille-pain célèbre sur TikTok.",
+      "delivery": {
+        "emotion": "deadpan"
+      },
+      "visual_intent": "Kevin, téléphone brandi, présente fièrement un grille-pain posé sur le plan de travail.",
+      "sfx": [
+        {
+          "name": "whoosh",
+          "word": 0
+        }
+      ]
+    },
+    {
+      "id": "l002",
+      "beat_id": "b02",
+      "speaker": "narrator",
+      "text": "Kevin a vingt-huit ans, aucun emploi, et une ring light plus chère que le loyer.",
+      "delivery": {
+        "emotion": "deadpan"
+      },
+      "visual_intent": "Kevin en pied, bras croisés, sûr de lui : portrait du personnage."
+    },
+    {
+      "id": "l003",
+      "beat_id": "b02",
+      "speaker": "ch_kevin",
+      "text": "Les gars, aujourd'hui, Toasty va faire une danse!",
+      "delivery": {
+        "emotion": "excited",
+        "rate": 1.1
+      },
+      "visual_intent": "Gros plan de Kevin qui parle à sa caméra de téléphone, surexcité, en faisant coucou."
+    },
+    {
+      "id": "l004",
+      "beat_id": "b03",
+      "speaker": "narrator",
+      "text": "Toasty, c'est le grille-pain. Toasty ne danse pas. Toasty grille du pain.",
+      "delivery": {
+        "emotion": "deadpan",
+        "pause_after_ms": 400
+      },
+      "visual_intent": "Plan serré sur le grille-pain immobile, filmé en contre-plongée comme une star.",
+      "sfx": [
+        {
+          "name": "ding",
+          "word": 11
+        }
+      ]
+    },
+    {
+      "id": "l005",
+      "beat_id": "b03",
+      "speaker": "narrator",
+      "text": "Alors Kevin l'a posé sur une enceinte, volume à fond, avec quatre tartines dedans.",
+      "delivery": {
+        "emotion": "neutral"
+      },
+      "visual_intent": "Plan large de la cuisine : Kevin rejoint le plan de travail, le grille-pain trône sur une enceinte, Kevin danse."
+    },
+    {
+      "id": "l006",
+      "beat_id": "b04",
+      "speaker": "narrator",
+      "text": "Le grille-pain a commencé à vibrer. Puis à fumer. Puis à sautiller.",
+      "delivery": {
+        "emotion": "neutral",
+        "rate": 0.95
+      },
+      "visual_intent": "Insert sur le grille-pain qui tremble, fume puis sautille.",
+      "sfx": [
+        {
+          "name": "pop",
+          "word": 8
+        },
+        {
+          "name": "boing",
+          "word": 11
+        }
+      ]
+    },
+    {
+      "id": "l007",
+      "beat_id": "b05",
+      "speaker": "narrator",
+      "text": "Et là, il a éjecté une tartine en plein dans la tête du proprio.",
+      "delivery": {
+        "emotion": "excited"
+      },
+      "visual_intent": "Le propriétaire entre ; une tartine jaillit du grille-pain et le frappe en pleine tête.",
+      "sfx": [
+        {
+          "name": "slide_whistle",
+          "word": 4
+        },
+        {
+          "name": "thud",
+          "word": 11
+        }
+      ]
+    },
+    {
+      "id": "l008",
+      "beat_id": "b06",
+      "speaker": "narrator",
+      "text": "La vidéo a fait trois millions de vues.",
+      "delivery": {
+        "emotion": "deadpan"
+      },
+      "visual_intent": "Kevin exulte avec son téléphone ; la narratrice est sous le choc.",
+      "sfx": [
+        {
+          "name": "sparkle",
+          "word": 5
+        }
+      ]
+    },
+    {
+      "id": "l009",
+      "beat_id": "b07",
+      "speaker": "narrator",
+      "text": "On a été expulsés. Toasty a maintenant plus d'abonnés que nous deux.",
+      "delivery": {
+        "emotion": "sad"
+      },
+      "visual_intent": "Le proprio les met dehors ; final sur Toasty, auréolé de gloire.",
+      "sfx": [
+        {
+          "name": "record_scratch",
+          "word": 3
+        },
+        {
+          "name": "ding",
+          "word": 11
+        }
+      ]
+    }
+  ],
+  "content_review": {
+    "themes": [
+      "humour absurde",
+      "violence slapstick légère (tartine)"
+    ],
+    "platform_risk": "low",
+    "notes": "Slapstick sans blessure montrée, aucun produit dangereux imité de façon réaliste. Personnages et marque fictifs.",
+    "real_people_or_brands": [
+      "TikTok (mention du nom de la plateforme uniquement)"
+    ]
+  }
+}

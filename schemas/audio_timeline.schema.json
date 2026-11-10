@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/audio_timeline.schema.json",
+  "title": "audio_timeline.json — GÉNÉRÉ. La voix est l'horloge de l'épisode.",
+  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "type": "object",
+  "required": ["contract", "sample_rate", "duration_s", "segments", "sfx", "tts"],
+  "properties": {
+    "contract": {"const": "audio_timeline"},
+    "sample_rate": {"type": "integer"},
+    "duration_s": {"type": "number", "exclusiveMinimum": 0},
+    "narration_wav": {"type": "string"},
+    "tts": {
+      "type": "object",
+      "required": ["backend"],
+      "properties": {
+        "backend": {"enum": ["piper", "espeak", "command", "recorded"]},
+        "voice": {"type": "string"},
+        "license": {"type": "string"},
+        "alignment": {"enum": ["proportional_syllables", "forced_aligner", "whisper"]}
+      }
+    },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["line_id", "speaker", "wav", "start_s", "end_s", "words"],
+        "properties": {
+          "line_id": {"$ref": "common.schema.json#/$defs/line_id"},
+          "speaker": {"type": "string"},
+          "wav": {"type": "string"},
+          "text_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+          "start_s": {"type": "number", "minimum": 0},
+          "end_s": {"type": "number", "minimum": 0},
+          "words": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["i", "text", "start_s", "end_s"],
+              "properties": {"i": {"type": "integer"}, "text": {"type": "string"}, "start_s": {"type": "number"}, "end_s": {"type": "number"}}
+            }
+          }
+        }
+      }
+    },
+    "sfx": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "file", "start_s"],
+        "properties": {"name": {"type": "string"}, "file": {"type": "string"}, "start_s": {"type": "number"}, "gain_db": {"type": "number"}, "source": {"type": "string"}}
+      }
+    },
+    "music": {"type": ["object", "null"], "properties": {"file": {"type": "string"}, "gain_db": {"type": "number"}, "license": {"type": "string"}}}
+  }
+}

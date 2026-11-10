@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/animation_plan.schema.json",
+  "title": "animation_plan.json — actions, expressions, accessoires et effets par plan (ancrés sur les mots)",
+  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "type": "object",
+  "required": ["contract", "shots"],
+  "$defs": {
+    "target": {"anyOf": [{"type": "string"}, {"$ref": "common.schema.json#/$defs/vec2"}]},
+    "action_name": {"enum": ["idle", "walk_to", "run_to", "turn_to", "look_at", "wave", "point", "shrug", "facepalm", "jump", "shocked_jump", "fall_back", "slip_fall", "cower", "stomp", "celebrate", "dance", "sit", "stand_up", "throw", "flail", "nod", "shake_head", "take_hit", "faint", "arms_crossed", "hands_on_hips", "lean_in", "talk_gesture"]},
+    "expression": {"enum": ["neutral", "happy", "laugh", "sad", "angry", "shocked", "scared", "smug", "disgusted", "confused", "deadpan", "crying", "evil_grin", "love"]}
+  },
+  "properties": {
+    "contract": {"const": "animation_plan"},
+    "shots": {
+      "type": "object",
+      "propertyNames": {"$ref": "common.schema.json#/$defs/shot_id"},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["char", "action", "at"],
+              "additionalProperties": false,
+              "properties": {
+                "char": {"$ref": "common.schema.json#/$defs/character_id"},
+                "action": {"$ref": "#/$defs/action_name"},
+                "at": {"$ref": "common.schema.json#/$defs/time_anchor"},
+                "duration_s": {"type": "number", "minimum": 0.1, "maximum": 20},
+                "target": {"$ref": "#/$defs/target"},
+                "intensity": {"type": "number", "minimum": 0.2, "maximum": 2.0, "default": 1.0},
+                "prop": {"$ref": "common.schema.json#/$defs/prop_id"}
+              }
+            }
+          },
+          "expressions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["char", "expr", "at"],
+              "additionalProperties": false,
+              "properties": {
+                "char": {"$ref": "common.schema.json#/$defs/character_id"},
+                "expr": {"$ref": "#/$defs/expression"},
+                "at": {"$ref": "common.schema.json#/$defs/time_anchor"},
+                "intensity": {"type": "number", "minimum": 0.2, "maximum": 1.5, "default": 1.0}
+              }
+            }
+          },
+          "props": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["prop", "action", "at"],
+              "additionalProperties": false,
+              "properties": {
+                "prop": {"$ref": "common.schema.json#/$defs/prop_id"},
+                "action": {"enum": ["attach", "detach", "appear", "disappear", "throw", "fall", "shake", "explode", "spin"]},
+                "at": {"$ref": "common.schema.json#/$defs/time_anchor"},
+                "char": {"$ref": "common.schema.json#/$defs/character_id"},
+                "hand": {"enum": ["L", "R"]},
+                "target": {"$ref": "#/$defs/target"},
+                "duration_s": {"type": "number", "minimum": 0.1, "maximum": 10}
+              }
+            }
+          },
+          "fx": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type", "at", "target"],
+              "additionalProperties": false,
+              "properties": {
+                "type": {"enum": ["smoke_puff", "explosion", "sparkles", "impact_star", "sweat_drops", "question_marks", "hearts"]},
+                "at": {"$ref": "common.schema.json#/$defs/time_anchor"},
+                "target": {"$ref": "#/$defs/target"},
+                "scale": {"type": "number", "minimum": 0.2, "maximum": 4}
+              }
+            }
+          },
+          "talk": {
+            "description": "Lip-flap automatique pour les répliques dont le speaker est présent ; ceci ajoute des locuteurs hors convention (ex : personnage qui mime la voix du narrateur).",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["char", "line"],
+              "properties": {"char": {"$ref": "common.schema.json#/$defs/character_id"}, "line": {"$ref": "common.schema.json#/$defs/line_id"}}
+            }
+          },
+          "auto_idle": {"type": "boolean", "default": true, "description": "Respiration/balancement automatique pour éviter les personnages figés"}
+        }
+      }
+    }
+  }
+}

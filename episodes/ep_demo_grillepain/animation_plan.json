@@ -1,0 +1,400 @@
+{
+  "contract": "animation_plan",
+  "contract_version": "1.0",
+  "episode_id": "ep_demo_grillepain",
+  "status": "approved",
+  "provenance": {
+    "created_by": "animator",
+    "created_at": "2026-11-10T09:00:00+00:00",
+    "revision": 1
+  },
+  "shots": {
+    "sh_001": {
+      "expressions": [
+        {
+          "char": "ch_kevin",
+          "expr": "happy",
+          "at": {
+            "line": "l001",
+            "word": 0
+          }
+        }
+      ],
+      "actions": [
+        {
+          "char": "ch_kevin",
+          "action": "point",
+          "at": {
+            "line": "l001",
+            "word": 6
+          },
+          "duration_s": 1.4,
+          "target": "pr_toaster"
+        }
+      ],
+      "fx": [
+        {
+          "type": "sparkles",
+          "at": {
+            "line": "l001",
+            "word": 8
+          },
+          "target": "pr_toaster",
+          "scale": 0.8
+        }
+      ]
+    },
+    "sh_002": {
+      "expressions": [
+        {
+          "char": "ch_kevin",
+          "expr": "smug",
+          "at": {
+            "line": "l002",
+            "word": 0
+          }
+        },
+        {
+          "char": "ch_kevin",
+          "expr": "happy",
+          "at": {
+            "line": "l002",
+            "word": 8
+          }
+        }
+      ],
+      "actions": [
+        {
+          "char": "ch_kevin",
+          "action": "arms_crossed",
+          "at": {
+            "line": "l002",
+            "word": 0
+          },
+          "duration_s": 4.0
+        }
+      ]
+    },
+    "sh_003": {
+      "expressions": [
+        {
+          "char": "ch_kevin",
+          "expr": "laugh",
+          "at": {
+            "line": "l003",
+            "word": 0
+          }
+        },
+        {
+          "char": "ch_kevin",
+          "expr": "happy",
+          "at": {
+            "line": "l003",
+            "word": 3
+          }
+        }
+      ],
+      "actions": [
+        {
+          "char": "ch_kevin",
+          "action": "wave",
+          "at": {
+            "line": "l003",
+            "word": 0
+          },
+          "duration_s": 1.6
+        },
+        {
+          "char": "ch_kevin",
+          "action": "talk_gesture",
+          "at": {
+            "line": "l003",
+            "word": 4
+          },
+          "duration_s": 1.4
+        }
+      ]
+    },
+    "sh_004": {
+      "props": [
+        {
+          "prop": "pr_toaster",
+          "action": "shake",
+          "at": {
+            "line": "l004",
+            "word": 9
+          },
+          "duration_s": 0.3
+        }
+      ]
+    },
+    "sh_005": {
+      "expressions": [
+        {
+          "char": "ch_kevin",
+          "expr": "happy",
+          "at": {
+            "line": "l005",
+            "word": 0
+          }
+        },
+        {
+          "char": "ch_kevin",
+          "expr": "laugh",
+          "at": {
+            "line": "l005",
+            "word": 7
+          }
+        }
+      ],
+      "actions": [
+        {
+          "char": "ch_kevin",
+          "action": "walk_to",
+          "at": {
+            "line": "l005",
+            "word": 1
+          },
+          "target": "kevin_spot"
+        },
+        {
+          "char": "ch_kevin",
+          "action": "dance",
+          "at": {
+            "line": "l005",
+            "word": 7
+          },
+          "duration_s": 2.5
+        }
+      ]
+    },
+    "sh_006": {
+      "props": [
+        {
+          "prop": "pr_toaster",
+          "action": "shake",
+          "at": {
+            "line": "l006",
+            "word": 3
+          },
+          "duration_s": 1.2
+        },
+        {
+          "prop": "pr_toaster",
+          "action": "shake",
+          "at": {
+            "line": "l006",
+            "word": 10
+          },
+          "duration_s": 0.8
+        }
+      ],
+      "fx": [
+        {
+          "type": "smoke_puff",
+          "at": {
+            "line": "l006",
+            "word": 8
+          },
+          "target": "pr_toaster",
+          "scale": 0.6
+        }
+      ]
+    },
+    "sh_007": {
+      "expressions": [
+        {
+          "char": "ch_proprio",
+          "expr": "angry",
+          "at": {
+            "line": "l007",
+            "word": 0
+          }
+        },
+        {
+          "char": "ch_kevin",
+          "expr": "shocked",
+          "at": {
+            "line": "l007",
+            "word": 5
+          }
+        },
+        {
+          "char": "ch_proprio",
+          "expr": "shocked",
+          "at": {
+            "line": "l007",
+            "word": 11
+          }
+        }
+      ],
+      "actions": [
+        {
+          "char": "ch_proprio",
+          "action": "walk_to",
+          "at": {
+            "line": "l007",
+            "word": 0
+          },
+          "target": [
+            1.3,
+            1.3
+          ],
+          "duration_s": 1.0
+        },
+        {
+          "char": "ch_proprio",
+          "action": "take_hit",
+          "at": {
+            "line": "l007",
+            "word": 11
+          }
+        },
+        {
+          "char": "ch_kevin",
+          "action": "shocked_jump",
+          "at": {
+            "line": "l007",
+            "word": 5
+          }
+        }
+      ],
+      "props": [
+        {
+          "prop": "pr_toast",
+          "action": "throw",
+          "at": {
+            "line": "l007",
+            "word": 4
+          },
+          "target": "ch_proprio",
+          "duration_s": 0.6
+        }
+      ],
+      "fx": [
+        {
+          "type": "impact_star",
+          "at": {
+            "line": "l007",
+            "word": 11
+          },
+          "target": "ch_proprio",
+          "scale": 0.8
+        }
+      ]
+    },
+    "sh_008": {
+      "expressions": [
+        {
+          "char": "ch_kevin",
+          "expr": "laugh",
+          "at": {
+            "line": "l008",
+            "word": 0
+          }
+        },
+        {
+          "char": "ch_lea",
+          "expr": "shocked",
+          "at": {
+            "line": "l008",
+            "word": 3
+          }
+        }
+      ],
+      "actions": [
+        {
+          "char": "ch_kevin",
+          "action": "celebrate",
+          "at": {
+            "line": "l008",
+            "word": 4
+          },
+          "duration_s": 1.6
+        }
+      ],
+      "fx": [
+        {
+          "type": "sparkles",
+          "at": {
+            "line": "l008",
+            "word": 5
+          },
+          "target": "ch_kevin"
+        }
+      ]
+    },
+    "sh_009": {
+      "expressions": [
+        {
+          "char": "ch_proprio",
+          "expr": "angry",
+          "at": {
+            "line": "l009",
+            "word": 0
+          }
+        },
+        {
+          "char": "ch_kevin",
+          "expr": "sad",
+          "at": {
+            "line": "l009",
+            "word": 2
+          }
+        },
+        {
+          "char": "ch_lea",
+          "expr": "deadpan",
+          "at": {
+            "line": "l009",
+            "word": 0
+          }
+        }
+      ],
+      "actions": [
+        {
+          "char": "ch_proprio",
+          "action": "point",
+          "at": {
+            "line": "l009",
+            "word": 0
+          },
+          "duration_s": 1.2,
+          "target": "offscreen_left"
+        }
+      ]
+    },
+    "sh_010": {
+      "props": [
+        {
+          "prop": "pr_toaster",
+          "action": "spin",
+          "at": {
+            "line": "l009",
+            "word": 6
+          },
+          "duration_s": 1.0
+        }
+      ],
+      "fx": [
+        {
+          "type": "sparkles",
+          "at": {
+            "line": "l009",
+            "word": 4
+          },
+          "target": "pr_toaster"
+        },
+        {
+          "type": "hearts",
+          "at": {
+            "line": "l009",
+            "word": 8
+          },
+          "target": "pr_toaster",
+          "scale": 0.6
+        }
+      ]
+    }
+  }
+}

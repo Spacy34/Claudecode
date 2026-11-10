@@ -1,0 +1,279 @@
+{
+  "shot_id": "sh_009",
+  "episode_id": "ep_demo_grillepain",
+  "fps": 30,
+  "frames": 47,
+  "engine_version": "0.3.0",
+  "set": {
+    "id": "set_cuisine",
+    "kit": "kitchen",
+    "description": "Cuisine de coloc, murs vert menthe, carrelage crème.",
+    "size": [
+      8,
+      6
+    ],
+    "palette": {
+      "wall": "#B8E0D2",
+      "floor": "#EAE2B7",
+      "accent": "#F77F00"
+    },
+    "use_kit_dressing": true,
+    "marks": {
+      "kevin_spot": [
+        0.6,
+        1.6
+      ],
+      "action_center": [
+        0.3,
+        1.7
+      ],
+      "lea_spot": [
+        -1.3,
+        1.1
+      ]
+    },
+    "source": "procedural",
+    "license": {
+      "spdx": "original",
+      "commercial_use": true
+    },
+    "seed": 5
+  },
+  "mood": "day_cool",
+  "characters": [
+    {
+      "id": "ch_proprio",
+      "design": {
+        "seed": 33,
+        "body": {
+          "height": 1.12,
+          "girth": 1.45,
+          "head_scale": 1.0,
+          "leg_length": 0.85,
+          "arm_length": 0.95,
+          "belly": 0.9
+        },
+        "skin": "#FFDBAC",
+        "hair": {
+          "style": "none",
+          "color": "#777777"
+        },
+        "eyes": {
+          "size": 0.85,
+          "spacing": 0.95,
+          "iris": "#222222"
+        },
+        "brows": {
+          "thickness": 1.8,
+          "color": "#555555"
+        },
+        "nose": {
+          "shape": "long",
+          "size": 1.2
+        },
+        "mouth": {
+          "width": 1.0
+        },
+        "outfit": {
+          "top": {
+            "type": "suit",
+            "color": "#6C757D",
+            "accent": "#9D0208"
+          },
+          "bottom": {
+            "type": "pants",
+            "color": "#495057"
+          },
+          "shoes": "#111111"
+        },
+        "accessories": [
+          "mustache"
+        ]
+      },
+      "pos": [
+        1.0,
+        0.9
+      ],
+      "facing_deg": 0.0,
+      "facing_target": [
+        0.1,
+        1.2
+      ],
+      "start_pose": "stand"
+    },
+    {
+      "id": "ch_kevin",
+      "design": {
+        "seed": 11,
+        "body": {
+          "height": 1.05,
+          "girth": 0.9,
+          "head_scale": 1.18,
+          "leg_length": 0.95,
+          "arm_length": 1.05,
+          "belly": 0.1
+        },
+        "skin": "#F1C27D",
+        "hair": {
+          "style": "spiky",
+          "color": "#4A2C1A"
+        },
+        "eyes": {
+          "size": 1.15,
+          "spacing": 1.0,
+          "iris": "#3B5BA5"
+        },
+        "brows": {
+          "thickness": 1.3,
+          "color": "#3A2416"
+        },
+        "nose": {
+          "shape": "round",
+          "size": 1.1
+        },
+        "mouth": {
+          "width": 1.15
+        },
+        "outfit": {
+          "top": {
+            "type": "hoodie",
+            "color": "#FF7F11",
+            "accent": "#E63946"
+          },
+          "bottom": {
+            "type": "pants",
+            "color": "#2B2D42"
+          },
+          "shoes": "#F8F8F8"
+        },
+        "accessories": [
+          "cap"
+        ]
+      },
+      "pos": [
+        0.1,
+        1.2
+      ],
+      "facing_deg": 0.0,
+      "facing_target": [
+        1.0,
+        0.9
+      ],
+      "start_pose": "stand"
+    },
+    {
+      "id": "ch_lea",
+      "design": {
+        "seed": 22,
+        "body": {
+          "height": 0.98,
+          "girth": 0.85,
+          "head_scale": 1.1,
+          "leg_length": 1.0,
+          "arm_length": 1.0,
+          "belly": 0.0
+        },
+        "skin": "#C68642",
+        "hair": {
+          "style": "bun",
+          "color": "#1C1C1C"
+        },
+        "eyes": {
+          "size": 1.0,
+          "spacing": 1.05,
+          "iris": "#5C3A21"
+        },
+        "brows": {
+          "thickness": 1.0,
+          "color": "#1C1C1C"
+        },
+        "nose": {
+          "shape": "potato",
+          "size": 0.9
+        },
+        "mouth": {
+          "width": 0.9
+        },
+        "outfit": {
+          "top": {
+            "type": "tshirt",
+            "color": "#2A9D8F"
+          },
+          "bottom": {
+            "type": "shorts",
+            "color": "#264653"
+          },
+          "shoes": "#E9C46A"
+        },
+        "accessories": [
+          "glasses",
+          "earrings"
+        ]
+      },
+      "pos": [
+        -0.6,
+        1.3
+      ],
+      "facing_deg": 0.0,
+      "facing_target": [
+        1.0,
+        0.9
+      ],
+      "start_pose": "stand"
+    }
+  ],
+  "props": [],
+  "camera": {
+    "framing": "wide",
+    "subject": {
+      "kind": "point",
+      "pos": [
+        0.2,
+        1.1,
+        1.0
+      ]
+    },
+    "angle": "high",
+    "move": "static",
+    "motivation": "Plongée : les colocs écrasés par l'expulsion, les trois personnages dans le cadre."
+  },
+  "actions": [
+    {
+      "char": "ch_proprio",
+      "action": "point",
+      "frame": 5,
+      "duration_frames": 36,
+      "intensity": 1.0,
+      "target": [
+        -6.0,
+        0.0
+      ],
+      "prop": null
+    }
+  ],
+  "expressions": [
+    {
+      "char": "ch_proprio",
+      "expr": "angry",
+      "frame": 5,
+      "intensity": 1.0
+    },
+    {
+      "char": "ch_kevin",
+      "expr": "sad",
+      "frame": 16,
+      "intensity": 1.0
+    },
+    {
+      "char": "ch_lea",
+      "expr": "deadpan",
+      "frame": 5,
+      "intensity": 1.0
+    }
+  ],
+  "prop_actions": [],
+  "fx": [],
+  "talk": [],
+  "auto_idle": true,
+  "transition_out": "cut"
+}

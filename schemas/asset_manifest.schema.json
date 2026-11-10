@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/asset_manifest.schema.json",
+  "title": "asset_manifest.json — décors et accessoires de l'épisode",
+  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "type": "object",
+  "required": ["contract", "sets", "props"],
+  "$defs": {
+    "prop_type": {"enum": ["sofa", "table", "chair", "tv", "fridge", "stove", "counter", "toaster", "plant", "lamp", "door", "window", "car", "tree", "bush", "bench", "desk", "computer", "phone", "mug", "bed", "toilet", "box", "trash_can", "cake", "sign", "pigeon", "cat", "frying_pan", "fire_extinguisher", "shopping_cart", "shelf", "rug", "streetlight", "building", "painting"]},
+    "placement": {
+      "type": "object",
+      "required": ["type", "pos"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"$ref": "#/$defs/prop_type"},
+        "pos": {"$ref": "common.schema.json#/$defs/vec2"},
+        "rot_deg": {"type": "number"},
+        "scale": {"type": "number", "minimum": 0.2, "maximum": 5},
+        "color": {"$ref": "common.schema.json#/$defs/color"},
+        "label": {"type": "string", "maxLength": 24}
+      }
+    }
+  },
+  "properties": {
+    "contract": {"const": "asset_manifest"},
+    "sets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kit", "source", "license"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/set_id"},
+          "kit": {"enum": ["living_room", "kitchen", "bedroom", "bathroom", "office", "street", "park", "supermarket", "studio_void"]},
+          "description": {"type": "string"},
+          "size": {"$ref": "common.schema.json#/$defs/vec2", "description": "largeur x profondeur en mètres"},
+          "palette": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "wall": {"$ref": "common.schema.json#/$defs/color"},
+              "floor": {"$ref": "common.schema.json#/$defs/color"},
+              "accent": {"$ref": "common.schema.json#/$defs/color"},
+              "sky": {"$ref": "common.schema.json#/$defs/color"}
+            }
+          },
+          "use_kit_dressing": {"type": "boolean", "default": true},
+          "dressing": {"type": "array", "items": {"$ref": "#/$defs/placement"}},
+          "marks": {
+            "type": "object",
+            "description": "Repères nommés (x, y) en mètres ; y positif = vers le fond.",
+            "additionalProperties": {"$ref": "common.schema.json#/$defs/vec2"}
+          },
+          "source": {"enum": ["procedural", "library", "external"]},
+          "license": {"$ref": "common.schema.json#/$defs/license"},
+          "seed": {"type": "integer"}
+        }
+      }
+    },
+    "props": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "source", "license"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/prop_id"},
+          "type": {"$ref": "#/$defs/prop_type"},
+          "color": {"$ref": "common.schema.json#/$defs/color"},
+          "scale": {"type": "number", "minimum": 0.2, "maximum": 5},
+          "label": {"type": "string", "maxLength": 24},
+          "hero": {"type": "boolean", "description": "Accessoire clé de l'histoire : doit être lisible à taille téléphone."},
+          "source": {"enum": ["procedural", "library", "external"]},
+          "external_path": {"type": "string"},
+          "license": {"$ref": "common.schema.json#/$defs/license"}
+        }
+      }
+    }
+  }
+}

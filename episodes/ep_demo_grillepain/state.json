@@ -1,0 +1,294 @@
+{
+  "episode_id": "ep_demo_grillepain",
+  "state_version": 1,
+  "stages": {
+    "brief": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "script": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "script_review": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "gate_script": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "design": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "storyboard": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "animation": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "voice": {
+      "status": "stale",
+      "attempts": 1,
+      "revision_rounds": 0,
+      "pid": null,
+      "started_at": "2026-11-10T09:00:51+00:00",
+      "error": null,
+      "finished_at": "2026-11-10T09:00:52+00:00",
+      "inputs": {
+        "story_script.json": "0d4e0595c185eda40396cf34dcce9d6236097f606bd4d3ebea1a25ffc0effb2a",
+        "cast_bible.json": "8645d6ff1d7ee4f5ec2d0364cd509a2d93975f64a0fde735da86f5d413c25b09"
+      },
+      "outputs": {
+        "audio_timeline.json": "166eef35ae69c01c7a23bf67103e1cd0fe649b6fb9cb808cab39131a53a769a6"
+      },
+      "note": null
+    },
+    "storyboard_review": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "compile": {
+      "status": "stale",
+      "attempts": 3,
+      "revision_rounds": 0,
+      "pid": null,
+      "started_at": "2026-11-10T09:07:33+00:00",
+      "error": null,
+      "finished_at": "2026-11-10T09:07:33+00:00",
+      "inputs": {
+        "story_script.json": "0d4e0595c185eda40396cf34dcce9d6236097f606bd4d3ebea1a25ffc0effb2a",
+        "cast_bible.json": "8645d6ff1d7ee4f5ec2d0364cd509a2d93975f64a0fde735da86f5d413c25b09",
+        "asset_manifest.json": "9fa0211622e3df094d7783ed2fedda903ad5d941e7855c18051f4ce756c592d4",
+        "storyboard.json": "56fbb6bf4df0c03a2aa94c62d25a8742593cc2f876637955b47866752f5dc91e",
+        "animation_plan.json": "5921283c0897c18aba8bbe3e4645b9fde001abb5a939f41d9137db04da39f148",
+        "audio_timeline.json": "166eef35ae69c01c7a23bf67103e1cd0fe649b6fb9cb808cab39131a53a769a6"
+      },
+      "outputs": {
+        "shot_manifest.json": "30eac8312cb0146d69f17167142ec7c7a775e7c753c22aaefe55f0d3dad12ad7"
+      },
+      "note": null
+    },
+    "lookdev": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "gate_lookdev": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "prototype": {
+      "status": "running",
+      "attempts": 1,
+      "revision_rounds": 0,
+      "pid": 3901,
+      "started_at": "2026-11-10T09:07:37+00:00",
+      "error": null
+    },
+    "gate_prototype": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "shots_check": {
+      "status": "stale",
+      "attempts": 3,
+      "revision_rounds": 0,
+      "pid": null,
+      "started_at": "2026-11-10T09:05:38+00:00",
+      "error": null,
+      "finished_at": "2026-11-10T09:07:07+00:00",
+      "inputs": {
+        "shot_manifest.json": "5d755ec8264f3e88f2ac09f0f368f1a1d10c34c5aafc61dec37d53c23cd3d783"
+      },
+      "outputs": {
+        "checks/shots_contact.png": "dcadabfc75d51f88a31ceb9acdbd681e61f7e4fc92590c2234d19a27db7b5a58"
+      },
+      "note": null
+    },
+    "first_cut": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "reviews": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "gate_first_cut": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "final": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    },
+    "delivery": {
+      "status": "pending",
+      "attempts": 0,
+      "revision_rounds": 0
+    }
+  },
+  "approvals": [],
+  "history": [
+    {
+      "at": "2026-11-10T09:00:51+00:00",
+      "event": "start",
+      "stage": "voice"
+    },
+    {
+      "at": "2026-11-10T09:00:52+00:00",
+      "event": "finish",
+      "stage": "voice",
+      "status": "completed"
+    },
+    {
+      "at": "2026-11-10T09:00:52+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "voice",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-10T09:00:52+00:00",
+      "event": "start",
+      "stage": "compile"
+    },
+    {
+      "at": "2026-11-10T09:00:52+00:00",
+      "event": "finish",
+      "stage": "compile",
+      "status": "completed"
+    },
+    {
+      "at": "2026-11-10T09:03:08+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "compile",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-10T09:03:08+00:00",
+      "event": "start",
+      "stage": "shots_check"
+    },
+    {
+      "at": "2026-11-10T09:04:24+00:00",
+      "event": "fail",
+      "stage": "shots_check",
+      "error": "[Errno 2] No such file or directory: '/home/user/Claudecode/episodes/ep_demo_grillepain/checks/sh_001_f0058.png'"
+    },
+    {
+      "at": "2026-11-10T09:04:29+00:00",
+      "event": "start",
+      "stage": "shots_check"
+    },
+    {
+      "at": "2026-11-10T09:04:30+00:00",
+      "event": "finish",
+      "stage": "shots_check",
+      "status": "needs_review"
+    },
+    {
+      "at": "2026-11-10T09:05:38+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "shots_check",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-10T09:05:38+00:00",
+      "event": "start",
+      "stage": "compile"
+    },
+    {
+      "at": "2026-11-10T09:05:38+00:00",
+      "event": "finish",
+      "stage": "compile",
+      "status": "completed"
+    },
+    {
+      "at": "2026-11-10T09:05:38+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "compile",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-10T09:05:38+00:00",
+      "event": "start",
+      "stage": "shots_check"
+    },
+    {
+      "at": "2026-11-10T09:07:07+00:00",
+      "event": "finish",
+      "stage": "shots_check",
+      "status": "completed"
+    },
+    {
+      "at": "2026-11-10T09:07:33+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "shots_check",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-10T09:07:33+00:00",
+      "event": "start",
+      "stage": "compile"
+    },
+    {
+      "at": "2026-11-10T09:07:33+00:00",
+      "event": "finish",
+      "stage": "compile",
+      "status": "completed"
+    },
+    {
+      "at": "2026-11-10T09:07:37+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "compile",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-10T09:07:37+00:00",
+      "event": "start",
+      "stage": "prototype"
+    }
+  ],
+  "cost_log": []
+}

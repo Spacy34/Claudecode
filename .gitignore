@@ -1,0 +1,14 @@
+.studio_cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+episodes/*/renders/.work/
+episodes/*/renders/*.mp4
+episodes/*/renders/*.ass
+episodes/*/audio/
+episodes/*/checks/frames_*/
+assets/voices/*.onnx
+assets/voices/*.onnx.json
+.env
+!episodes/ep_demo_grillepain/renders/prototype.mp4
+!episodes/ep_demo_grillepain/renders/prototype.ass

@@ -1,0 +1,181 @@
+{
+  "contract": "shot_manifest",
+  "contract_version": "1.0",
+  "episode_id": "ep_demo_grillepain",
+  "status": "generated",
+  "provenance": {
+    "created_by": "studio compile",
+    "created_at": "2026-11-10T09:07:33+00:00",
+    "depends_on": [
+      {
+        "path": "story_script.json",
+        "sha256": "0d4e0595c185eda40396cf34dcce9d6236097f606bd4d3ebea1a25ffc0effb2a"
+      },
+      {
+        "path": "cast_bible.json",
+        "sha256": "8645d6ff1d7ee4f5ec2d0364cd509a2d93975f64a0fde735da86f5d413c25b09"
+      },
+      {
+        "path": "asset_manifest.json",
+        "sha256": "9fa0211622e3df094d7783ed2fedda903ad5d941e7855c18051f4ce756c592d4"
+      },
+      {
+        "path": "storyboard.json",
+        "sha256": "56fbb6bf4df0c03a2aa94c62d25a8742593cc2f876637955b47866752f5dc91e"
+      },
+      {
+        "path": "animation_plan.json",
+        "sha256": "5921283c0897c18aba8bbe3e4645b9fde001abb5a939f41d9137db04da39f148"
+      },
+      {
+        "path": "audio_timeline.json",
+        "sha256": "166eef35ae69c01c7a23bf67103e1cd0fe649b6fb9cb808cab39131a53a769a6"
+      }
+    ]
+  },
+  "fps": 30,
+  "total_frames": 1036,
+  "shots": [
+    {
+      "id": "sh_001",
+      "start_frame": 0,
+      "end_frame": 116,
+      "frames": 116,
+      "start_s": 0.0,
+      "end_s": 3.867,
+      "spec_sha256": "82404c9bca446d1e033b0e4cb2e45a10f88af4258d09cf2fd5f5d8525b542cd1",
+      "spec_path": "shots/sh_001.json",
+      "line_ids": [
+        "l001"
+      ],
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_002",
+      "start_frame": 116,
+      "end_frame": 248,
+      "frames": 132,
+      "start_s": 3.867,
+      "end_s": 8.267,
+      "spec_sha256": "5e53dabb37cdc3728d672fec41cb61cfffae524ac1625f278e8c6a7a418052e2",
+      "spec_path": "shots/sh_002.json",
+      "line_ids": [
+        "l002"
+      ],
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_003",
+      "start_frame": 248,
+      "end_frame": 319,
+      "frames": 71,
+      "start_s": 8.267,
+      "end_s": 10.633,
+      "spec_sha256": "6b7ec428e59250bbe1b00a423b468c6d9c0d5a55ab122a5f34176ea5a6738774",
+      "spec_path": "shots/sh_003.json",
+      "line_ids": [
+        "l003"
+      ],
+      "transition_out": "whip"
+    },
+    {
+      "id": "sh_004",
+      "start_frame": 319,
+      "end_frame": 463,
+      "frames": 144,
+      "start_s": 10.633,
+      "end_s": 15.433,
+      "spec_sha256": "f5872a606fa87d60fc94148c5da0461d71b04c329835ce4977d204be42314c7e",
+      "spec_path": "shots/sh_004.json",
+      "line_ids": [
+        "l004"
+      ],
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_005",
+      "start_frame": 463,
+      "end_frame": 599,
+      "frames": 136,
+      "start_s": 15.433,
+      "end_s": 19.967,
+      "spec_sha256": "8af00533cc4a63edfbc8cc6518f090828b16a074937a698a7b79922ecc42e627",
+      "spec_path": "shots/sh_005.json",
+      "line_ids": [
+        "l005"
+      ],
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_006",
+      "start_frame": 599,
+      "end_frame": 727,
+      "frames": 128,
+      "start_s": 19.967,
+      "end_s": 24.233,
+      "spec_sha256": "5db705d292e7e0b50860b1d71665630706a27ea0328377de34aebf37608b8e0d",
+      "spec_path": "shots/sh_006.json",
+      "line_ids": [
+        "l006"
+      ],
+      "transition_out": "smash_cut"
+    },
+    {
+      "id": "sh_007",
+      "start_frame": 727,
+      "end_frame": 818,
+      "frames": 91,
+      "start_s": 24.233,
+      "end_s": 27.267,
+      "spec_sha256": "471d77acb37ba2267c503c9cd4264bb1410dadad7660354dffd3f5456cda7a54",
+      "spec_path": "shots/sh_007.json",
+      "line_ids": [
+        "l007"
+      ],
+      "transition_out": "flash_white"
+    },
+    {
+      "id": "sh_008",
+      "start_frame": 818,
+      "end_frame": 881,
+      "frames": 63,
+      "start_s": 27.267,
+      "end_s": 29.367,
+      "spec_sha256": "34cf1276dadcc9d3f0d2990520279c053ca0125f8260a53a4bee28d2b37a6f06",
+      "spec_path": "shots/sh_008.json",
+      "line_ids": [
+        "l008"
+      ],
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_009",
+      "start_frame": 881,
+      "end_frame": 928,
+      "frames": 47,
+      "start_s": 29.367,
+      "end_s": 30.933,
+      "spec_sha256": "4e85418fed820ce672a992e71b39443c5bbfcd04bcb1873126eb074176ec9863",
+      "spec_path": "shots/sh_009.json",
+      "line_ids": [
+        "l009"
+      ],
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_010",
+      "start_frame": 928,
+      "end_frame": 1036,
+      "frames": 108,
+      "start_s": 30.933,
+      "end_s": 34.533,
+      "spec_sha256": "92e74e8160f0c592cee1af21da7fca4abdf278e48cf8306ada63c2919b645f33",
+      "spec_path": "shots/sh_010.json",
+      "line_ids": [
+        "l009"
+      ],
+      "transition_out": "fade_black"
+    }
+  ],
+  "warnings": []
+}

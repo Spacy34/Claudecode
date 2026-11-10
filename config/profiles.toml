@@ -1,0 +1,32 @@
+# Profils de rendu. La sortie finale est TOUJOURS ré-échantillonnée en 1080x1920 / 30 fps
+# par le compositing ; les profils draft/preview rendent moins de pixels/échantillons.
+
+[draft]
+description = "Production très rapide : vérifier blocage, timing, cadrage."
+resolution = [360, 640]
+render_every_n_frames = 2        # 1 image sur 2, dupliquée au montage
+cycles_samples = 4
+eevee_samples = 4
+denoise = true
+outlines = true
+upscale_to_delivery = false      # draft reste en 360x640 (fichier de travail)
+
+[preview]
+description = "Validation visuelle humaine et critique multimodale."
+resolution = [540, 960]
+render_every_n_frames = 1
+cycles_samples = 8
+eevee_samples = 16
+denoise = true
+outlines = true
+upscale_to_delivery = true
+
+[final]
+description = "Qualité de livraison 1080x1920."
+resolution = [1080, 1920]
+render_every_n_frames = 1
+cycles_samples = 48
+eevee_samples = 64
+denoise = true
+outlines = true
+upscale_to_delivery = true

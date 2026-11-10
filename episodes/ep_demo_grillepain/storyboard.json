@@ -1,0 +1,419 @@
+{
+  "contract": "storyboard",
+  "contract_version": "1.0",
+  "episode_id": "ep_demo_grillepain",
+  "status": "approved",
+  "provenance": {
+    "created_by": "director",
+    "created_at": "2026-11-10T09:00:00+00:00",
+    "revision": 1
+  },
+  "shots": [
+    {
+      "id": "sh_001",
+      "line_ids": [
+        "l001"
+      ],
+      "set_id": "set_cuisine",
+      "mood": "interior_warm",
+      "characters": [
+        {
+          "id": "ch_kevin",
+          "mark": "kevin_spot",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "id": "pr_toaster",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 0.92
+        },
+        {
+          "id": "pr_phone",
+          "held_by": "ch_kevin",
+          "hand": "R"
+        }
+      ],
+      "camera": {
+        "framing": "medium",
+        "subject": "ch_kevin",
+        "angle": "eye",
+        "move": "push_in",
+        "motivation": "Accroche : on découvre Kevin et l'objet de son obsession, la poussée renforce l'annonce."
+      },
+      "intent": "Comprendre en 1 s : un type veut rendre un grille-pain célèbre.",
+      "emotion": "enthousiasme absurde",
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_002",
+      "line_ids": [
+        "l002"
+      ],
+      "set_id": "set_cuisine",
+      "mood": "interior_warm",
+      "characters": [
+        {
+          "id": "ch_kevin",
+          "mark": "kevin_spot",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "id": "pr_toaster",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 0.92
+        }
+      ],
+      "camera": {
+        "framing": "full",
+        "subject": "ch_kevin",
+        "angle": "low",
+        "side_deg": 15,
+        "move": "static",
+        "motivation": "Contre-plongée ironique : il se croit important."
+      },
+      "intent": "Portrait du personnage, fierté mal placée.",
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_003",
+      "line_ids": [
+        "l003"
+      ],
+      "set_id": "set_cuisine",
+      "mood": "interior_warm",
+      "characters": [
+        {
+          "id": "ch_kevin",
+          "mark": "kevin_spot",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "id": "pr_phone",
+          "held_by": "ch_kevin",
+          "hand": "R"
+        }
+      ],
+      "camera": {
+        "framing": "close_up",
+        "subject": "ch_kevin",
+        "angle": "eye",
+        "move": "handheld",
+        "motivation": "Style vlog : caméra portée comme son téléphone."
+      },
+      "intent": "Kevin en mode influenceur.",
+      "transition_out": "whip"
+    },
+    {
+      "id": "sh_004",
+      "line_ids": [
+        "l004"
+      ],
+      "set_id": "set_cuisine",
+      "mood": "dramatic",
+      "characters": [],
+      "props": [
+        {
+          "id": "pr_toaster",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 0.92
+        }
+      ],
+      "camera": {
+        "framing": "insert",
+        "subject": "pr_toaster",
+        "angle": "low",
+        "move": "static",
+        "motivation": "Le grille-pain filmé comme une star, immobile : comique de contraste."
+      },
+      "intent": "Toasty ne fait rien.",
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_005",
+      "line_ids": [
+        "l005"
+      ],
+      "set_id": "set_cuisine",
+      "mood": "interior_warm",
+      "characters": [
+        {
+          "id": "ch_kevin",
+          "mark": [
+            1.2,
+            0.8
+          ],
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "id": "pr_speaker",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 0.92
+        },
+        {
+          "id": "pr_toaster",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 1.24
+        }
+      ],
+      "camera": {
+        "framing": "wide",
+        "subject": "ch_kevin",
+        "angle": "eye",
+        "move": "track_subject",
+        "motivation": "Plan large qui accompagne Kevin jusqu'à l'installation absurde enceinte + grille-pain."
+      },
+      "intent": "Montrer le dispositif ridicule et Kevin qui danse.",
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_006",
+      "line_ids": [
+        "l006"
+      ],
+      "set_id": "set_cuisine",
+      "mood": "interior_warm",
+      "characters": [],
+      "props": [
+        {
+          "id": "pr_speaker",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 0.92
+        },
+        {
+          "id": "pr_toaster",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 1.24
+        }
+      ],
+      "camera": {
+        "framing": "insert",
+        "subject": "pr_toaster",
+        "angle": "eye",
+        "move": "shake",
+        "motivation": "Tremblement caméra = tension, le grille-pain s'emballe."
+      },
+      "intent": "Le grille-pain vibre, fume, sautille.",
+      "transition_out": "smash_cut"
+    },
+    {
+      "id": "sh_007",
+      "line_ids": [
+        "l007"
+      ],
+      "set_id": "set_cuisine",
+      "mood": "interior_warm",
+      "characters": [
+        {
+          "id": "ch_kevin",
+          "mark": [
+            -0.6,
+            1.0
+          ],
+          "facing": "ch_proprio"
+        },
+        {
+          "id": "ch_proprio",
+          "mark": [
+            2.4,
+            1.0
+          ],
+          "facing": "ch_kevin"
+        }
+      ],
+      "props": [
+        {
+          "id": "pr_speaker",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 0.92
+        },
+        {
+          "id": "pr_toaster",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 1.24
+        },
+        {
+          "id": "pr_toast",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 1.5
+        }
+      ],
+      "camera": {
+        "framing": "wide",
+        "subject": "action_center",
+        "angle": "eye",
+        "move": "static",
+        "motivation": "Cadre large fixe : la trajectoire de la tartine doit être lisible d'un bout à l'autre."
+      },
+      "intent": "Cause (tartine) et effet (tête du proprio) dans le même cadre.",
+      "transition_out": "flash_white"
+    },
+    {
+      "id": "sh_008",
+      "line_ids": [
+        "l008"
+      ],
+      "set_id": "set_cuisine",
+      "mood": "interior_warm",
+      "characters": [
+        {
+          "id": "ch_kevin",
+          "mark": [
+            0.45,
+            1.0
+          ],
+          "facing": "camera"
+        },
+        {
+          "id": "ch_lea",
+          "mark": [
+            -0.55,
+            1.0
+          ],
+          "facing": 45
+        }
+      ],
+      "props": [
+        {
+          "id": "pr_phone",
+          "held_by": "ch_kevin",
+          "hand": "R"
+        }
+      ],
+      "camera": {
+        "framing": "two_shot",
+        "subject": "ch_kevin",
+        "secondary_subject": "ch_lea",
+        "angle": "eye",
+        "move": "push_in",
+        "motivation": "Réactions opposées dans un même cadre : joie / effarement."
+      },
+      "intent": "Succès viral vs consternation.",
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_009",
+      "line_ids": [
+        "l009"
+      ],
+      "set_id": "set_cuisine",
+      "mood": "day_cool",
+      "characters": [
+        {
+          "id": "ch_proprio",
+          "mark": [
+            1.0,
+            0.9
+          ],
+          "facing": "ch_kevin"
+        },
+        {
+          "id": "ch_kevin",
+          "mark": [
+            0.1,
+            1.2
+          ],
+          "facing": "ch_proprio"
+        },
+        {
+          "id": "ch_lea",
+          "mark": [
+            -0.6,
+            1.3
+          ],
+          "facing": "ch_proprio"
+        }
+      ],
+      "props": [],
+      "camera": {
+        "framing": "wide",
+        "subject": [
+          0.2,
+          1.1
+        ],
+        "angle": "high",
+        "move": "static",
+        "motivation": "Plongée : les colocs écrasés par l'expulsion, les trois personnages dans le cadre."
+      },
+      "intent": "Expulsion.",
+      "transition_out": "cut"
+    },
+    {
+      "id": "sh_010",
+      "line_ids": [
+        "l009"
+      ],
+      "start": {
+        "line": "l009",
+        "word": 4
+      },
+      "set_id": "set_cuisine",
+      "mood": "dramatic",
+      "characters": [],
+      "props": [
+        {
+          "id": "pr_speaker",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 0.92
+        },
+        {
+          "id": "pr_toaster",
+          "mark": [
+            -0.35,
+            2.45
+          ],
+          "height": 1.24
+        }
+      ],
+      "camera": {
+        "framing": "insert",
+        "subject": "pr_toaster",
+        "angle": "low",
+        "move": "push_in",
+        "motivation": "Apothéose ironique du vrai gagnant."
+      },
+      "intent": "Toasty triomphe.",
+      "transition_out": "fade_black"
+    }
+  ]
+}

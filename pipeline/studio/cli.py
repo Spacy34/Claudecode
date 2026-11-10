@@ -1,0 +1,656 @@
+"""CLI `studio` : toutes les opérations déterministes du pipeline. Les agents Codex appellent ces commandes ;
+ils ne réimplémentent jamais rendu, timing, mixage ou contrôles techniques à la main.
+
+Usage : scripts/studio <commande> [options]   (ou PYTHONPATH=pipeline python3 -m studio ...)
+"""
+import argparse
+import json
+import shutil
+import sys
+from pathlib import Path
+
+from . import audio, compose, contracts, hardware, memory, render
+from .compile import CompileError, compile_episode
+from .qa import frames as qframes
+from .qa import tech
+from .state import STAGES, State
+from .util import ROOT, cache_dir, episode_dir, load_config, now, read_json, run, sha256_file, sha256_json, write_json
+
+CFG = None
+
+
+def cfg():
+    global CFG
+    if CFG is None:
+        CFG = load_config()
+    return CFG
+
+
+def ep_path(ep):
+    p = episode_dir(cfg(), ep)
+    if not p.exists():
+        sys.exit(f"épisode introuvable : {p}")
+    return p
+
+
+def out(obj):
+    print(json.dumps(obj, ensure_ascii=False, indent=2))
+
+
+# ------------------------------------------------------------------ commandes de base
+def cmd_doctor(a):
+    res = hardware.diagnose(cfg())
+    write_json(cache_dir(cfg()) / "hardware.json", res)
+    out(res)
+    return 1 if res["blocking"] else 0
+
+
+def cmd_new(a):
+    ep = a.episode
+    p = episode_dir(cfg(), ep)
+    if p.exists() and any(p.iterdir()):
+        sys.exit(f"{p} existe déjà")
+    story = Path(a.story_file).read_text(encoding="utf-8") if a.story_file else a.story
+    if not story:
+        sys.exit("--story ou --story-file requis")
+    for d in ("reviews", "renders", "checks", "lookdev", "shots", "audio"):
+        (p / d).mkdir(parents=True, exist_ok=True)
+    brief = {"contract": "episode_brief", "contract_version": contracts.CONTRACT_VERSION, "episode_id": ep, "status": "approved",
+             "provenance": {"created_by": "human", "created_at": now()}, "source_story": story.strip(), "source_kind": a.kind,
+             "target_duration_s": a.duration, "duration_tolerance_s": 10, "language": "fr-FR",
+             "style": {"visual": "cartoon 3D low-poly goofy, couleurs saturées, contours encrés, expressions exagérées",
+                       "tone": ["absurde", "WTF", "humour noir"], "references_to_avoid_copying": ["personnages/assets de chaînes existantes"]},
+             "voice": {"narrator_gender": "any", "energy": "lively"}, "stop_after": a.stop_after}
+    errs = contracts.schema_errors("episode_brief", brief)
+    if errs:
+        sys.exit("\n".join(errs))
+    write_json(p / "episode_brief.json", brief)
+    st = State(p, ep)
+    st.finish("brief")
+    print(f"Épisode créé : {p}\nÉtape suivante : story-architect écrit story_script.json, puis `studio submit {ep} script`.")
+
+
+def cmd_validate(a):
+    rep = contracts.validate_episode(ep_path(a.episode), only=set(a.only.split(",")) if a.only else None)
+    rep["_capabilities"] = contracts.capability_errors()
+    bad = {k: v for k, v in rep.items() if v}
+    out(bad or {"ok": True, "checked": sorted(k for k in rep if not k.startswith("_"))})
+    return 1 if bad else 0
+
+
+def cmd_status(a):
+    p = ep_path(a.episode)
+    st = State(p)
+    ch = st.refresh()
+    print(f"Épisode {a.episode}" + (f"  (changements détectés : {ch})" if ch else ""))
+    for name, status, owner, kind, att, note in st.summary():
+        mark = {"completed": "✔", "approved": "✔", "running": "…", "failed": "✘", "stale": "↺", "interrupted": "⚠", "needs_review": "?"}.get(status, " ")
+        print(f" {mark} {name:<18} {status:<12} {kind:<7} {owner:<45} {note[:60]}")
+    print("Prêtes :", ", ".join(st.ready()) or "aucune")
+    return 0
+
+
+# ------------------------------------------------------------------ soumission des étapes agents / revues
+def cmd_submit(a):
+    p = ep_path(a.episode)
+    st = State(p)
+    stage = a.stage
+    if stage not in STAGES:
+        sys.exit(f"étape inconnue {stage}")
+    owner, kind, ins, outs, deps, _ = STAGES[stage]
+    if kind == "gate":
+        sys.exit("une gate se valide avec `studio approve` (humain)")
+    missing = [d for d in deps if st.st(d)["status"] not in ("completed", "approved")]
+    if missing and not a.force:
+        sys.exit(f"dépendances non satisfaites : {missing} (voir `studio status`)")
+    if kind == "agent":
+        rep = contracts.validate_episode(p)
+        names = [n for n, f in contracts.ARTIFACTS.items() if f in outs]
+        errs = {k: v for k, v in rep.items() if v and (k in names or k == "_cross")}
+        if errs:
+            st.fail(stage, json.dumps(errs, ensure_ascii=False)[:1500])
+            out({"stage": stage, "status": "failed", "errors": errs})
+            return 1
+        st.finish(stage)
+        out({"stage": stage, "status": "completed"})
+        return 0
+    if kind == "review":
+        if not a.review:
+            sys.exit("--review <fichier> requis (un par critique)")
+        verdicts, blockers = [], []
+        for rp in a.review:
+            rpath = (p / rp) if not Path(rp).is_absolute() else Path(rp)
+            r = read_json(rpath)
+            errs = contracts.schema_errors("review_report", r)
+            if errs:
+                sys.exit(f"{rp} invalide :\n" + "\n".join(errs))
+            tgt = p / r["target"]["path"] if not Path(r["target"]["path"]).is_absolute() else Path(r["target"]["path"])
+            if not tgt.exists() or sha256_file(tgt) != r["target"]["sha256"]:
+                sys.exit(f"{rp} : la cible a changé depuis la revue (hash différent) : revue périmée, relancer le critique.")
+            verdicts.append(r["verdict"])
+            blockers += [f for f in r["findings"] if f["severity"] == "blocker"]
+            low = [k for k, v in r["scores"].items() if v["score"] < cfg()["quality"]["min_dimension_score"]]
+            if low and r["verdict"] == "approve":
+                print(f"attention : {rp} approuve malgré des scores bas {low}")
+        s = st.st(stage)
+        if all(v == "approve" for v in verdicts) and not blockers:
+            st.finish(stage, note=f"revues: {a.review}")
+            out({"stage": stage, "status": "completed", "verdicts": verdicts})
+            return 0
+        s["revision_rounds"] = s.get("revision_rounds", 0) + 1
+        if s["revision_rounds"] > int(cfg()["quality"]["max_revision_rounds"]):
+            st.finish(stage, "needs_review", note=f"budget de corrections épuisé ({s['revision_rounds'] - 1}) : ESCALADE HUMAINE")
+            out({"stage": stage, "status": "needs_review", "escalation": True, "blockers": blockers})
+            return 2
+        st.fail(stage, f"verdicts {verdicts}, {len(blockers)} bloquant(s) : corriger puis re-soumettre (tour {s['revision_rounds']})")
+        out({"stage": stage, "status": "failed", "revision_round": s["revision_rounds"], "blockers": blockers})
+        return 1
+    sys.exit(f"{stage} est une étape automatique : utiliser `studio run {a.episode}`")
+
+
+def cmd_approve(a):
+    p = ep_path(a.episode)
+    st = State(p)
+    gate = a.gate
+    if gate not in STAGES or STAGES[gate][1] != "gate":
+        sys.exit(f"{gate} n'est pas une gate")
+    human = cfg()["quality"].get("human_gates", ["gate_script", "gate_lookdev", "gate_prototype", "gate_first_cut"])
+    if a.by != "human" and gate in human:
+        sys.exit(f"{gate} exige une validation HUMAINE (config quality.human_gates)")
+    if a.by == "human":
+        if not sys.stdin.isatty():
+            sys.exit("validation humaine : commande à lancer dans un terminal interactif par l'utilisateur (pas par un agent)")
+        typed = input(f"Validation humaine de {gate} pour {a.episode}. Tapez l'identifiant de l'épisode pour confirmer : ").strip()
+        if typed != a.episode:
+            sys.exit("confirmation incorrecte : rien n'a été validé")
+    deps = [d for d in STAGES[gate][4] if st.st(d)["status"] not in ("completed", "approved")]
+    if deps and not a.override:
+        sys.exit(f"pré-requis non satisfaits {deps} ; `--override` (humain) possible avec une note")
+    st.approve(gate, a.by, a.note or "")
+    print(f"{gate} approuvée par {a.by} (liée aux hashes actuels des artefacts).")
+
+
+# ------------------------------------------------------------------ étapes automatiques
+def _manifest(p):
+    return read_json(p / "shot_manifest.json")
+
+
+def _render_and_assemble(p, shots, profile, out_rel, kind):
+    c = cfg()
+    man = _manifest(p)
+    tl = read_json(p / "audio_timeline.json")
+    sel = [s for s in man["shots"] if s["id"] in shots] if shots else man["shots"]
+    recs = render.render_shots(c, p, sel, profile)
+    stats = {"rendered": sum(r["status"] == "rendered" for r in recs), "cached": sum(r["status"] == "cached" for r in recs),
+             "failed": [r["id"] for r in recs if r["status"] == "failed"]}
+    rm = {"contract": "render_manifest", "contract_version": contracts.CONTRACT_VERSION, "episode_id": man["episode_id"], "status": "generated",
+          "provenance": {"created_by": "studio render", "created_at": now(), "depends_on": contracts.provenance_deps(p, ["shot_manifest"])},
+          "profile": profile, "engine_version": render.engine_hash()[:12], "shots": recs, "output": None}
+    if stats["failed"]:
+        write_json(p / f"render_manifest_{profile}.json", rm)
+        raise RuntimeError(f"plans en échec : {stats['failed']} (voir render_manifest_{profile}.json / blender.log)")
+    prof = render.profile_dict(c, profile)
+    res = compose.assemble(c, p, man, tl, recs, prof, p / out_rel, fps=man["fps"])
+    rm["output"] = out_rel
+    write_json(p / f"render_manifest_{profile}.json", rm)
+    W, H = res["resolution"]
+    allowed_black = [s["end_s"] - res["start_s"] for s in man["shots"] if s.get("transition_out") == "fade_black"]
+    checks, dur = tech.check_video(p / out_rel, expected_duration=res["end_s"] - res["start_s"], expected_frames=res["expected_frames"],
+                                   spec={"width": W, "height": H}, subs_path=(p / out_rel).with_suffix(".ass"), allowed_black=allowed_black, cfg=c)
+    checks += tech.scene_checks_to_qa(recs)
+    qa = tech.report(p / out_rel, checks, man["episode_id"], kind)
+    write_json(p / f"qa_{Path(out_rel).stem}.json", qa)
+    if kind == "final":
+        write_json(p / "qa_report.json", qa)
+    return {"output": str(p / out_rel), **stats, "qa_summary": qa["summary"], "duration_s": round(dur, 2)}
+
+
+def stage_voice(p, st):
+    return audio.build_voice(p, cfg())
+
+
+def stage_compile(p, st):
+    try:
+        man = compile_episode(p, cfg())
+    except CompileError as e:
+        raise RuntimeError(str(e))
+    return {"shots": len(man["shots"]), "frames": man["total_frames"], "warnings": man["warnings"]}
+
+
+def stage_lookdev(p, st, profile="preview"):
+    c = cfg()
+    cast = read_json(p / "cast_bible.json")["characters"]
+    assets = read_json(p / "asset_manifest.json")
+    sdir = p / "lookdev" / "specs"
+    sdir.mkdir(parents=True, exist_ok=True)
+    void = {"id": "set_lookdev", "kit": "studio_void", "source": "procedural", "license": {"spdx": "original", "commercial_use": True}, "use_kit_dressing": False}
+    shots, captions = [], {}
+    for ch in cast:
+        for kind, framing, acts, exprs in (("face", "medium_close", [], [("neutral", 1), ("happy", 11), ("shocked", 21), ("angry", 31)]),
+                                           ("body", "full", [{"char": ch["id"], "action": "wave", "frame": 5, "duration_frames": 30, "intensity": 1.0, "target": None, "prop": None}], [("happy", 1)])):
+            sid = f"ld_{ch['id']}_{kind}"
+            spec = {"shot_id": "sh_900", "episode_id": read_json(p / "episode_brief.json")["episode_id"], "fps": 30, "frames": 40, "engine_version": "lookdev",
+                    "set": void, "mood": "day_warm", "characters": [{"id": ch["id"], "design": ch["design"], "pos": [0, 0], "facing_deg": 0.0, "facing_target": None, "start_pose": "stand"}],
+                    "props": [], "camera": {"framing": framing, "subject": {"kind": "char", "id": ch["id"]}, "angle": "eye", "move": "static", "motivation": "lookdev"},
+                    "actions": acts, "expressions": [{"char": ch["id"], "expr": e, "frame": f, "intensity": 1.0} for e, f in exprs],
+                    "prop_actions": [], "fx": [], "talk": [], "auto_idle": True, "transition_out": "cut"}
+            sp = sdir / f"{sid}.json"
+            write_json(sp, spec)
+            frames = "8,18,28,38" if kind == "face" else "20"
+            shots.append(({"id": sid, "spec_path": str(sp.relative_to(p)), "spec_sha256": sha256_json(spec), "frames": 40}, frames))
+            captions[sid] = (ch["name"], ["neutre", "content", "choqué", "énervé"] if kind == "face" else ["corps entier"])
+    for s in assets["sets"]:
+        sid = f"ld_{s['id']}"
+        spec = {"shot_id": "sh_901", "episode_id": assets["episode_id"], "fps": 30, "frames": 2, "engine_version": "lookdev", "set": s, "mood": "day_warm",
+                "characters": [], "props": [], "camera": {"framing": "wide", "subject": {"kind": "point", "pos": [0, 0.5, 1.0]}, "angle": "eye", "move": "static", "motivation": "lookdev"},
+                "actions": [], "expressions": [], "prop_actions": [], "fx": [], "talk": [], "auto_idle": False, "transition_out": "cut"}
+        sp = sdir / f"{sid}.json"
+        write_json(sp, spec)
+        shots.append(({"id": sid, "spec_path": str(sp.relative_to(p)), "spec_sha256": sha256_json(spec), "frames": 2}, "1"))
+        captions[sid] = (s["id"], [s["kit"]])
+    items, failed = [], []
+    for shot, fr in shots:
+        rec = render.render_shot(c, p, shot, profile, mode="stills", frames=fr)
+        if rec["status"] == "failed":
+            failed.append((shot["id"], rec.get("error")))
+            continue
+        name, labels = captions[shot["id"]]
+        for k, f in enumerate(fr.split(",")):
+            src = Path(rec["frames_dir"]) / f"f{int(f):04d}.png"
+            dst = p / "lookdev" / f"{shot['id']}_{f}.png"
+            shutil.copy(src, dst)
+            items.append((dst, f"{name}\n{labels[min(k, len(labels) - 1)]}"))
+    if failed:
+        raise RuntimeError(f"lookdev en échec : {failed}")
+    sheet = qframes.contact_sheet(items, p / "lookdev" / "contact_sheet.png", cols=4, title="LOOKDEV — personnages, expressions, décors")
+    return {"contact_sheet": str(sheet), "images": len(items)}
+
+
+def _prototype_shots(man, seconds):
+    sel, t = [], 0.0
+    for s in man["shots"]:
+        sel.append(s["id"])
+        t = s["end_s"]
+        if t >= seconds:
+            break
+    return sel
+
+
+def stage_prototype(p, st, shots=None, seconds=8.0, profile="preview"):
+    man = _manifest(p)
+    sel = shots or _prototype_shots(man, seconds)
+    return _render_and_assemble(p, sel, profile, "renders/prototype.mp4", "prototype")
+
+
+def stage_shots_check(p, st, profile="draft"):
+    c = cfg()
+    man = _manifest(p)
+    script = {l["id"]: l for l in read_json(p / "story_script.json")["lines"]}
+    recs = render.render_shots(c, p, man["shots"], profile, mode="stills")
+    items, all_checks = [], []
+    for s, r in zip(man["shots"], recs):
+        if r["status"] == "failed":
+            all_checks.append({"shot": s["id"], "id": "render_failed", "severity": "blocker", "status": "fail", "message": r.get("error")})
+            continue
+        rep = r["scene_report"] or {}
+        for ck in rep.get("checks", []):
+            all_checks.append({"shot": s["id"], **ck})
+        frs = rep.get("rendered_frames") or rep.get("sample_frames") or [1]
+        mid = sorted(frs, key=lambda f: abs(f - s["frames"] // 2))[0]
+        dst = p / "checks" / f"{s['id']}_f{mid:04d}.png"
+        shutil.copy(Path(r["frames_dir"]) / f"f{mid:04d}.png", dst)
+        n_issue = sum(1 for ck in rep.get("checks", []) if ck["status"] != "pass")
+        items.append((dst, f"{s['id']}  {s['start_s']:.1f}-{s['end_s']:.1f}s  ⚠{n_issue}\n{script[s['line_ids'][0]]['text'][:70]}"))
+    sheet = qframes.contact_sheet(items, p / "checks" / "shots_contact.png", cols=4, title=f"{man['episode_id']} — 1 image de contrôle par plan")
+    write_json(p / "checks" / "scene_checks.json", {"generated_at": now(), "profile": profile, "checks": all_checks})
+    blockers = [x for x in all_checks if x["severity"] in ("blocker", "major") and x["status"] == "fail"]
+    if blockers:
+        st.finish("shots_check", "needs_review", note=f"{len(blockers)} défaut(s) majeur(s) : voir checks/scene_checks.json")
+        return {"contact_sheet": str(sheet), "blocking": blockers, "status": "needs_review"}
+    return {"contact_sheet": str(sheet), "issues": len(all_checks)}
+
+
+def stage_first_cut(p, st, profile="preview"):
+    return _render_and_assemble(p, None, profile, "renders/first_cut.mp4", "first_cut")
+
+
+def _require_gates(st, gates):
+    bad = [g for g in gates if not st.approval_valid(g)]
+    if bad:
+        raise RuntimeError(f"rendu final refusé : validations humaines manquantes ou périmées {bad}")
+
+
+def stage_final(p, st):
+    _require_gates(st, ["gate_script", "gate_prototype", "gate_first_cut"])
+    return _render_and_assemble(p, None, "final", "renders/final.mp4", "final")
+
+
+def stage_delivery(p, st):
+    qa = read_json(p / "qa_report.json")
+    if qa["summary"]["blocking"]:
+        raise RuntimeError("QA finale bloquante : livraison refusée (voir qa_report.json)")
+    fin = p / "renders" / "final.mp4"
+    tl = read_json(p / "audio_timeline.json")
+    assets = read_json(p / "asset_manifest.json")
+    licenses = [{"asset": s["id"], **s["license"]} for s in assets["sets"]] + [{"asset": x["id"], **x["license"]} for x in assets["props"]]
+    licenses.append({"asset": "voice", "spdx": tl["tts"]["backend"], "note": tl["tts"].get("license")})
+    licenses.append({"asset": "music", "spdx": "original", "note": (tl.get("music") or {}).get("license")})
+    man = {"contract": "episode_manifest", "contract_version": contracts.CONTRACT_VERSION, "episode_id": qa["episode_id"], "status": "generated",
+           "provenance": {"created_by": "studio delivery", "created_at": now()},
+           "deliverables": [{"path": "renders/final.mp4", "sha256": sha256_file(fin), "kind": "video", "spec": {"res": "1080x1920", "fps": 30, "codec": "h264/aac"}},
+                            {"path": "renders/final.ass", "sha256": sha256_file(fin.with_suffix(".ass")), "kind": "subtitles"}],
+           "gates": [{"gate": a["gate"], "status": "approved" if st.approval_valid(a["gate"]) else "périmée", "approved_by": a["by"], "at": a["at"], "note": a.get("note", "")} for a in st.data["approvals"]],
+           "qa_summary": qa["summary"], "reviews": sorted(str(x.relative_to(p)) for x in (p / "reviews").glob("*.json")),
+           "licenses": licenses, "cost_log": st.data.get("cost_log", []),
+           "limitations": ["Les scores des critiques sont des appréciations, pas des mesures.",
+                           "La QA technique ne garantit pas la qualité visuelle ni l'intérêt narratif.",
+                           "Conformité plateforme évaluée par analyse contextuelle, pas par l'outil de modération de la plateforme."],
+           "publication": "NOT_PUBLISHED"}
+    write_json(p / "episode_manifest.json", man)
+    return {"manifest": str(p / "episode_manifest.json")}
+
+
+AUTO = {"voice": stage_voice, "compile": stage_compile, "lookdev": stage_lookdev, "prototype": stage_prototype, "shots_check": stage_shots_check,
+        "first_cut": stage_first_cut, "final": stage_final, "delivery": stage_delivery}
+
+NEXT_HINT = {
+    "agent": "agent `{owner}` : produire {outs}, puis `studio submit {ep} {stage}`",
+    "review": "critique(s) `{owner}` (lecture seule) : écrire reviews/<role>_<gate>_rN.json, puis `studio submit {ep} {stage} --review <fichiers>`",
+    "gate": "HUMAIN : inspecter puis lancer soi-même `studio approve {ep} {stage}` dans un terminal",
+}
+
+
+def run_stage(p, st, name, **kw):
+    for d in ("reviews", "renders", "checks", "lookdev", "shots", "audio"):
+        (p / d).mkdir(parents=True, exist_ok=True)
+    st.start(name)
+    try:
+        res = AUTO[name](p, st, **kw) if kw else AUTO[name](p, st)
+    except Exception as e:
+        st.fail(name, e)
+        raise
+    if st.st(name)["status"] == "running":
+        st.finish(name)
+    return res
+
+
+def cmd_run(a):
+    p = ep_path(a.episode)
+    st = State(p)
+    st.refresh()
+    stop_after = read_json(p / "episode_brief.json").get("stop_after")
+    executed = []
+    while True:
+        ready = st.ready()
+        auto = [r for r in ready if STAGES[r][1] == "auto" and r != "final"]
+        if a.until and a.until in [e for e, _ in executed]:
+            break
+        if not auto:
+            break
+        name = auto[0]
+        print(f"→ {name}")
+        try:
+            res = run_stage(p, st, name)
+        except Exception as e:
+            print(f"✘ {name} : {e}")
+            return 1
+        executed.append((name, res))
+        print(json.dumps(res, ensure_ascii=False)[:800])
+        if stop_after and name == stop_after:
+            break
+    pending = []
+    for r in st.ready():
+        owner, kind, _, outs, _, _ = STAGES[r]
+        if kind == "auto":
+            pending.append(f"{r} : `studio final {a.episode}` (exige les validations humaines)" if r == "final" else f"{r} : automatique")
+        else:
+            pending.append(f"{r} : " + NEXT_HINT[kind].format(owner=owner, outs=outs, ep=a.episode, stage=r))
+    print("\nÀ faire ensuite :\n  " + "\n  ".join(pending or ["rien : épisode terminé ou bloqué (voir `studio status`)"]))
+    return 0
+
+
+def _single(a, name, **kw):
+    p = ep_path(a.episode)
+    st = State(p)
+    st.refresh()
+    deps = [d for d in STAGES[name][4] if st.st(d)["status"] not in ("completed", "approved")]
+    if deps and not getattr(a, "force", False):
+        sys.exit(f"{name} : dépendances non satisfaites {deps} (option --force pour une itération de travail hors DAG)")
+    out(run_stage(p, st, name, **kw))
+
+
+def cmd_voice(a):
+    _single(a, "voice")
+
+
+def cmd_compile(a):
+    _single(a, "compile")
+
+
+def cmd_lookdev(a):
+    _single(a, "lookdev", profile=a.profile)
+
+
+def cmd_prototype(a):
+    _single(a, "prototype", shots=a.shots.split(",") if a.shots else None, seconds=a.seconds, profile=a.profile)
+
+
+def cmd_check_shots(a):
+    _single(a, "shots_check", profile=a.profile)
+
+
+def cmd_first_cut(a):
+    _single(a, "first_cut", profile=a.profile)
+
+
+def cmd_final(a):
+    _single(a, "final")
+    p = ep_path(a.episode)
+    st = State(p)
+    out(run_stage(p, st, "delivery"))
+
+
+def cmd_render(a):
+    """Rendu libre (itération de travail, hors DAG) d'un sous-ensemble de plans."""
+    p = ep_path(a.episode)
+    out(_render_and_assemble(p, a.shots.split(",") if a.shots else None, a.profile, a.out, "work"))
+
+
+def cmd_qa(a):
+    p = ep_path(a.episode)
+    v = Path(a.video)
+    checks, dur = tech.check_video(v, spec={"width": a.width, "height": a.height}, subs_path=v.with_suffix(".ass") if v.with_suffix(".ass").exists() else None, cfg=cfg())
+    rep = tech.report(v, checks, read_json(p / "episode_brief.json")["episode_id"], "adhoc")
+    if a.write:
+        write_json(Path(a.write), rep)
+    out(rep["summary"] | {"failed": [c for c in checks if c["status"] != "pass"]})
+    return 1 if rep["summary"]["blocking"] else 0
+
+
+def cmd_frames(a):
+    p = ep_path(a.episode)
+    v = Path(a.video) if Path(a.video).is_absolute() else p / a.video
+    dur = float(json.loads(run(["ffprobe", "-v", "error", "-print_format", "json", "-show_format", str(v)]).stdout)["format"]["duration"])
+    if a.at:
+        times = [float(x) for x in a.at.split(",")]
+    else:
+        man = _manifest(p)
+        times = [min(dur - 0.05, (s["start_s"] + s["end_s"]) / 2 - (man["shots"][0]["start_s"] if a.relative else 0)) for s in man["shots"] if s["start_s"] < dur + 0.01] if a.per_shot else \
+            [round(t * a.every, 2) for t in range(int(dur / a.every) + 1)]
+    od = p / "checks" / f"frames_{v.stem}"
+    paths = qframes.extract(v, times, od)
+    sheet = qframes.contact_sheet([(pth, f"{t:.2f}s") for pth, t in zip(paths, times)], od / "contact.png", cols=4, title=f"{v.name} — frames horodatées")
+    out({"frames": [str(x) for x in paths], "contact_sheet": str(sheet)})
+
+
+def cmd_inject(a):
+    """Injection volontaire d'un défaut pour vérifier que la QA le détecte (test G)."""
+    p = ep_path(a.episode)
+    src = p / a.video
+    dst = p / "renders" / f"injected_{a.defect}.mp4"
+    man = _manifest(p)
+    if a.defect == "black_shot":
+        s = next(x for x in man["shots"] if x["id"] == a.shot)
+        t0 = s["start_s"] - man["shots"][0]["start_s"]
+        t1 = t0 + (s["end_s"] - s["start_s"])
+        run(["ffmpeg", "-y", "-v", "error", "-i", str(src), "-vf", f"drawbox=x=0:y=0:w=iw:h=ih:color=black:t=fill:enable='between(t,{t0:.3f},{t1:.3f})'",
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "copy", str(dst)])
+        expect = ("black_frames", (round(t0, 2), round(t1, 2)))
+    elif a.defect == "audio_offset":
+        run(["ffmpeg", "-y", "-v", "error", "-i", str(src), "-itsoffset", "0.5", "-i", str(src), "-map", "0:v", "-map", "1:a", "-c", "copy", str(dst)])
+        expect = ("av_start_sync", 0.5)
+    elif a.defect == "offscreen_character":
+        s = next(x for x in man["shots"] if x["id"] == a.shot)
+        spec = read_json(p / s["spec_path"])
+        subj = spec["camera"]["subject"]
+        victim = subj["id"] if subj.get("kind") == "char" else spec["characters"][0]["id"]
+        # défaut réaliste : la caméra vise un point vide, le personnage du plan n'est jamais visible
+        spec["camera"]["subject"] = {"kind": "point", "pos": [-5.0, 0.5, 1.2]}
+        spec["camera"]["framing"] = "close_up"
+        spec["camera"]["move"] = "static"
+        sp = p / "checks" / f"injected_{a.shot}.json"
+        write_json(sp, spec)
+        rec = render.render_shot(cfg(), p, {"id": a.shot, "spec_path": str(sp.relative_to(p)), "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "draft", mode="stills")
+        found = [c for c in (rec.get("scene_report") or {}).get("checks", []) if c["id"].startswith(("char_never_visible", "char_offscreen")) and victim in c["id"]]
+        res = {"defect": a.defect, "shot": a.shot, "victim": victim, "detected": bool(found), "evidence": found, "render_status": rec["status"]}
+        write_json(p / "checks" / "injection_offscreen_character.json", res)
+        out(res)
+        return 0 if found else 1
+    else:
+        sys.exit("défauts : black_shot, audio_offset, offscreen_character")
+    checks, _ = tech.check_video(dst, spec={"width": 1080, "height": 1920}, cfg=cfg())
+    hit = [c for c in checks if c["id"] == expect[0] and c["status"] == "fail"]
+    res = {"defect": a.defect, "injected_file": str(dst), "expected_check": expect[0], "expected_value": expect[1], "detected": bool(hit), "evidence": hit}
+    write_json(p / "checks" / f"injection_{a.defect}.json", res)
+    out(res)
+    return 0 if hit else 1
+
+
+def cmd_cache(a):
+    if a.prune:
+        n, total = render.prune_cache(cfg())
+        out({"removed": n, "total_gb": round(total / (1 << 30), 2)})
+    else:
+        total, entries = render.cache_stats(cfg())
+        out({"entries": len(entries), "total_gb": round(total / (1 << 30), 3), "limit_gb": cfg()["limits"]["max_cache_gb"]})
+
+
+def cmd_memory(a):
+    if a.action == "search":
+        for e in memory.search(cfg(), a.terms, a.limit):
+            print(f"## {e['title']}  [{e['file']}]\n{e['body']}\n")
+    else:
+        print(memory.add(cfg(), a.category, a.title, a.text, [t.strip() for t in a.tags.split(",")], a.episode))
+
+
+def cmd_cost(a):
+    p = ep_path(a.episode)
+    st = State(p)
+    st.add_cost(a.kind, a.amount, a.unit, a.note or "")
+    out(st.data["cost_log"][-1])
+
+
+def build_parser():
+    ap = argparse.ArgumentParser(prog="studio", description="Studio TikTok 3D : pipeline déterministe")
+    sp = ap.add_subparsers(dest="cmd", required=True)
+    sp.add_parser("doctor", help="diagnostic matériel/logiciel").set_defaults(fn=cmd_doctor)
+    x = sp.add_parser("new", help="créer un épisode")
+    x.add_argument("episode")
+    x.add_argument("--story")
+    x.add_argument("--story-file")
+    x.add_argument("--duration", type=float, default=90)
+    x.add_argument("--kind", default="original_user_story", choices=["original_user_story", "idea", "reddit_style_paraphrase", "other"])
+    x.add_argument("--stop-after", default="prototype", choices=["script", "storyboard", "lookdev", "prototype", "first_cut", "final"])
+    x.set_defaults(fn=cmd_new)
+    for name, fn in (("validate", cmd_validate), ("status", cmd_status), ("voice", cmd_voice), ("compile", cmd_compile), ("final", cmd_final)):
+        x = sp.add_parser(name)
+        x.add_argument("episode")
+        if name == "validate":
+            x.add_argument("--only", default="")
+        if name in ("voice", "compile"):
+            x.add_argument("--force", action="store_true")
+        x.set_defaults(fn=fn)
+    x = sp.add_parser("run", help="exécute les étapes automatiques prêtes jusqu'à une étape agent/revue/gate")
+    x.add_argument("episode")
+    x.add_argument("--until", default="")
+    x.set_defaults(fn=cmd_run)
+    x = sp.add_parser("submit", help="valider et enregistrer le livrable d'un agent ou d'un critique")
+    x.add_argument("episode")
+    x.add_argument("stage")
+    x.add_argument("--review", action="append")
+    x.add_argument("--force", action="store_true")
+    x.set_defaults(fn=cmd_submit)
+    x = sp.add_parser("approve", help="validation d'une gate (HUMAIN, terminal interactif)")
+    x.add_argument("episode")
+    x.add_argument("gate")
+    x.add_argument("--by", default="human")
+    x.add_argument("--note", default="")
+    x.add_argument("--override", action="store_true")
+    x.set_defaults(fn=cmd_approve)
+    for name, fn, prof in (("lookdev", cmd_lookdev, "preview"), ("check-shots", cmd_check_shots, "draft"), ("first-cut", cmd_first_cut, "preview")):
+        x = sp.add_parser(name)
+        x.add_argument("episode")
+        x.add_argument("--profile", default=prof)
+        x.add_argument("--force", action="store_true")
+        x.set_defaults(fn=fn)
+    x = sp.add_parser("prototype")
+    x.add_argument("episode")
+    x.add_argument("--shots", default="")
+    x.add_argument("--seconds", type=float, default=8.0)
+    x.add_argument("--profile", default="preview")
+    x.add_argument("--force", action="store_true")
+    x.set_defaults(fn=cmd_prototype)
+    x = sp.add_parser("render", help="rendu de travail hors DAG")
+    x.add_argument("episode")
+    x.add_argument("--shots", default="")
+    x.add_argument("--profile", default="draft")
+    x.add_argument("--out", default="renders/work.mp4")
+    x.set_defaults(fn=cmd_render)
+    x = sp.add_parser("qa")
+    x.add_argument("episode")
+    x.add_argument("video")
+    x.add_argument("--width", type=int, default=1080)
+    x.add_argument("--height", type=int, default=1920)
+    x.add_argument("--write", default="")
+    x.set_defaults(fn=cmd_qa)
+    x = sp.add_parser("frames", help="frames horodatées + planche contact pour inspection visuelle")
+    x.add_argument("episode")
+    x.add_argument("video")
+    x.add_argument("--at", default="")
+    x.add_argument("--every", type=float, default=1.0)
+    x.add_argument("--per-shot", action="store_true")
+    x.add_argument("--relative", action="store_true", help="vidéo partielle commençant au premier plan")
+    x.set_defaults(fn=cmd_frames)
+    x = sp.add_parser("inject", help="injecter un défaut pour tester la détection")
+    x.add_argument("episode")
+    x.add_argument("--defect", required=True)
+    x.add_argument("--video", default="renders/prototype.mp4")
+    x.add_argument("--shot", default="sh_002")
+    x.set_defaults(fn=cmd_inject)
+    x = sp.add_parser("cache")
+    x.add_argument("--prune", action="store_true")
+    x.set_defaults(fn=cmd_cache)
+    x = sp.add_parser("memory")
+    x.add_argument("action", choices=["search", "add"])
+    x.add_argument("terms", nargs="*")
+    x.add_argument("--limit", type=int, default=5)
+    x.add_argument("--category", default="lessons")
+    x.add_argument("--title", default="")
+    x.add_argument("--text", default="")
+    x.add_argument("--tags", default="")
+    x.add_argument("--episode", default=None)
+    x.set_defaults(fn=cmd_memory)
+    x = sp.add_parser("cost", help="journaliser une dépense (crédits TTS externe, GPU loué…)")
+    x.add_argument("episode")
+    x.add_argument("--kind", required=True)
+    x.add_argument("--amount", type=float, required=True)
+    x.add_argument("--unit", required=True)
+    x.add_argument("--note", default="")
+    x.set_defaults(fn=cmd_cost)
+    return ap
+
+
+def main(argv=None):
+    a = build_parser().parse_args(argv)
+    rc = a.fn(a)
+    sys.exit(rc or 0)

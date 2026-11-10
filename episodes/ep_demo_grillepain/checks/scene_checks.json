@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-11-10T09:07:07+00:00",
+  "profile": "draft",
+  "checks": [
+    {
+      "shot": "sh_005",
+      "id": "char_offscreen:ch_kevin",
+      "severity": "minor",
+      "status": "warn",
+      "frame": 1,
+      "message": "ch_kevin présent dans le plan mais hors champ (tête projetée 1.70,0.65).",
+      "frames": [
+        1,
+        24
+      ]
+    },
+    {
+      "shot": "sh_005",
+      "id": "floating_prop:pr_toaster",
+      "severity": "minor",
+      "status": "warn",
+      "frame": 1,
+      "message": "pr_toaster flotte à 0.30 m au-dessus de son support.",
+      "frames": [
+        1,
+        24,
+        68,
+        76,
+        136
+      ]
+    },
+    {
+      "shot": "sh_006",
+      "id": "floating_prop:pr_toaster",
+      "severity": "minor",
+      "status": "warn",
+      "frame": 1,
+      "message": "pr_toaster flotte à 0.30 m au-dessus de son support.",
+      "frames": [
+        1,
+        64,
+        128
+      ]
+    },
+    {
+      "shot": "sh_007",
+      "id": "char_offscreen:ch_proprio",
+      "severity": "minor",
+      "status": "warn",
+      "frame": 1,
+      "message": "ch_proprio présent dans le plan mais hors champ (tête projetée 1.43,0.64).",
+      "frames": [
+        1,
+        13
+      ]
+    },
+    {
+      "shot": "sh_007",
+      "id": "floating_prop:pr_toaster",
+      "severity": "minor",
+      "status": "warn",
+      "frame": 1,
+      "message": "pr_toaster flotte à 0.30 m au-dessus de son support.",
+      "frames": [
+        1,
+        13,
+        45,
+        46,
+        77,
+        91
+      ]
+    },
+    {
+      "shot": "sh_007",
+      "id": "floating_prop:pr_toast",
+      "severity": "minor",
+      "status": "warn",
+      "frame": 1,
+      "message": "pr_toast flotte à 0.25 m au-dessus de son support.",
+      "frames": [
+        1,
+        13
+      ]
+    },
+    {
+      "shot": "sh_010",
+      "id": "floating_prop:pr_toaster",
+      "severity": "minor",
+      "status": "warn",
+      "frame": 1,
+      "message": "pr_toaster flotte à 0.30 m au-dessus de son support.",
+      "frames": [
+        1,
+        54,
+        108
+      ]
+    }
+  ]
+}

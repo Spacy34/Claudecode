@@ -1,0 +1,9 @@
+jsonschema>=4.18
+referencing>=0.30
+Pillow>=10
+pytest>=8
+# Blender : soit le binaire Blender >= 4.2 (recommandé avec GPU), soit le module pip ci-dessous
+# (taille ~400 Mo, Python 3.13 pour bpy 5.2 ; consulter pypi.org/project/bpy pour la compatibilité Python)
+# bpy==5.2.3
+# Voix production (facultatif, vérifier la licence de chaque voix) :
+# piper-tts

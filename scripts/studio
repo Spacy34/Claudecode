@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Point d'entrée unique du pipeline déterministe.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PY="${STUDIO_PYTHON:-python3}"
+exec env PYTHONPATH="$ROOT/pipeline${PYTHONPATH:+:$PYTHONPATH}" "$PY" -m studio "$@"

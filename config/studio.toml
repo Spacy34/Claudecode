@@ -1,0 +1,62 @@
+# Configuration globale du studio. Chaque valeur peut être surchargée par
+# variable d'environnement STUDIO_<SECTION>_<KEY> (ex: STUDIO_RENDER_DEFAULT_PROFILE=draft).
+
+[paths]
+episodes_dir = "episodes"
+cache_dir = ".studio_cache"          # rendus de plans réutilisables (clé = hash du plan)
+assets_dir = "assets"
+memory_dir = "memory"
+
+[blender]
+# "auto"   : binaire `blender` (BLENDER_BIN ou PATH) s'il existe, sinon module Python `bpy`
+# "binary" : impose le binaire Blender (recommandé sur un poste avec GPU : EEVEE disponible)
+# "module" : impose le module pip `bpy` (headless, Cycles CPU)
+mode = "auto"
+binary = ""
+min_version = "4.2"
+
+[render]
+default_profile = "preview"
+fps = 30
+# moteur : "auto" choisit EEVEE si un GPU est utilisable par Blender, sinon Cycles CPU.
+engine = "auto"
+
+[limits]
+max_parallel_renders = 1        # processus Blender simultanés
+shot_timeout_s = 3600           # au-delà, le plan est marqué failed
+max_cache_gb = 20               # purge LRU au-delà (studio cache --prune)
+max_ram_gb = 0                  # 0 = 75 % de la RAM détectée
+max_threads = 0                 # 0 = tous les cœurs ; sinon limite Cycles
+
+[tts]
+# "auto" : piper si un modèle .onnx est configuré et installé, sinon espeak-ng (qualité robotique, dev/test uniquement)
+backend = "auto"
+piper_model = ""                 # chemin vers ex: assets/voices/fr_FR-xxx-medium.onnx (vérifier la licence de la voix)
+espeak_voice = "fr+m3"
+espeak_speed = 165
+# backend "command" : adaptateur générique pour un TTS externe facultatif.
+# {text_file} et {out_wav} sont substitués. Aucune clé ne doit être écrite ici : utiliser l'environnement.
+command = ""
+
+[audio]
+sample_rate = 48000
+target_lufs = -14.0
+true_peak_db = -1.5
+music_gain_db = -24.0
+sfx_gain_db = -8.0
+lead_in_s = 0.25
+tail_s = 0.8
+
+[subtitles]
+font_family = "Inter ExtraBold"
+font_size_ratio = 0.050          # taille police / hauteur image
+words_per_chunk = 3
+max_chars_per_chunk = 22
+vertical_position = 0.68         # 0 = haut, 1 = bas (zone sûre TikTok : éviter > 0.80)
+highlight_color = "&H0000E5FF"   # ASS BGR : jaune
+base_color = "&H00FFFFFF"
+
+[quality]
+max_revision_rounds = 2          # au-delà : escalade humaine
+min_dimension_score = 6          # un score < seuil sur une dimension critique bloque
+blocker_severities = ["blocker"]

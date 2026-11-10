@@ -1,0 +1,306 @@
+{
+  "shot_id": "sh_007",
+  "episode_id": "ep_demo_grillepain",
+  "fps": 30,
+  "frames": 91,
+  "engine_version": "0.3.0",
+  "set": {
+    "id": "set_cuisine",
+    "kit": "kitchen",
+    "description": "Cuisine de coloc, murs vert menthe, carrelage crème.",
+    "size": [
+      8,
+      6
+    ],
+    "palette": {
+      "wall": "#B8E0D2",
+      "floor": "#EAE2B7",
+      "accent": "#F77F00"
+    },
+    "use_kit_dressing": true,
+    "marks": {
+      "kevin_spot": [
+        0.6,
+        1.6
+      ],
+      "action_center": [
+        0.3,
+        1.7
+      ],
+      "lea_spot": [
+        -1.3,
+        1.1
+      ]
+    },
+    "source": "procedural",
+    "license": {
+      "spdx": "original",
+      "commercial_use": true
+    },
+    "seed": 5
+  },
+  "mood": "interior_warm",
+  "characters": [
+    {
+      "id": "ch_kevin",
+      "design": {
+        "seed": 11,
+        "body": {
+          "height": 1.05,
+          "girth": 0.9,
+          "head_scale": 1.18,
+          "leg_length": 0.95,
+          "arm_length": 1.05,
+          "belly": 0.1
+        },
+        "skin": "#F1C27D",
+        "hair": {
+          "style": "spiky",
+          "color": "#4A2C1A"
+        },
+        "eyes": {
+          "size": 1.15,
+          "spacing": 1.0,
+          "iris": "#3B5BA5"
+        },
+        "brows": {
+          "thickness": 1.3,
+          "color": "#3A2416"
+        },
+        "nose": {
+          "shape": "round",
+          "size": 1.1
+        },
+        "mouth": {
+          "width": 1.15
+        },
+        "outfit": {
+          "top": {
+            "type": "hoodie",
+            "color": "#FF7F11",
+            "accent": "#E63946"
+          },
+          "bottom": {
+            "type": "pants",
+            "color": "#2B2D42"
+          },
+          "shoes": "#F8F8F8"
+        },
+        "accessories": [
+          "cap"
+        ]
+      },
+      "pos": [
+        -0.6,
+        1.0
+      ],
+      "facing_deg": 0.0,
+      "facing_target": [
+        2.4,
+        1.0
+      ],
+      "start_pose": "stand"
+    },
+    {
+      "id": "ch_proprio",
+      "design": {
+        "seed": 33,
+        "body": {
+          "height": 1.12,
+          "girth": 1.45,
+          "head_scale": 1.0,
+          "leg_length": 0.85,
+          "arm_length": 0.95,
+          "belly": 0.9
+        },
+        "skin": "#FFDBAC",
+        "hair": {
+          "style": "none",
+          "color": "#777777"
+        },
+        "eyes": {
+          "size": 0.85,
+          "spacing": 0.95,
+          "iris": "#222222"
+        },
+        "brows": {
+          "thickness": 1.8,
+          "color": "#555555"
+        },
+        "nose": {
+          "shape": "long",
+          "size": 1.2
+        },
+        "mouth": {
+          "width": 1.0
+        },
+        "outfit": {
+          "top": {
+            "type": "suit",
+            "color": "#6C757D",
+            "accent": "#9D0208"
+          },
+          "bottom": {
+            "type": "pants",
+            "color": "#495057"
+          },
+          "shoes": "#111111"
+        },
+        "accessories": [
+          "mustache"
+        ]
+      },
+      "pos": [
+        2.4,
+        1.0
+      ],
+      "facing_deg": 0.0,
+      "facing_target": [
+        -0.6,
+        1.0
+      ],
+      "start_pose": "stand"
+    }
+  ],
+  "props": [
+    {
+      "id": "pr_speaker",
+      "type": "box",
+      "color": "#222222",
+      "scale": 0.8,
+      "label": "BASS",
+      "pos": [
+        -0.35,
+        2.45
+      ],
+      "height": 0.92,
+      "held_by": null,
+      "hand": "R",
+      "rot_deg": 0.0
+    },
+    {
+      "id": "pr_toaster",
+      "type": "toaster",
+      "color": "#C9CED6",
+      "scale": 1.4,
+      "label": null,
+      "pos": [
+        -0.35,
+        2.45
+      ],
+      "height": 1.24,
+      "held_by": null,
+      "hand": "R",
+      "rot_deg": 0.0
+    },
+    {
+      "id": "pr_toast",
+      "type": "box",
+      "color": "#D9A05B",
+      "scale": 0.25,
+      "label": null,
+      "pos": [
+        -0.35,
+        2.45
+      ],
+      "height": 1.5,
+      "held_by": null,
+      "hand": "R",
+      "rot_deg": 0.0
+    }
+  ],
+  "camera": {
+    "framing": "wide",
+    "subject": {
+      "kind": "point",
+      "pos": [
+        0.3,
+        1.7,
+        1.0
+      ]
+    },
+    "angle": "eye",
+    "move": "static",
+    "motivation": "Cadre large fixe : la trajectoire de la tartine doit être lisible d'un bout à l'autre."
+  },
+  "actions": [
+    {
+      "char": "ch_proprio",
+      "action": "walk_to",
+      "frame": 5,
+      "duration_frames": 30,
+      "intensity": 1.0,
+      "target": [
+        1.3,
+        1.3
+      ],
+      "prop": null
+    },
+    {
+      "char": "ch_proprio",
+      "action": "take_hit",
+      "frame": 69,
+      "duration_frames": 0,
+      "intensity": 1.0,
+      "target": null,
+      "prop": null
+    },
+    {
+      "char": "ch_kevin",
+      "action": "shocked_jump",
+      "frame": 38,
+      "duration_frames": 0,
+      "intensity": 1.0,
+      "target": null,
+      "prop": null
+    }
+  ],
+  "expressions": [
+    {
+      "char": "ch_proprio",
+      "expr": "angry",
+      "frame": 5,
+      "intensity": 1.0
+    },
+    {
+      "char": "ch_kevin",
+      "expr": "shocked",
+      "frame": 38,
+      "intensity": 1.0
+    },
+    {
+      "char": "ch_proprio",
+      "expr": "shocked",
+      "frame": 69,
+      "intensity": 1.0
+    }
+  ],
+  "prop_actions": [
+    {
+      "prop": "pr_toast",
+      "action": "throw",
+      "frame": 24,
+      "duration_frames": 18,
+      "char": null,
+      "hand": "R",
+      "target": {
+        "kind": "char",
+        "id": "ch_proprio"
+      }
+    }
+  ],
+  "fx": [
+    {
+      "type": "impact_star",
+      "frame": 69,
+      "scale": 0.8,
+      "target": {
+        "kind": "char",
+        "id": "ch_proprio"
+      }
+    }
+  ],
+  "talk": [],
+  "auto_idle": true,
+  "transition_out": "flash_white"
+}

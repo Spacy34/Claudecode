@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/render_manifest.schema.json",
+  "title": "render_manifest.json — GÉNÉRÉ. Un enregistrement par plan rendu, avec clé de cache.",
+  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "type": "object",
+  "required": ["contract", "profile", "shots"],
+  "properties": {
+    "contract": {"const": "render_manifest"},
+    "profile": {"enum": ["draft", "preview", "final"]},
+    "engine_version": {"type": "string"},
+    "blender_version": {"type": "string"},
+    "shots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "cache_key", "status"],
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/shot_id"},
+          "cache_key": {"$ref": "common.schema.json#/$defs/sha256"},
+          "status": {"enum": ["rendered", "cached", "failed", "skipped"]},
+          "video": {"type": "string"},
+          "frames_dir": {"type": "string"},
+          "render_seconds": {"type": "number"},
+          "render_engine": {"type": "string"},
+          "scene_report": {"type": "object", "description": "Contrôles géométriques exécutés dans Blender (cadrage, sol, collisions)"},
+          "error": {"type": "string"}
+        }
+      }
+    },
+    "output": {"type": "string"}
+  }
+}
