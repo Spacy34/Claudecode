@@ -5,7 +5,7 @@
   "status": "generated",
   "provenance": {
     "created_by": "studio render",
-    "created_at": "2026-11-10T09:37:20+00:00",
+    "created_at": "2026-11-10T10:09:13+00:00",
     "depends_on": [
       {
         "path": "shot_manifest.json",
@@ -14,14 +14,14 @@
     ]
   },
   "profile": "preview",
-  "engine_version": "214dfb0bb8ea",
+  "engine_version": "d60e78a67360",
   "shots": [
     {
       "id": "sh_001",
-      "cache_key": "ccc1bac0a6db704db8ac7a198415c2772452e4bc85d753e234fd2733d0aa7711",
-      "frames_dir": "/home/user/Claudecode/.studio_cache/shots/ccc1bac0a6db704db8ac7a198415c2772452e4bc85d753e234fd2733d0aa7711",
+      "cache_key": "9e15e9500e2b18e18c72e4f80a00bfdb02e0e9fad7be137ccfce9ed59712bcf9",
+      "frames_dir": "/home/user/Claudecode/.studio_cache/shots/9e15e9500e2b18e18c72e4f80a00bfdb02e0e9fad7be137ccfce9ed59712bcf9",
       "render_engine": "cycles",
-      "render_seconds": 870.1,
+      "render_seconds": 838.4,
       "status": "rendered",
       "scene_report": {
         "shot_id": "sh_001",
@@ -87,7 +87,7 @@
         "engine_version": "0.3.0",
         "render_engine": "CYCLES",
         "frames": 116,
-        "build_seconds": 0.19,
+        "build_seconds": 0.2,
         "rendered_frames": [
           1,
           2,
@@ -206,16 +206,16 @@
           115,
           116
         ],
-        "render_seconds": 869.23,
-        "seconds_per_frame": 7.493
+        "render_seconds": 837.52,
+        "seconds_per_frame": 7.22
       }
     },
     {
       "id": "sh_002",
-      "cache_key": "51d7bd86bd1cdd7b2194f18b52c4fb609b09532bf942671c427524ecb427ee69",
-      "frames_dir": "/home/user/Claudecode/.studio_cache/shots/51d7bd86bd1cdd7b2194f18b52c4fb609b09532bf942671c427524ecb427ee69",
+      "cache_key": "c4dc4bf9623073ed717a6cb74201e111726deb771af22047a570d1bcdeda7f81",
+      "frames_dir": "/home/user/Claudecode/.studio_cache/shots/c4dc4bf9623073ed717a6cb74201e111726deb771af22047a570d1bcdeda7f81",
       "render_engine": "cycles",
-      "render_seconds": 912.1,
+      "render_seconds": 899.0,
       "status": "rendered",
       "scene_report": {
         "shot_id": "sh_002",
@@ -286,7 +286,7 @@
         "engine_version": "0.3.0",
         "render_engine": "CYCLES",
         "frames": 132,
-        "build_seconds": 0.12,
+        "build_seconds": 0.1,
         "rendered_frames": [
           1,
           2,
@@ -421,8 +421,8 @@
           131,
           132
         ],
-        "render_seconds": 911.18,
-        "seconds_per_frame": 6.903
+        "render_seconds": 898.13,
+        "seconds_per_frame": 6.804
       }
     }
   ],

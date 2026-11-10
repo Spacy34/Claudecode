@@ -91,18 +91,18 @@
       "revision_rounds": 0
     },
     "prototype": {
-      "status": "running",
+      "status": "completed",
       "attempts": 2,
       "revision_rounds": 0,
-      "pid": 7668,
+      "pid": null,
       "started_at": "2026-11-10T09:40:16+00:00",
       "error": null,
-      "finished_at": "2026-11-10T09:37:28+00:00",
+      "finished_at": "2026-11-10T10:09:22+00:00",
       "inputs": {
         "shot_manifest.json": "30eac8312cb0146d69f17167142ec7c7a775e7c753c22aaefe55f0d3dad12ad7"
       },
       "outputs": {
-        "renders/prototype.mp4": "87929bc62ebba3bd1992f5dde2f6018260dd772ededaae8a470a6367a7036a9c"
+        "renders/prototype.mp4": "b7666a9b40ebfc8f75949704a48f3b8b69b4f6349078c3c83ae96df957d18f61"
       },
       "note": null
     },
@@ -317,6 +317,12 @@
       "at": "2026-11-10T09:40:16+00:00",
       "event": "start",
       "stage": "prototype"
+    },
+    {
+      "at": "2026-11-10T10:09:22+00:00",
+      "event": "finish",
+      "stage": "prototype",
+      "status": "completed"
     }
   ],
   "cost_log": []
