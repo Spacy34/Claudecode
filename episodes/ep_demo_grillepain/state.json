@@ -3,14 +3,30 @@
   "state_version": 1,
   "stages": {
     "brief": {
-      "status": "pending",
+      "status": "completed",
       "attempts": 0,
-      "revision_rounds": 0
+      "revision_rounds": 0,
+      "pid": null,
+      "finished_at": "2026-11-10T09:17:40+00:00",
+      "inputs": {},
+      "outputs": {
+        "episode_brief.json": "06e4dd79ba7b8e45b3604b8b4bf8e6d80363f7e7f7a4a4d7cc6ea88f69d77ed9"
+      },
+      "note": null
     },
     "script": {
-      "status": "pending",
+      "status": "completed",
       "attempts": 0,
-      "revision_rounds": 0
+      "revision_rounds": 0,
+      "pid": null,
+      "finished_at": "2026-11-10T09:17:40+00:00",
+      "inputs": {
+        "episode_brief.json": "06e4dd79ba7b8e45b3604b8b4bf8e6d80363f7e7f7a4a4d7cc6ea88f69d77ed9"
+      },
+      "outputs": {
+        "story_script.json": "0d4e0595c185eda40396cf34dcce9d6236097f606bd4d3ebea1a25ffc0effb2a"
+      },
+      "note": null
     },
     "script_review": {
       "status": "pending",
@@ -288,6 +304,18 @@
       "at": "2026-11-10T09:07:37+00:00",
       "event": "start",
       "stage": "prototype"
+    },
+    {
+      "at": "2026-11-10T09:17:40+00:00",
+      "event": "finish",
+      "stage": "brief",
+      "status": "completed"
+    },
+    {
+      "at": "2026-11-10T09:17:40+00:00",
+      "event": "finish",
+      "stage": "script",
+      "status": "completed"
     }
   ],
   "cost_log": []
