@@ -40,14 +40,27 @@ def encode_clip(cfg, rec, shot, profile, t_in, t_out, fps):
     if t_in == "whip":
         vf.append("boxblur=luma_radius=min(h\\,w)/14:luma_power=2:enable='lte(n\\,2)'")
     vf.append("format=yuv420p")
-    run(["ffmpeg", "-y", "-v", "error", "-framerate", f"{fps / step:.6f}", "-pattern_type", "glob", "-i", str(Path(rec["frames_dir"]) / "f*.png"),
+    # Liste ffconcat (portable : -pattern_type glob n'existe pas dans les builds FFmpeg Windows)
+    fdir = Path(rec["frames_dir"])
+    pngs = sorted(fdir.glob("f[0-9][0-9][0-9][0-9].png"))
+    if not pngs:
+        raise RuntimeError(f"aucune image rendue dans {fdir}")
+    lst = out.with_suffix(".ffconcat")
+    lines = ["ffconcat version 1.0"]
+    for k, png in enumerate(pngs):
+        nxt = int(pngs[k + 1].stem[1:]) if k + 1 < len(pngs) else N + 1
+        lines += [f"file '{png.as_posix()}'", f"duration {max(1, nxt - int(png.stem[1:])) / fps:.6f}"]
+    lines.append(f"file '{pngs[-1].as_posix()}'")
+    lst.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(lst),
          "-vf", ",".join(vf), "-frames:v", str(N), "-r", str(fps), "-c:v", "libx264", "-preset", "veryfast", "-crf", "14", "-an", str(out)])
+    lst.unlink(missing_ok=True)
     return out
 
 
 def concat(clips, out):
     lst = Path(out).with_suffix(".txt")
-    lst.write_text("".join(f"file '{c}'\n" for c in clips))
+    lst.write_text("".join(f"file '{Path(c).as_posix()}'\n" for c in clips), encoding="utf-8")
     run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy", str(out)])
     lst.unlink()
     return out
@@ -132,10 +145,17 @@ def assemble(cfg, ep_dir, manifest, timeline, recs, profile, out_path, fps=30):
     up = profile.get("upscale_to_delivery", True)
     W, H = (1080, 1920) if up else tuple(profile["resolution"])
     fonts = ROOT / cfg["paths"]["assets_dir"] / "fonts"
-    ass_f = f"ass='{ass}'" + (f":fontsdir='{fonts}'" if fonts.is_dir() else "")
+    # ffmpeg lancé depuis le dossier du .ass : chemins relatifs, donc pas de « C: » à échapper sous Windows
+    import os
+    ass_f = f"ass='{ass.name}'"
+    if fonts.is_dir():
+        try:
+            ass_f += f":fontsdir='{Path(os.path.relpath(fonts, ass.parent)).as_posix()}'"
+        except ValueError:   # disque différent sous Windows
+            pass
     vf = f"scale={W}:{H}:flags=lanczos,{ass_f},format=yuv420p"
-    run(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-i", str(audio), "-vf", vf, "-r", str(fps), "-c:v", "libx264", "-preset", "medium",
+    run(["ffmpeg", "-y", "-v", "error", "-i", str(Path(video).resolve()), "-i", str(Path(audio).resolve()), "-vf", vf, "-r", str(fps), "-c:v", "libx264", "-preset", "medium",
          "-crf", "18" if profile["name"] == "final" else "21", "-profile:v", "high", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
-         "-ac", "2", "-t", f"{t1 - t0:.3f}", "-movflags", "+faststart", str(out_path)])
+         "-ac", "2", "-t", f"{t1 - t0:.3f}", "-movflags", "+faststart", str(Path(out_path).resolve())], cwd=str(ass.parent))
     return {"output": str(out_path), "start_s": t0, "end_s": t1, "subtitle_events": n_sub, "sfx_cues": len(cues), "clips": [str(c) for c in clips],
             "expected_frames": sum(s["frames"] for s in shots), "resolution": [W, H]}

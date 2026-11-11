@@ -42,11 +42,12 @@ def diagnose(cfg):
         res["ffmpeg_features"]["aac"] = " aac " in e
     blender_bin = os.environ.get("BLENDER_BIN") or cfg["blender"].get("binary") or which("blender")
     res["blender_binary"] = _ver([blender_bin, "--version"]) if blender_bin else None
+    res["blender_path"] = blender_bin
     try:
         res["bpy_module"] = importlib.metadata.version("bpy") if importlib.util.find_spec("bpy") else None
     except importlib.metadata.PackageNotFoundError:
         res["bpy_module"] = None
-    res["espeak_ng"] = _ver(["espeak-ng", "--version"])
+    res["espeak_ng"] = _ver([which("espeak-ng"), "--version"]) if which("espeak-ng") else None
     res["piper"] = bool(which("piper") or importlib.util.find_spec("piper"))
     pm = cfg["tts"].get("piper_model")
     res["piper_model"] = pm if pm and (ROOT / pm).exists() else None

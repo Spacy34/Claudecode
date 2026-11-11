@@ -49,6 +49,16 @@ def _hash_inputs(ep_dir, files):
 def _alive(pid):
     if not pid:
         return False
+    if os.name == "nt":   # os.kill(pid, 0) enverrait un CTRL_C_EVENT sous Windows
+        import ctypes
+        k = ctypes.windll.kernel32
+        h = k.OpenProcess(0x1000, False, int(pid))   # PROCESS_QUERY_LIMITED_INFORMATION
+        if not h:
+            return False
+        code = ctypes.c_ulong()
+        k.GetExitCodeProcess(h, ctypes.byref(code))
+        k.CloseHandle(h)
+        return code.value == 259   # STILL_ACTIVE
     try:
         os.kill(pid, 0)
         return True

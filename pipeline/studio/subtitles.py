@@ -27,6 +27,16 @@ def chunks(words, per, max_chars):
     return out
 
 
+def _font_family(sc):
+    """Windows n'a pas Inter : repli sur Arial Black (présente sur tout Windows) sauf police déposée dans assets/fonts."""
+    import os
+    from .util import ROOT
+    fam = sc["font_family"]
+    if os.name == "nt" and fam.startswith("Inter") and not any((ROOT / "assets" / "fonts").glob("Inter*")):
+        return "Arial Black"
+    return fam
+
+
 def build_ass(timeline, cfg, out_path, t_start=0.0, t_end=None, width=1080, height=1920):
     sc = cfg["subtitles"]
     size = int(height * float(sc["font_size_ratio"]))
@@ -37,7 +47,7 @@ def build_ass(timeline, cfg, out_path, t_start=0.0, t_end=None, width=1080, heig
         "[Script Info]", "ScriptType: v4.00+", f"PlayResX: {width}", f"PlayResY: {height}", "WrapStyle: 0", "ScaledBorderAndShadow: yes", "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: TT,{sc['font_family']},{size},{base},{hl},&H00000000,&H80000000,-1,0,0,0,100,100,1,0,1,{max(4, size // 14)},{max(2, size // 30)},5,60,60,0,1",
+        f"Style: TT,{_font_family(sc)},{size},{base},{hl},&H00000000,&H80000000,-1,0,0,0,100,100,1,0,1,{max(4, size // 14)},{max(2, size // 30)},5,60,60,0,1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
     t_end = t_end if t_end is not None else timeline["duration_s"]

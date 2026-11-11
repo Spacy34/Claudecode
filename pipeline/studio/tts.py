@@ -54,7 +54,7 @@ def synth(backend, cfg, text, out_wav, line, voice_cfg=None, ep_dir=None):
         with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
             tf.write(text)
         try:
-            run(["espeak-ng", "-v", v, "-s", str(speed), "-p", str(int(max(0, min(99, 50 * pitch)))), "-w", str(out_wav), "-f", tf.name])
+            run([which("espeak-ng") or "espeak-ng", "-v", v, "-s", str(speed), "-p", str(int(max(0, min(99, 50 * pitch)))), "-w", str(out_wav), "-f", tf.name])
         finally:
             os.unlink(tf.name)
         return {"backend": "espeak", "voice": v, "license": "espeak-ng GPL-3.0 (outil) ; audio généré utilisable"}

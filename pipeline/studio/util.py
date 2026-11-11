@@ -93,15 +93,33 @@ def cache_dir(cfg):
     return p
 
 
-def run(cmd, check=True, capture=True, timeout=None, input_text=None, env=None):
-    r = subprocess.run(cmd, capture_output=capture, text=True, timeout=timeout, input=input_text, env=env)
+def run(cmd, check=True, capture=True, timeout=None, input_text=None, env=None, cwd=None):
+    r = subprocess.run(cmd, capture_output=capture, text=True, timeout=timeout, input=input_text, env=env, cwd=cwd,
+                       encoding="utf-8", errors="replace")
     if check and r.returncode != 0:
         raise RuntimeError(f"commande échouée ({r.returncode}) : {' '.join(map(str, cmd))}\n{(r.stderr or '')[-3000:]}")
     return r
 
 
+IS_WINDOWS = os.name == "nt"
+
+# Emplacements d'installation Windows usuels (winget / installeurs officiels), hors PATH par défaut.
+_WIN_CANDIDATES = {
+    "blender": [r"C:\Program Files\Blender Foundation\Blender*\blender.exe"],
+    "espeak-ng": [r"C:\Program Files\eSpeak NG\espeak-ng.exe", r"C:\Program Files (x86)\eSpeak NG\espeak-ng.exe"],
+}
+
+
 def which(name):
-    return shutil.which(name)
+    p = shutil.which(name)
+    if p or not IS_WINDOWS:
+        return p
+    import glob
+    for pat in _WIN_CANDIDATES.get(name, []):
+        hits = sorted(glob.glob(pat))
+        if hits:
+            return hits[-1]   # version la plus récente
+    return None
 
 
 def ffprobe_json(path):

@@ -12,6 +12,9 @@ Rien n'est jamais publié automatiquement.
 - Limites et priorités : [`references/limitations.md`](references/limitations.md)
 
 ## 1. Installation
+**Windows : suivre [`WINDOWS.md`](WINDOWS.md)** (installateur PowerShell + commande `scripts\studio.cmd`).
+
+Linux / macOS / WSL :
 ```bash
 scripts/install.sh
 ```
