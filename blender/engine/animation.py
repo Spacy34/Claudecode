@@ -143,7 +143,12 @@ class CharAnim:
     def j(self, n):
         return self.c.joints[n]
 
+    HEAD_LIMITS = {0: (-20.0, 16.0), 1: (-25.0, 25.0), 2: (-75.0, 75.0)}   # au-delà, on ne voit plus le visage
+
     def rot(self, joint, axis, f, deg, interp='BEZIER'):
+        if joint == "head":
+            lo, hi = self.HEAD_LIMITS[axis]
+            deg = max(lo, min(hi, deg))
         self.a.key(self.j(joint), 'rotation_euler', axis, f, D(deg), interp)
 
     def pose(self, name_or_dict, f, interp='BEZIER', blend=1.0):
@@ -250,8 +255,12 @@ class CharAnim:
         fa, fb = f, f + ramp
         for side, up, inner, s in (("L", bl, il, 1), ("R", br, ir, -1)):
             eye, pupil, brow = self.c.face[f"eye_{side}"], self.c.face[f"pupil_{side}"], self.c.face[f"brow_{side}"]
+            # le sourcil glisse SUR la surface de la tête (sinon il flotte devant le front quand il monte)
+            bz = r * 0.50 + max(-0.08, min(0.14, lerp(0, up))) * r * 1.6
+            bx = brow.location.x
+            by = -(math.sqrt(max(r * r - bz * bz - bx * bx * 0.6, 0.0)) * 0.97 + r * 0.06)
             for obj, path, idx, val in ((eye, 'scale', 2, lerp(1, eye_sq)), (pupil, 'scale', 0, lerp(1, pup)), (pupil, 'scale', 2, lerp(1, pup)),
-                                        (brow, 'location', 2, r * 0.50 + lerp(0, up) * r * 2.2), (brow, 'rotation_euler', 1, s * D(lerp(0, inner)))):
+                                        (brow, 'location', 2, bz), (brow, 'location', 1, by), (brow, 'rotation_euler', 1, s * D(lerp(0, inner)))):
                 self.a.key(obj, path, idx, fa, self.a.value_at(obj, path, idx, fa))
                 self.a.key(obj, path, idx, fb, val)
             for part, on in ((f"blush_{side}", blush), (f"tear_{side}", tears)):
@@ -558,6 +567,11 @@ class CharAnim:
             bob = abs(math.cos(ph)) * (0.05 if run else 0.025) * self.c.H
             self.a.key(self.j("hips"), 'location', 2, f, self.c.hip_z - (0.03 * self.c.H if run else 0) + bob)
         self.pose("rest", f_end + 6)
+        # arrivé à destination, il se retourne vers la caméra (« triche ») : on ne finit pas un déplacement de dos
+        if dist > 0.3 and abs(math.atan2(p1.x - p0.x, -(p1.y - p0.y))) > D(65):
+            heading = math.atan2(p1.x - p0.x, -(p1.y - p0.y))
+            self.a.key(root, 'rotation_euler', 2, f_end + 2, self.a.value_at(root, 'rotation_euler', 2, f_end + 2))
+            self.a.key(root, 'rotation_euler', 2, f_end + 9, max(-D(55), min(D(55), heading)))
         return f_end
 
     def act_walk_to(self, f0, dur, k, target, world):

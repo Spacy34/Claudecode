@@ -48,6 +48,12 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
                 if hy < 0.36 and framing not in ("wide", "insert"):
                     out.append({"id": f"face_under_subtitles:{cid}", "severity": "minor", "status": "warn", "frame": f,
                                 "message": f"Visage du sujet bas dans l'image (y={hy:.2f}) : risque de recouvrement par les sous-titres."})
+            hm = ch.joints["head"].matrix_world
+            fwd = (hm.to_3x3() @ Vector((0, -1, 0))).normalized()
+            to_cam = (cam.matrix_world.translation - lm["head"]).normalized()
+            if fwd.dot(to_cam) < 0.15:
+                out.append({"id": f"face_away:{cid}", "severity": "major" if is_subject else "minor", "status": "fail" if is_subject else "warn", "frame": f,
+                            "message": f"Visage de {cid} invisible depuis la caméra (dos ou tête penchée, cos={fwd.dot(to_cam):.2f})."})
             x, y = lm["feet"].x, lm["feet"].y
             b = set_info["bounds"]
             if not (b[0] <= x <= b[1] and b[2] <= y <= b[3]) and in_frame:
@@ -95,7 +101,7 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
             seen[c["id"]] = c
     res = list(seen.values())
     for c in res:
-        if c["severity"] == "major" and len(c["frames"]) < max(2, len(sample_frames) // 3) and c["id"].startswith(("subject_too_small", "head_cropped")):
+        if c["severity"] == "major" and len(c["frames"]) < max(2, len(sample_frames) // 3) and c["id"].startswith(("subject_too_small", "head_cropped", "face_away")):
             c["severity"], c["status"] = "minor", "warn"   # transitoire (ex : saut) : avertissement seulement
     return res
 

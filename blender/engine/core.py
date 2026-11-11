@@ -47,7 +47,11 @@ def setup_render(sc, profile, engine_pref='auto', threads=0):
     sc.render.film_transparent = False
     try:
         sc.view_settings.view_transform = 'Standard'   # couleurs cartoon franches (AgX désature)
-        sc.view_settings.look = 'None'
+        sc.view_settings.exposure = -0.45               # matériaux semi-émissifs : éviter l'image délavée
+        try:
+            sc.view_settings.look = 'Medium High Contrast'
+        except TypeError:
+            sc.view_settings.look = 'None'
     except Exception:
         pass
     if threads:

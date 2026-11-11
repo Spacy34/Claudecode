@@ -1,19 +1,7 @@
 {
-  "generated_at": "2026-11-10T09:07:07+00:00",
+  "generated_at": "2026-11-11T20:26:53+00:00",
   "profile": "draft",
   "checks": [
-    {
-      "shot": "sh_005",
-      "id": "char_offscreen:ch_kevin",
-      "severity": "minor",
-      "status": "warn",
-      "frame": 1,
-      "message": "ch_kevin présent dans le plan mais hors champ (tête projetée 1.70,0.65).",
-      "frames": [
-        1,
-        24
-      ]
-    },
     {
       "shot": "sh_005",
       "id": "floating_prop:pr_toaster",
@@ -27,6 +15,17 @@
         68,
         76,
         136
+      ]
+    },
+    {
+      "shot": "sh_005",
+      "id": "face_away:ch_kevin",
+      "severity": "minor",
+      "status": "warn",
+      "frame": 24,
+      "message": "Visage de ch_kevin invisible depuis la caméra (dos ou tête penchée, cos=-0.78).",
+      "frames": [
+        24
       ]
     },
     {
@@ -48,7 +47,7 @@
       "severity": "minor",
       "status": "warn",
       "frame": 1,
-      "message": "ch_proprio présent dans le plan mais hors champ (tête projetée 1.43,0.64).",
+      "message": "ch_proprio présent dans le plan mais hors champ (tête projetée 1.44,0.64).",
       "frames": [
         1,
         13

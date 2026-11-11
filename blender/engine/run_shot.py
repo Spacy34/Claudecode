@@ -97,6 +97,7 @@ class Shot:
             if c.get("facing_target") is not None:
                 tx, ty = c["facing_target"]
                 fr = math.atan2(tx - x, -(ty - y))
+                fr = max(-D(65), min(D(65), fr))   # règle de mise en scène : on « triche » vers la caméra
             else:
                 fr = D(c.get("facing_deg") or 0.0)
             ch.place(x, y, fr)

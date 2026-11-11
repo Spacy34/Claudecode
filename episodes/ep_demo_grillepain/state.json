@@ -61,12 +61,12 @@
     },
     "compile": {
       "status": "stale",
-      "attempts": 3,
+      "attempts": 4,
       "revision_rounds": 0,
       "pid": null,
-      "started_at": "2026-11-10T09:07:33+00:00",
+      "started_at": "2026-11-11T20:24:26+00:00",
       "error": null,
-      "finished_at": "2026-11-10T09:07:33+00:00",
+      "finished_at": "2026-11-11T20:24:26+00:00",
       "inputs": {
         "story_script.json": "0d4e0595c185eda40396cf34dcce9d6236097f606bd4d3ebea1a25ffc0effb2a",
         "cast_bible.json": "8645d6ff1d7ee4f5ec2d0364cd509a2d93975f64a0fde735da86f5d413c25b09",
@@ -76,7 +76,7 @@
         "audio_timeline.json": "166eef35ae69c01c7a23bf67103e1cd0fe649b6fb9cb808cab39131a53a769a6"
       },
       "outputs": {
-        "shot_manifest.json": "30eac8312cb0146d69f17167142ec7c7a775e7c753c22aaefe55f0d3dad12ad7"
+        "shot_manifest.json": "95ae15ed80cbdb018f82eac9d412016438d7b39b5908972e4116343a7b591b49"
       },
       "note": null
     },
@@ -91,7 +91,7 @@
       "revision_rounds": 0
     },
     "prototype": {
-      "status": "completed",
+      "status": "stale",
       "attempts": 2,
       "revision_rounds": 0,
       "pid": null,
@@ -112,18 +112,18 @@
       "revision_rounds": 0
     },
     "shots_check": {
-      "status": "stale",
-      "attempts": 3,
+      "status": "completed",
+      "attempts": 5,
       "revision_rounds": 0,
       "pid": null,
-      "started_at": "2026-11-10T09:05:38+00:00",
+      "started_at": "2026-11-11T20:26:03+00:00",
       "error": null,
-      "finished_at": "2026-11-10T09:07:07+00:00",
+      "finished_at": "2026-11-11T20:26:53+00:00",
       "inputs": {
-        "shot_manifest.json": "5d755ec8264f3e88f2ac09f0f368f1a1d10c34c5aafc61dec37d53c23cd3d783"
+        "shot_manifest.json": "95ae15ed80cbdb018f82eac9d412016438d7b39b5908972e4116343a7b591b49"
       },
       "outputs": {
-        "checks/shots_contact.png": "dcadabfc75d51f88a31ceb9acdbd681e61f7e4fc92590c2234d19a27db7b5a58"
+        "checks/shots_contact.png": "7f6e6a0e0191d41b52a893ec6724e6510b60f5722ab21d45c7c209b38b191285"
       },
       "note": null
     },
@@ -322,6 +322,69 @@
       "at": "2026-11-10T10:09:22+00:00",
       "event": "finish",
       "stage": "prototype",
+      "status": "completed"
+    },
+    {
+      "at": "2026-11-11T20:24:26+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "prototype",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-11T20:24:26+00:00",
+      "event": "start",
+      "stage": "compile"
+    },
+    {
+      "at": "2026-11-11T20:24:26+00:00",
+      "event": "finish",
+      "stage": "compile",
+      "status": "completed"
+    },
+    {
+      "at": "2026-11-11T20:24:26+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "compile",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-11T20:24:26+00:00",
+      "event": "start",
+      "stage": "shots_check"
+    },
+    {
+      "at": "2026-11-11T20:25:44+00:00",
+      "event": "finish",
+      "stage": "shots_check",
+      "status": "needs_review"
+    },
+    {
+      "at": "2026-11-11T20:26:03+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "shots_check",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-11T20:26:03+00:00",
+      "event": "start",
+      "stage": "shots_check"
+    },
+    {
+      "at": "2026-11-11T20:26:53+00:00",
+      "event": "finish",
+      "stage": "shots_check",
       "status": "completed"
     }
   ],

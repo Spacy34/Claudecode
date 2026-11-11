@@ -55,7 +55,7 @@ class Character:
         self.neck_len = 0.05 * H
         self.head_cz = self.hip_z + self.torso_h + self.neck_len + self.head_r * 0.92
         self.height = self.head_cz + self.head_r * 1.05
-        self.ink = 0.010 * H
+        self.ink = 0.020 * H   # contours épais : lisibilité à taille téléphone
         self.joints = {}
         self.meshes = []
         self.face = {}
@@ -67,13 +67,14 @@ class Character:
         d = self.d
         o = d["outfit"]
         top_col = o["top"]["color"]
+        flat = 0.35   # part d'auto-illumination : aplats de couleur franche, peu dépendants de l'éclairage
         self.m = {
-            "skin": core.toon_mat(f"{self.id}_skin", d["skin"], rough=0.8, emission=0.04),
-            "top": core.toon_mat(f"{self.id}_top", top_col),
-            "accent": core.toon_mat(f"{self.id}_accent", o["top"].get("accent", "#E63946")),
-            "bottom": core.toon_mat(f"{self.id}_bottom", o["bottom"]["color"]),
-            "shoes": core.toon_mat(f"{self.id}_shoes", o.get("shoes", "#1E1E1E"), rough=0.5),
-            "hair": core.toon_mat(f"{self.id}_hair", d["hair"].get("color", "#3B2416"), rough=0.9),
+            "skin": core.toon_mat(f"{self.id}_skin", d["skin"], rough=0.8, emission=flat),
+            "top": core.toon_mat(f"{self.id}_top", top_col, emission=flat),
+            "accent": core.toon_mat(f"{self.id}_accent", o["top"].get("accent", "#E63946"), emission=flat),
+            "bottom": core.toon_mat(f"{self.id}_bottom", o["bottom"]["color"], emission=flat * 0.8),
+            "shoes": core.toon_mat(f"{self.id}_shoes", o.get("shoes", "#1E1E1E"), rough=0.5, emission=flat * 0.6),
+            "hair": core.toon_mat(f"{self.id}_hair", d["hair"].get("color", "#3B2416"), rough=0.9, emission=flat * 0.6),
             "brow": core.toon_mat(f"{self.id}_brow", d["brows"].get("color", "#2A1B12")),
             "white": core.toon_mat("eye_white", "#FFFFFF", rough=0.4, emission=0.25),
             "iris": core.toon_mat(f"{self.id}_iris", d["eyes"].get("iris", "#2B2B2B"), rough=0.3),
@@ -85,7 +86,7 @@ class Character:
             "tear": core.emit_mat("tear", "#7FD3FF", 1.2),
             "gold": core.toon_mat("gold", "#F4C430", rough=0.3, metallic=0.6),
             "dark": core.toon_mat("lens_dark", "#111111", rough=0.2),
-            "chef": core.toon_mat("chef_white", "#F7F7F7", emission=0.1),
+            "chef": core.toon_mat("chef_white", "#F7F7F7", emission=0.3),
         }
 
     def _j(self, name, loc, parent):
