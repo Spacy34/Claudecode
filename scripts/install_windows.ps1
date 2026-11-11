@@ -1,4 +1,4 @@
-# Installation native Windows 10/11 (PowerShell). Lancer depuis la racine du dépôt :
+﻿# Installation native Windows 10/11 (PowerShell). Lancer depuis la racine du dépôt :
 #   powershell -ExecutionPolicy Bypass -File scripts\install_windows.ps1
 # N'utilise que winget (gestionnaire officiel de Microsoft) et PyPI. Chaque commande est affichée avant exécution.
 $ErrorActionPreference = "Continue"
@@ -17,8 +17,21 @@ if (-not (Has "winget")) {
     exit 1
 }
 
-Step "1/5 Python 3.12"
-if (Has "py") { py -3 --version } elseif (Has "python") { python --version } else { WingetInstall "Python.Python.3.12" "Python" }
+Step "1/5 Python 3.11+ (3.12 conseillé)"
+function FindPy {
+    foreach ($v in @("3.13", "3.12", "3.11")) {
+        if (Has "py") { & py "-$v" -c "import sys" 2>$null; if ($LASTEXITCODE -eq 0) { return @("py", "-$v") } }
+    }
+    return $null
+}
+$pyCmd = FindPy
+if (-not $pyCmd) {
+    Write-Host "Aucun Python >= 3.11 (une version plus ancienne peut exister, elle ne convient pas)." -ForegroundColor Yellow
+    WingetInstall "Python.Python.3.12" "Python 3.12"
+    $pyCmd = FindPy
+    if (-not $pyCmd) { $pyCmd = @("py", "-3.12") }
+}
+Write-Host "Python utilisé : $($pyCmd -join ' ')"
 
 Step "2/5 FFmpeg (avec libass et libx264)"
 if (Has "ffmpeg") { ffmpeg -hide_banner -version | Select-Object -First 1 } else { WingetInstall "Gyan.FFmpeg" "FFmpeg" }
@@ -34,8 +47,9 @@ if ($espeak -or (Has "espeak-ng")) { Write-Host "espeak-ng trouvé" } else {
 }
 
 Step "5/5 Dépendances Python"
-if (Has "py") { $py = "py"; $pyArgs = @("-3") } else { $py = "python"; $pyArgs = @() }
+$py = $pyCmd[0]; $pyArgs = @($pyCmd[1..($pyCmd.Length - 1)])
 & $py @pyArgs -m pip install -r requirements.txt
+if ($LASTEXITCODE -ne 0) { Write-Host "pip a échoué : fermez/rouvrez PowerShell puis relancez ce script." -ForegroundColor Yellow }
 
 Write-Host "`nIMPORTANT : fermez et rouvrez PowerShell pour que les nouveaux programmes soient dans le PATH," -ForegroundColor Green
 Write-Host "puis lancez le diagnostic :  scripts\studio.cmd doctor" -ForegroundColor Green

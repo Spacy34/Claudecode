@@ -89,6 +89,7 @@ scripts\studio.cmd approve <episode> gate_script
 ## Problèmes fréquents
 | Message | Solution |
 |---|---|
+| `No module named 'tomllib'` | Python trop ancien (3.8/3.9/3.10). Installe Python 3.12 : `winget install --id Python.Python.3.12 -e`, rouvre PowerShell, puis `py -3.12 -m pip install -r requirements.txt`. `studio.cmd` choisit ensuite automatiquement Python 3.12. |
 | `winget n'est pas reconnu` | Installe « App Installer » depuis le Microsoft Store. |
 | `python` / `ffmpeg` introuvable après installation | Ferme et rouvre PowerShell (étape 4). Sinon redémarre le PC. |
 | `l'exécution de scripts est désactivée` | Utilise exactement la commande de l'étape 3 (avec `-ExecutionPolicy Bypass`). |
