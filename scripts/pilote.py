@@ -48,7 +48,13 @@ def codex_prompt(ep, n):
     for rv in n["review"]:
         lines.append(f"- revue `{rv['stage']}` : critique(s) {rv['owner']} en lecture seule (rapports dans reviews/, puis submit --review)")
     for st, err in n["failed"].items():
-        lines.append(f"- `{st}` a échoué au tour précédent : {err}. Fais corriger par le `fix_owner` des findings, puis refais l'étape.")
+        if st.startswith("gate_"):
+            lines.append(f"- validation `{st}` REFUSÉE par la QA : {err}")
+            lines.append("  -> fais corriger chaque défaut par le rôle indiqué entre crochets, dans SES artefacts (storyboard, "
+                         "animation_plan, asset_manifest… ; moteur seulement pour pipeline-engineer), valide avec `scripts/studio validate` ; "
+                         "ne lance AUCUN rendu : le pilote re-rendra les plans modifiés et revérifiera.")
+        else:
+            lines.append(f"- `{st}` a échoué au tour précédent : {err}. Fais corriger par le `fix_owner` des findings, puis refais l'étape.")
     brief = ep_dir(ep) / "episode_brief.json"
     if brief.exists() and json.loads(brief.read_text(encoding="utf-8")).get("script_lock"):
         lines.append("ATTENTION : script IMPOSÉ par l'utilisateur (episode_brief.script_lock) : ne jamais modifier texte, ordre ni locuteurs.")

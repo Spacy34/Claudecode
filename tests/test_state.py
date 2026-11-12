@@ -58,7 +58,7 @@ def test_autonomous_mode_auto_approves_and_refuses(episode, monkeypatch):
     assert st.approval_valid("gate_script")
     assert st.data["approvals"][-1]["by"] == "auto:studio"
     ok, why = cli.auto_gate_ok(episode, "gate_prototype")
-    assert not ok and "QA" in why
+    assert not ok and "qa_prototype" in why
 
 
 def test_human_mode_never_auto_approves(episode, monkeypatch):
@@ -71,3 +71,30 @@ def test_human_mode_never_auto_approves(episode, monkeypatch):
     with pytest.raises(SystemExit):
         cli.main(["run", episode.name])
     assert State(episode).st("gate_script")["status"] == "pending"
+
+
+def test_autonomous_qa_refusal_gives_correction_rounds(episode, monkeypatch):
+    """QA bloquante : 2 tours de correction (défaut + rôle responsable transmis), puis arrêt pour humain."""
+    import json as _j
+    import studio.cli as cli
+    from studio.state import ORDER
+    monkeypatch.setenv("STUDIO_QUALITY_AUTONOMOUS", "true")
+    cli.CFG = None
+    st = State(episode)
+    for s in ORDER[:ORDER.index("gate_prototype")]:
+        st.finish(s, "approved" if s.startswith("gate_") else "completed")
+    qa = {"checks": [{"id": "sh_002:char_never_visible:ch_chloe", "category": "scene", "severity": "major", "status": "fail",
+                      "message": "sh_002 : ch_chloe jamais visible", "method": "blender_scene_check"}],
+          "summary": {"blocking": True}}
+    (episode / "qa_prototype.json").write_text(_j.dumps(qa))
+    statuses = []
+    for _ in range(3):
+        try:
+            cli.main(["run", episode.name])
+        except SystemExit:
+            pass
+        s = State(episode).st("gate_prototype")
+        statuses.append((s["status"], s.get("revision_rounds")))
+    assert statuses == [("failed", 1), ("failed", 2), ("needs_review", 3)], statuses
+    err = State(episode).st("gate_prototype")
+    assert "[director] sh_002:char_never_visible" in (err.get("note") or err.get("error") or "")

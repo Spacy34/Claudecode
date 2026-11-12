@@ -33,15 +33,35 @@ def human_gates():
     return q.get("human_gates", ["gate_script", "gate_lookdev", "gate_prototype", "gate_first_cut"])
 
 
+FIX_OWNER = {"char_never_visible": "director", "char_offscreen": "director", "subject_too_small": "director", "head_cropped": "director",
+             "face_under_subtitles": "director", "face_away": "director/animator", "face_profile": "director/animator",
+             "foreground_occluder": "director", "out_of_set": "director/animator", "inside_furniture": "animator",
+             "char_overlap": "director/animator", "floating_prop": "environment-artist/animator", "render_failed": "pipeline-engineer"}
+
+
+def _qa_blockers(q):
+    """Défauts bloquants d'un rapport QA, avec le rôle chargé de la correction."""
+    out = []
+    for c in read_json(q)["checks"]:
+        if c["status"] == "fail" and c["severity"] in ("blocker", "major"):
+            key = c["id"].split(":")[1] if c["id"].count(":") >= 1 and c["id"].split(":")[0].startswith("sh_") else c["id"].split(":")[0]
+            owner = FIX_OWNER.get(key, "pipeline-engineer" if c["category"] in ("technical", "audio", "sync", "subtitles") else "director")
+            out.append(f"[{owner}] {c['id']} : {c['message']}")
+    return out
+
+
 def auto_gate_ok(p, gate):
-    """Mode autonome : conditions objectives pour valider une gate sans humain."""
-    if gate == "gate_prototype":
-        q = p / "qa_prototype.json"
-        return q.exists() and not read_json(q)["summary"]["blocking"], "QA du prototype bloquante"
-    if gate == "gate_first_cut":
-        q = p / "qa_first_cut.json"
-        return q.exists() and not read_json(q)["summary"]["blocking"], "QA du first cut bloquante"
-    return True, ""   # gate_script / gate_lookdev : la revue indépendante (dépendance) a déjà approuvé
+    """Mode autonome : conditions objectives pour valider une gate sans humain. -> (ok, raison détaillée)"""
+    qa = {"gate_prototype": "qa_prototype.json", "gate_first_cut": "qa_first_cut.json"}.get(gate)
+    if qa is None:
+        return True, ""   # gate_script / gate_lookdev : la revue indépendante (dépendance) a déjà approuvé
+    q = p / qa
+    if not q.exists():
+        return False, f"{qa} absent"
+    blockers = _qa_blockers(q)
+    if blockers:
+        return False, f"QA bloquante ({qa}) : " + " | ".join(blockers[:8])
+    return True, ""
 
 
 def ep_path(ep):
@@ -436,8 +456,15 @@ def cmd_run(a):
             g = auto_gates[0]
             ok, why = auto_gate_ok(p, g)
             if not ok:
-                st.finish(g, "needs_review", note=f"validation automatique refusée : {why}")
-                print(f"⚠ {g} : validation automatique refusée ({why}) — arrêt")
+                gs = st.st(g)
+                gs["revision_rounds"] = gs.get("revision_rounds", 0) + 1
+                if gs["revision_rounds"] > int(cfg()["quality"]["max_revision_rounds"]):
+                    st.finish(g, "needs_review", note=f"budget de corrections épuisé : {why}")
+                    print(f"⚠ {g} : toujours refusée après {gs['revision_rounds'] - 1} correction(s) — arrêt ({why})")
+                else:
+                    # tour de correction : l'agent fix_owner corrige ses artefacts ; les plans touchés seront re-rendus
+                    st.fail(g, f"tour {gs['revision_rounds']} : corriger puis re-rendre. {why}")
+                    print(f"⚠ {g} : refusée, tour de correction {gs['revision_rounds']} ({why})")
                 break
             st.approve(g, "auto:studio", "mode autonome : revues approuvées et QA non bloquante")
             print(f"✔ {g} validée automatiquement")
@@ -755,6 +782,19 @@ def cmd_next(a):
     print(json.dumps(res, ensure_ascii=False))
 
 
+def cmd_retry(a):
+    """Remet une étape arrêtée (needs_review/failed/interrupted) en attente. Action HUMAINE (reprise après escalade)."""
+    p = ep_path(a.episode)
+    st = State(p)
+    s_ = st.st(a.stage)
+    s_["status"] = "pending"
+    if a.reset_rounds:
+        s_["revision_rounds"] = 0
+    st.log("retry", stage=a.stage, by="human")
+    st.save()
+    print(f"{a.stage} remise en attente (tours de correction : {s_.get('revision_rounds', 0)}).")
+
+
 def build_parser():
     ap = argparse.ArgumentParser(prog="studio", description="Studio TikTok 3D : pipeline déterministe")
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -859,6 +899,11 @@ def build_parser():
     x.add_argument("--speaker", type=int, default=None)
     x.add_argument("--emotion", default="neutral")
     x.set_defaults(fn=cmd_tts_test)
+    x = sp.add_parser("retry", help="remettre une étape arrêtée en attente (humain)")
+    x.add_argument("episode")
+    x.add_argument("stage")
+    x.add_argument("--reset-rounds", action="store_true")
+    x.set_defaults(fn=cmd_retry)
     x = sp.add_parser("next", help="ce qu'il reste à faire (JSON, pour le pilote)")
     x.add_argument("episode")
     x.set_defaults(fn=cmd_next)
