@@ -100,6 +100,7 @@ puis sur ton PC `ssh -L 8765:127.0.0.1:8765 studio@IP_DU_VPS` et ouvre `http://l
 | Symptôme | Cause / solution |
 |---|---|
 | `Permission denied: .../.venv` | dépôt cloné avec sudo : `sudo chown -R $USER:$USER <dossier>` puis relancer |
+| `ImportError ... pip._internal` | `.venv` corrompu par un essai interrompu : `rm -rf .venv` puis relancer le script |
 | `doctor` : Blender introuvable | `source ~/.bashrc` ; vérifier `ls /opt/blender-*/blender` |
 | Blender : `libXi.so`/`libGL` manquant | `sudo apt-get install libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libxkbcommon0 libsm6 libegl1` |
 | Rendu très lent | normal sur CPU : itérer en `draft`, `preview` seulement pour les gates ; GPU pour `final` |

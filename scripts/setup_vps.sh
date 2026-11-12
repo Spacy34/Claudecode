@@ -42,9 +42,10 @@ sudo apt-get install -y -qq python3 python3-venv python3-pip ffmpeg espeak-ng fo
 python3 -c 'import sys; assert sys.version_info >= (3, 11), "Python 3.11+ requis (Ubuntu 24.04 recommandé)"'
 
 echo "== 2/6 Environnement Python isolé (.venv)"
-python3 -m venv .venv
-.venv/bin/pip install -q --upgrade pip
-.venv/bin/pip install -q -r requirements.txt
+# --clear : repart d'un environnement neuf (un .venv à moitié créé par un essai précédent casse pip)
+python3 -m venv --clear .venv
+.venv/bin/python -m pip install -q -r requirements.txt
+.venv/bin/python -c "import jsonschema, PIL, pytest; print('dépendances Python OK')"
 
 echo "== 3/6 Blender ${BLENDER_VERSION} (binaire officiel, headless)"
 if [ ! -x "${BLENDER_DIR}/blender" ]; then
