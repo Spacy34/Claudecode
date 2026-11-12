@@ -165,3 +165,15 @@ def test_vocab_composite_external_animal(compiled, tmp_path):
     rec2 = render.render_shot(cfg, ep, {"id": "sh_001", "spec_path": "shots/vocab2.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
     assert rec2["status"] == "rendered"
     assert any("pr_cube" in w for w in rec2["scene_report"]["warnings"])
+
+
+def test_intended_offscreen_character_not_flagged(compiled):
+    """Personnage volontairement hors champ (voix off) : pas de char_never_visible."""
+    ep, cfg, man = compiled
+    spec = read_json(ep / next(s for s in man["shots"] if s["id"] == "sh_002")["spec_path"])
+    spec["camera"]["subject"] = {"kind": "point", "pos": [-5.0, 0.5, 1.2]}
+    spec["camera"]["framing"] = "close_up"
+    spec["characters"][0]["offscreen"] = True
+    write_json(ep / "shots" / "off.json", spec)
+    rec = render.render_shot(cfg, ep, {"id": "sh_002", "spec_path": "shots/off.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
+    assert not any(c["id"].startswith(("char_never_visible", "char_offscreen")) for c in rec["scene_report"]["checks"])

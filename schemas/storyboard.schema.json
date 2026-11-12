@@ -2,44 +2,116 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://studio.local/schemas/storyboard.schema.json",
   "title": "storyboard.json — découpage en plans (mise en scène, caméra, lumière). Aucun timecode absolu : les plans sont ancrés sur les répliques.",
-  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/envelope"
+    }
+  ],
   "type": "object",
-  "required": ["contract", "shots"],
+  "required": [
+    "contract",
+    "shots"
+  ],
   "$defs": {
     "target": {
       "description": "Mark nommé du décor, position [x,y], id de personnage ou d'accessoire.",
       "anyOf": [
-        {"type": "string"},
-        {"$ref": "common.schema.json#/$defs/vec2"}
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "common.schema.json#/$defs/vec2"
+        }
       ]
     }
   },
   "properties": {
-    "contract": {"const": "storyboard"},
+    "contract": {
+      "const": "storyboard"
+    },
     "shots": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "line_ids", "set_id", "mood", "characters", "camera", "intent"],
+        "required": [
+          "id",
+          "line_ids",
+          "set_id",
+          "mood",
+          "characters",
+          "camera",
+          "intent"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": {"$ref": "common.schema.json#/$defs/shot_id"},
-          "line_ids": {"type": "array", "minItems": 1, "items": {"$ref": "common.schema.json#/$defs/line_id"}},
-          "start": {"$ref": "common.schema.json#/$defs/time_anchor", "description": "Début du plan (défaut : premier mot de la première réplique). Permet de couper au milieu d'une phrase."},
-          "set_id": {"$ref": "common.schema.json#/$defs/set_id"},
-          "mood": {"enum": ["day_warm", "day_cool", "night", "interior_warm", "office_flat", "dramatic", "spooky", "sunset"]},
+          "id": {
+            "$ref": "common.schema.json#/$defs/shot_id"
+          },
+          "line_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "common.schema.json#/$defs/line_id"
+            }
+          },
+          "start": {
+            "$ref": "common.schema.json#/$defs/time_anchor",
+            "description": "Début du plan (défaut : premier mot de la première réplique). Permet de couper au milieu d'une phrase."
+          },
+          "set_id": {
+            "$ref": "common.schema.json#/$defs/set_id"
+          },
+          "mood": {
+            "enum": [
+              "day_warm",
+              "day_cool",
+              "night",
+              "interior_warm",
+              "office_flat",
+              "dramatic",
+              "spooky",
+              "sunset"
+            ]
+          },
           "characters": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["id", "mark"],
+              "required": [
+                "id",
+                "mark"
+              ],
               "additionalProperties": false,
               "properties": {
-                "id": {"$ref": "common.schema.json#/$defs/character_id"},
-                "mark": {"$ref": "#/$defs/target"},
-                "facing": {"anyOf": [{"type": "number"}, {"type": "string"}], "description": "degrés (0 = vers la caméra par défaut), 'camera', ou id/mark à regarder"},
-                "start_pose": {"enum": ["stand", "sit", "lying"]}
+                "id": {
+                  "$ref": "common.schema.json#/$defs/character_id"
+                },
+                "mark": {
+                  "$ref": "#/$defs/target"
+                },
+                "facing": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "description": "degrés (0 = vers la caméra par défaut), 'camera', ou id/mark à regarder"
+                },
+                "start_pose": {
+                  "enum": [
+                    "stand",
+                    "sit",
+                    "lying"
+                  ]
+                },
+                "offscreen": {
+                  "type": "boolean",
+                  "description": "Présent mais VOLONTAIREMENT hors champ (voix hors champ, entrée ultérieure) : les contrôles de visibilité l'ignorent."
+                }
               }
             }
           },
@@ -47,37 +119,131 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["id"],
+              "required": [
+                "id"
+              ],
               "additionalProperties": false,
               "properties": {
-                "id": {"$ref": "common.schema.json#/$defs/prop_id"},
-                "mark": {"$ref": "#/$defs/target"},
-                "held_by": {"$ref": "common.schema.json#/$defs/character_id"},
-                "hand": {"enum": ["L", "R"]},
-                "height": {"type": "number", "minimum": 0, "maximum": 3, "description": "Hauteur de pose (posé sur un meuble)"},
-                "rot_deg": {"type": "number"}
+                "id": {
+                  "$ref": "common.schema.json#/$defs/prop_id"
+                },
+                "mark": {
+                  "$ref": "#/$defs/target"
+                },
+                "held_by": {
+                  "$ref": "common.schema.json#/$defs/character_id"
+                },
+                "hand": {
+                  "enum": [
+                    "L",
+                    "R"
+                  ]
+                },
+                "height": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 3,
+                  "description": "Hauteur de pose (posé sur un meuble)"
+                },
+                "rot_deg": {
+                  "type": "number"
+                }
               }
             }
           },
           "camera": {
             "type": "object",
-            "required": ["framing", "subject", "motivation"],
+            "required": [
+              "framing",
+              "subject",
+              "motivation"
+            ],
             "additionalProperties": false,
             "properties": {
-              "framing": {"enum": ["wide", "full", "medium", "medium_close", "close_up", "extreme_close_up", "two_shot", "over_shoulder", "insert"]},
-              "subject": {"$ref": "#/$defs/target"},
-              "secondary_subject": {"$ref": "#/$defs/target"},
-              "angle": {"enum": ["eye", "low", "high", "dutch", "top_down"], "default": "eye"},
-              "side_deg": {"type": "number", "minimum": -170, "maximum": 170, "description": "Azimut autour du sujet ; 0 = face au sujet depuis le côté caméra du décor"},
-              "move": {"enum": ["static", "push_in", "pull_out", "pan_left", "pan_right", "orbit_left", "orbit_right", "track_subject", "shake", "crash_zoom", "handheld"], "default": "static"},
-              "lens_mm": {"type": "number", "minimum": 14, "maximum": 135},
-              "motivation": {"type": "string", "minLength": 3, "description": "Raison narrative du cadrage/mouvement"}
+              "framing": {
+                "enum": [
+                  "wide",
+                  "full",
+                  "medium",
+                  "medium_close",
+                  "close_up",
+                  "extreme_close_up",
+                  "two_shot",
+                  "over_shoulder",
+                  "insert"
+                ]
+              },
+              "subject": {
+                "$ref": "#/$defs/target"
+              },
+              "secondary_subject": {
+                "$ref": "#/$defs/target"
+              },
+              "angle": {
+                "enum": [
+                  "eye",
+                  "low",
+                  "high",
+                  "dutch",
+                  "top_down"
+                ],
+                "default": "eye"
+              },
+              "side_deg": {
+                "type": "number",
+                "minimum": -170,
+                "maximum": 170,
+                "description": "Azimut autour du sujet ; 0 = face au sujet depuis le côté caméra du décor"
+              },
+              "move": {
+                "enum": [
+                  "static",
+                  "push_in",
+                  "pull_out",
+                  "pan_left",
+                  "pan_right",
+                  "orbit_left",
+                  "orbit_right",
+                  "track_subject",
+                  "shake",
+                  "crash_zoom",
+                  "handheld"
+                ],
+                "default": "static"
+              },
+              "lens_mm": {
+                "type": "number",
+                "minimum": 14,
+                "maximum": 135
+              },
+              "motivation": {
+                "type": "string",
+                "minLength": 3,
+                "description": "Raison narrative du cadrage/mouvement"
+              }
             }
           },
-          "transition_out": {"enum": ["cut", "whip", "smash_cut", "fade_black", "flash_white"], "default": "cut"},
-          "intent": {"type": "string", "minLength": 5, "description": "Ce que le spectateur doit comprendre dans ce plan"},
-          "emotion": {"type": "string"},
-          "continuity_notes": {"type": "string"}
+          "transition_out": {
+            "enum": [
+              "cut",
+              "whip",
+              "smash_cut",
+              "fade_black",
+              "flash_white"
+            ],
+            "default": "cut"
+          },
+          "intent": {
+            "type": "string",
+            "minLength": 5,
+            "description": "Ce que le spectateur doit comprendre dans ce plan"
+          },
+          "emotion": {
+            "type": "string"
+          },
+          "continuity_notes": {
+            "type": "string"
+          }
         }
       }
     }

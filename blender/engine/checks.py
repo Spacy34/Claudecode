@@ -19,7 +19,8 @@ def _proj(sc, cam, p):
 
 def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
     out = []
-    seen_visible = {cid: False for cid in chars}
+    intended_off = {c["id"] for c in spec.get("characters", []) if c.get("offscreen")}
+    seen_visible = {cid: False for cid in chars if cid not in intended_off}
     framing = spec["camera"]["framing"]
     subject = spec["camera"].get("subject")
     for f in sample_frames:
@@ -34,6 +35,8 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
             is_subject = isinstance(subject, dict) and subject.get("id") == cid
             if in_frame:
                 seen_visible[cid] = True
+            if not in_frame and cid in intended_off:
+                continue   # hors champ voulu par le réalisateur
             if not in_frame:
                 out.append({"id": f"char_offscreen:{cid}", "severity": "major" if is_subject else "minor", "status": "fail" if is_subject else "warn",
                             "frame": f, "message": f"{cid} présent dans le plan mais hors champ (tête projetée {hx:.2f},{hy:.2f})."})

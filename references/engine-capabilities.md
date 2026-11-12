@@ -113,6 +113,8 @@ Cadrages : wide, full, medium, medium_close, close_up, extreme_close_up, two_sho
 over_shoulder, insert (accessoire). Angles : eye, low, high, dutch, top_down. `side_deg` : azimut autour du
 sujet. `lens_mm` optionnel. Mouvements : static, push_in, pull_out, pan_left, pan_right, orbit_left,
 orbit_right, track_subject, shake (sur l'impact), crash_zoom, handheld.
+Personnage volontairement hors champ (voix hors champ, entrée plus tard) : `"offscreen": true` dans
+`storyboard.shots[].characters[]` (sinon un personnage jamais visible est un défaut bloquant `char_never_visible`).
 Cadrage AUTOMATIQUE sur les positions réelles évaluées ; azimut figé au début du plan ; anti-occlusion par
 lancer de rayons (la caméra MONTE d'abord pour regarder par-dessus un obstacle, puis se rapproche en dernier
 recours) ; un objet posé sur un meuble n'est jamais filmé en contre-plongée.

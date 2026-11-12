@@ -120,7 +120,7 @@ def compile_episode(ep_dir, cfg):
                     ft = resolve(other["mark"])
                 facing_target = ft
             chars.append({"id": c["id"], "design": cast[c["id"]]["design"], "pos": pos, "facing_deg": facing_deg, "facing_target": facing_target,
-                          "start_pose": c.get("start_pose", "stand")})
+                          "start_pose": c.get("start_pose", "stand"), "offscreen": bool(c.get("offscreen", False))})
         props = []
         for p in s.get("props", []):
             a = props_[p["id"]]

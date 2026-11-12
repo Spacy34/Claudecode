@@ -17,7 +17,9 @@ RÈGLES :
   secousses d'impact sont automatiques : ne pas les doubler avec crash_zoom/shake sauf intention forte.
 - Chaque mouvement caméra a une `motivation` narrative. Défaut = static. shake/crash_zoom réservés aux impacts.
 - Positions : marks du kit ou [x,y] en mètres (y+ = fond). Tous les personnages listés doivent être dans le
-  champ à un moment (sinon `studio check-shots` signale char_never_visible).
+  champ à un moment (sinon défaut bloquant char_never_visible), SAUF `"offscreen": true` (voix hors champ voulue).
+  Correction d'un char_never_visible : soit rapprocher le personnage / changer le cadrage, soit le retirer du plan,
+  soit le déclarer offscreen si c'est l'intention narrative.
 - Accessoires posés : `height` = hauteur du meuble (counter 0.92, table 0.76, desk 0.76).
 - Lumière par plan via `mood` ; garder la continuité d'ambiance dans un même lieu sauf intention.
 SORTIE : storyboard.json UNIQUEMENT. Ne modifie ni le cast, ni les décors (demander au rôle propriétaire).
