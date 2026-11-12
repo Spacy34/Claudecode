@@ -211,6 +211,7 @@ class CharAnim:
             ang += 2 * math.pi
         if max_turn is not None:   # geste vers une cible : ne jamais tourner le dos à la caméra
             ang = cur + max(-max_turn, min(max_turn, ang - cur))
+        self.last_turn = ang - cur
         root = self.j("root")
         self.a.key(root, 'rotation_euler', 2, f, cur)
         self.a.key(root, 'rotation_euler', 2, f + frames, ang)
@@ -370,9 +371,16 @@ class CharAnim:
             f += 5
 
     def act_point(self, f0, dur, k, target, world):
+        self.last_turn = 0.0
         if target is not None:
-            self.face_to(f0, target, 5, max_turn=D(50))
-        self._hold_pose("point", f0, dur, k)
+            self.face_to(f0, target, 5, max_turn=D(35))
+        f1 = self._hold_pose("point", f0, dur, k)
+        if abs(self.last_turn) > D(10):
+            # « triche » d'acteur : le bras désigne la cible, la tête revient vers la caméra
+            back = -math.degrees(self.last_turn) * 0.6
+            self.rot("head", 2, f0 + 6, back)
+            self.rot("head", 2, f1 - 4, back)
+            self.rot("head", 2, f1 + 4, 0.0)
 
     def act_shrug(self, f0, dur, k, target, world):
         self._hold_pose("shrug", f0, max(dur, 18), k)

@@ -51,6 +51,9 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
             hm = ch.joints["head"].matrix_world
             fwd = (hm.to_3x3() @ Vector((0, -1, 0))).normalized()
             to_cam = (cam.matrix_world.translation - lm["head"]).normalized()
+            if is_subject and 0.15 <= fwd.dot(to_cam) < 0.45 and framing in ("medium", "medium_close", "close_up", "extreme_close_up"):
+                out.append({"id": f"face_profile:{cid}", "severity": "minor", "status": "warn", "frame": f,
+                            "message": f"Sujet très de profil en plan rapproché (cos={fwd.dot(to_cam):.2f}) : on voit surtout sa nuque."})
             if fwd.dot(to_cam) < 0.15:
                 out.append({"id": f"face_away:{cid}", "severity": "major" if is_subject else "minor", "status": "fail" if is_subject else "warn", "frame": f,
                             "message": f"Visage de {cid} invisible depuis la caméra (dos ou tête penchée, cos={fwd.dot(to_cam):.2f})."})

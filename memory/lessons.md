@@ -66,3 +66,9 @@ tags: camera, punch, zoom, montage, saut
 date: 2026-11-12
 
 Un zoom vers le centre du cadre coupe la tête si le personnage saute (célébration). add_punch vise le point le plus haut des yeux du sujet pendant la tenue du zoom et réduit l'amplitude en plan large/two_shot.
+
+## Désigner une cible derrière soi : tricher vers la caméra
+tags: animation, point, visage, profil, camera
+date: 2026-11-12
+
+Rendu VPS de la démo : en pointant le grille-pain derrière lui, Kevin montrait sa nuque (rotation 50°, non détectée car face_away se déclenche à ~80°). Correctif : corps limité à 35°, tête ramenée vers la caméra (60 % de la rotation) pendant le geste ; nouveau contrôle face_profile (sujet trop de profil en plan rapproché).
