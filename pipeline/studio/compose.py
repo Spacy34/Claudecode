@@ -153,9 +153,27 @@ def assemble(cfg, ep_dir, manifest, timeline, recs, profile, out_path, fps=30):
             ass_f += f":fontsdir='{Path(os.path.relpath(fonts, ass.parent)).as_posix()}'"
         except ValueError:   # disque différent sous Windows
             pass
-    vf = f"scale={W}:{H}:flags=lanczos,{ass_f},format=yuv420p"
-    run(["ffmpeg", "-y", "-v", "error", "-i", str(Path(video).resolve()), "-i", str(Path(audio).resolve()), "-vf", vf, "-r", str(fps), "-c:v", "libx264", "-preset", "medium",
+    # couche motion design (téléphone, textes, stickers…) SOUS les sous-titres, puis barre de progression
+    from . import motion
+    md = motion.load(ep_dir)
+    overlay = motion.build_overlay(cfg, ep_dir, timeline, W, H, fps, t0, t1) if md else None
+    prog = motion.progress_settings(md)
+    inputs = ["-i", str(Path(video).resolve()), "-i", str(Path(audio).resolve())]
+    graph = [f"[0:v]scale={W}:{H}:flags=lanczos[b0]"]
+    cur = "b0"
+    if overlay:
+        inputs += ["-f", "concat", "-safe", "0", "-i", str(Path(overlay).resolve())]
+        graph.append(f"[2:v]format=rgba,setpts=PTS-STARTPTS[ov];[{cur}][ov]overlay=0:0:eof_action=pass:format=auto[b1]")
+        cur = "b1"
+    if prog:
+        ph = max(4, H // 160)
+        col = prog["color"].lstrip("#")
+        total = max(0.1, timeline["duration_s"])
+        graph.append(f"color=c=0x{col}:s={W}x{ph}:r={fps}[pb];[{cur}][pb]overlay=x='-w+w*(t+{t0:.3f})/{total:.3f}':y={int(H * 0.012)}:shortest=1[b2]")
+        cur = "b2"
+    graph.append(f"[{cur}]{ass_f},format=yuv420p[v]")
+    run(["ffmpeg", "-y", "-v", "error"] + inputs + ["-filter_complex", ";".join(graph), "-map", "[v]", "-map", "1:a", "-r", str(fps), "-c:v", "libx264", "-preset", "medium",
          "-crf", "18" if profile["name"] == "final" else "21", "-profile:v", "high", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
          "-ac", "2", "-t", f"{t1 - t0:.3f}", "-movflags", "+faststart", str(Path(out_path).resolve())], cwd=str(ass.parent))
     return {"output": str(out_path), "start_s": t0, "end_s": t1, "subtitle_events": n_sub, "sfx_cues": len(cues), "clips": [str(c) for c in clips],
-            "expected_frames": sum(s["frames"] for s in shots), "resolution": [W, H]}
+            "expected_frames": sum(s["frames"] for s in shots), "resolution": [W, H], "motion_overlay": bool(overlay), "progress_bar": bool(prog)}

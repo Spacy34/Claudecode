@@ -16,7 +16,7 @@ from conftest import ROOT
 
 SCHEMA = json.loads((ROOT / "references/codex/config.schema.json").read_text())
 CONFIG_KEYS = set(SCHEMA["properties"])
-EXPECTED_ROLES = {"story-architect", "script-critic", "director", "character-artist", "environment-artist", "animator",
+EXPECTED_ROLES = {"motion-designer", "story-architect", "script-critic", "director", "character-artist", "environment-artist", "animator",
                   "voice-sound", "pipeline-engineer", "continuity-auditor", "visual-critic", "retention-editor"}
 
 

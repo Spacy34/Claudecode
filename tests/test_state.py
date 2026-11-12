@@ -195,3 +195,21 @@ def test_shots_check_human_mode_stops_once(episode, monkeypatch):
     with pytest.raises(SystemExit):
         cli.main(["run", episode.name])
     assert len(calls) == 1 and State(episode).st("shots_check")["status"] == "needs_review"
+
+
+def test_new_optional_input_does_not_invalidate_existing_episode(episode):
+    """Ajout de motion_design.json aux entrées de first_cut : un épisode déjà avancé ne devient pas périmé."""
+    from studio.state import ORDER
+    st = State(episode)
+    for s_ in ORDER[:ORDER.index("first_cut") + 1]:
+        st.finish(s_, "approved" if s_.startswith("gate_") else "completed")
+    old = dict(st.st("first_cut")["inputs"])
+    old.pop("motion_design.json")          # état enregistré avant l'existence de motion_design.json
+    st.st("first_cut")["inputs"] = old
+    st.save()
+    st = State(episode)
+    assert not [c for c in st.refresh() if c[0] == "first_cut"]
+    assert st.st("first_cut")["status"] == "completed"
+    (episode / "motion_design.json").write_text("{}")
+    st = State(episode)
+    assert ("first_cut", "stale:inputs") in st.refresh(), "une fois créé, motion_design.json invalide bien le montage"

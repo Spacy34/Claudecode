@@ -662,6 +662,31 @@ def cmd_cost(a):
     out(st.data["cost_log"][-1])
 
 
+def cmd_motion_suggest(a):
+    """Indices de motion design repérés dans le script (téléphone, chiffres, ellipses, amour…). Le motion-designer décide."""
+    from . import motion
+    p = ep_path(a.episode)
+    sug = motion.suggest(read_json(p / "story_script.json"))
+    write_json(p / "checks" / "motion_suggestions.json", {"generated_at": now(), "suggestions": sug})
+    out({"suggestions": sug, "fichier": str(p / "checks" / "motion_suggestions.json")})
+
+
+def cmd_motion_preview(a):
+    """Planche de contrôle du motion design (sans rendu 3D) : un instant par élément, zones TikTok en gris."""
+    from . import motion
+    p = ep_path(a.episode)
+    rep = contracts.validate_episode(p)
+    errs = {k: v for k, v in rep.items() if v and k in ("motion_design", "_cross")}
+    if errs:
+        out({"status": "invalide", "errors": errs})
+        return 1
+    tl = read_json(p / "audio_timeline.json") if (p / "audio_timeline.json").exists() else None
+    if tl is None:
+        sys.exit("audio_timeline.json absent : l'étape voice doit avoir tourné (les éléments sont ancrés sur la voix)")
+    sheet = motion.preview(p, tl, p / "checks" / "motion_contact.png")
+    out({"contact_sheet": str(sheet) if sheet else None, "elements": len((motion.load(p) or {}).get("elements", []))})
+
+
 def cmd_kits(a):
     """Galerie des décors : un plan large par kit avec un personnage témoin (échelle). Aucun épisode requis."""
     import sys as _s
@@ -888,6 +913,12 @@ def build_parser():
     x.add_argument("--video", default="renders/prototype.mp4")
     x.add_argument("--shot", default="sh_002")
     x.set_defaults(fn=cmd_inject)
+    x = sp.add_parser("motion-suggest", help="moments propices au motion design repérés dans le script")
+    x.add_argument("episode")
+    x.set_defaults(fn=cmd_motion_suggest)
+    x = sp.add_parser("motion-preview", help="planche de contrôle du motion design (sans rendu 3D)")
+    x.add_argument("episode")
+    x.set_defaults(fn=cmd_motion_preview)
     x = sp.add_parser("kits", help="galerie de rendu de tous les décors (contrôle visuel)")
     x.add_argument("--kits", default="")
     x.add_argument("--profile", default="draft")

@@ -44,6 +44,7 @@ python3 -m pytest -q tests                      # tests automatiques
 | `asset_manifest.json` | environment-artist |
 | `storyboard.json` | director |
 | `animation_plan.json` | animator |
+| `motion_design.json` (couche 2D TikTok) | motion-designer |
 | `voice` (config voix dans `cast_bible.json[*].voice`, `audio/recorded/`) | voice-sound (via le character-artist pour cast_bible) |
 | `reviews/<rôle>_<gate>_r<N>.json` | le critique concerné, uniquement son fichier |
 | `blender/engine/`, `pipeline/` | pipeline-engineer (avec tests) |

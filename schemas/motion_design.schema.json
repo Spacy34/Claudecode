@@ -1,0 +1,362 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/motion_design.schema.json",
+  "title": "motion_design.json — couche 2D « TikTok » par-dessus la 3D (téléphone, textes, stickers, compteurs…), ancrée sur la narration.",
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/envelope"
+    }
+  ],
+  "type": "object",
+  "required": [
+    "contract",
+    "elements"
+  ],
+  "$defs": {
+    "anchor": {
+      "type": "object",
+      "required": [
+        "line"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "line": {
+          "$ref": "common.schema.json#/$defs/line_id"
+        },
+        "word": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "edge": {
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "offset_s": {
+          "type": "number",
+          "minimum": -3,
+          "maximum": 3
+        }
+      }
+    },
+    "message": {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "enum": [
+            "me",
+            "them"
+          ],
+          "description": "chat : 'me' = bulle bleue à droite (le propriétaire du téléphone), 'them' = bulle grise"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 24,
+          "description": "notification : titre (défaut = contact) ; post : auteur du commentaire"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "at": {
+          "$ref": "#/$defs/anchor",
+          "description": "apparition (défaut : échelonnée après le début de l'élément)"
+        },
+        "typing": {
+          "type": "boolean",
+          "description": "chat, bulle 'them' : indicateur « … » avant (défaut true)"
+        }
+      }
+    }
+  },
+  "properties": {
+    "contract": {
+      "const": "motion_design"
+    },
+    "globals": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "progress_bar": {
+          "type": "boolean",
+          "description": "barre de progression en haut (défaut true)"
+        },
+        "progress_color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        }
+      }
+    },
+    "elements": {
+      "type": "array",
+      "maxItems": 60,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "at",
+          "intent"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^mo_[a-z0-9_]+$"
+          },
+          "type": {
+            "enum": [
+              "phone",
+              "text_pop",
+              "sticker",
+              "name_tag",
+              "counter",
+              "arrow"
+            ]
+          },
+          "at": {
+            "$ref": "#/$defs/anchor",
+            "description": "apparition, ancrée sur un mot de la narration"
+          },
+          "until": {
+            "$ref": "#/$defs/anchor",
+            "description": "disparition (sinon duration_s ; le téléphone reste au moins jusqu'au dernier message + 1,2 s)"
+          },
+          "duration_s": {
+            "type": "number",
+            "minimum": 0.4,
+            "maximum": 20
+          },
+          "position": {
+            "enum": [
+              "top",
+              "center",
+              "left",
+              "right",
+              "top_left",
+              "top_right"
+            ]
+          },
+          "scale": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 1.6
+          },
+          "intent": {
+            "type": "string",
+            "minLength": 5,
+            "description": "Ce que l'élément apporte au spectateur (lien avec la voix)"
+          },
+          "screen": {
+            "enum": [
+              "chat",
+              "notification",
+              "call",
+              "post",
+              "search"
+            ]
+          },
+          "contact": {
+            "type": "string",
+            "maxLength": 24
+          },
+          "contact_color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "app": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "messages": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "$ref": "#/$defs/message"
+            }
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "likes_from": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "likes_to": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "style": {
+            "enum": [
+              "impact",
+              "label",
+              "typewriter"
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "number_color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "icon": {
+            "enum": [
+              "heart",
+              "broken_heart",
+              "skull",
+              "fire",
+              "question",
+              "exclamation",
+              "money",
+              "clock",
+              "check",
+              "cross",
+              "star",
+              "lightning",
+              "laugh",
+              "sweat"
+            ]
+          },
+          "value_from": {
+            "type": "number"
+          },
+          "value_to": {
+            "type": "number"
+          },
+          "decimals": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "prefix": {
+            "type": "string",
+            "maxLength": 6
+          },
+          "suffix": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "target": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "description": "arrow : point visé en fraction de l'image [x, y], origine en HAUT à gauche"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "phone"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "screen"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "text_pop"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "text"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "name_tag"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "text"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "sticker"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "icon"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "counter"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "value_to"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "arrow"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "target"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

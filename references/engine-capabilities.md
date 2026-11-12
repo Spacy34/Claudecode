@@ -129,3 +129,7 @@ cut, whip (flou + whoosh), smash_cut (thud), fade_black, flash_white (pop).
 ## Contrôles automatiques dans Blender (scene_report)
 char_never_visible, char_offscreen, subject_too_small, head_cropped, face_under_subtitles, face_away,
 foreground_occluder (meuble qui bouche le premier plan), out_of_set, inside_furniture, char_overlap, floating_prop. Ils ne jugent pas l'esthétique.
+
+## Motion design 2D (couche TikTok)
+Téléphone (conversation, notification, appel, post, recherche), textes, stickers, étiquettes, compteurs, flèches :
+voir references/motion-design.md (`motion_design.json`, rôle motion-designer).

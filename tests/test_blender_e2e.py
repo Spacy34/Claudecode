@@ -184,3 +184,38 @@ def test_intended_offscreen_character_not_flagged(compiled):
     write_json(ep / "shots" / "off.json", spec)
     rec = render.render_shot(cfg, ep, {"id": "sh_002", "spec_path": "shots/off.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
     assert not any(c["id"].startswith(("char_never_visible", "char_offscreen")) for c in rec["scene_report"]["checks"])
+
+
+def _frame_rgb(video, t, out_png):
+    import subprocess
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.3f}", "-i", str(video), "-frames:v", "1", str(out_png)], check=True)
+    from PIL import Image
+    return Image.open(out_png).convert("RGB")
+
+
+def test_motion_design_overlay_and_progress_bar(compiled):
+    """La couche motion design (téléphone, compteur…) et la barre de progression sont incrustées dans la vidéo."""
+    from pathlib import Path
+    from studio import motion
+    ep, cfg, man = compiled
+    ids = ["sh_008", "sh_009"]
+    recs = [render.render_shot(cfg, ep, s, "tiny") for s in man["shots"] if s["id"] in ids]
+    prof = render.profile_dict(cfg, "tiny")
+    tl = read_json(ep / "audio_timeline.json")
+    (ep / "renders").mkdir(exist_ok=True)
+    plain = compose.assemble(cfg, ep, man, tl, recs, prof, ep / "renders" / "plain.mp4", fps=30)
+    assert not plain["motion_overlay"] and not plain["progress_bar"]
+    shutil.copy(Path(__file__).resolve().parents[1] / "episodes" / "ep_demo_grillepain" / "motion_design.json", ep / "motion_design.json")
+    res = compose.assemble(cfg, ep, man, tl, recs, prof, ep / "renders" / "motion.mp4", fps=30)
+    assert res["motion_overlay"] and res["progress_bar"]
+    phone = next(e for e in motion.resolve(motion.load(ep), tl) if e["id"] == "mo_expulse")
+    t = phone["_t0"] + 1.2 - res["start_s"]
+    a = _frame_rgb(ep / "renders" / "plain.mp4", t, ep / "renders" / "a.png")
+    b = _frame_rgb(ep / "renders" / "motion.mp4", t, ep / "renders" / "b.png")
+    # le téléphone (côté droit) modifie nettement l'image ; la barre de progression est rouge en haut à gauche
+    box = (600, 450, 940, 1000)
+    from PIL import ImageChops, ImageStat
+    diff = ImageStat.Stat(ImageChops.difference(a.crop(box), b.crop(box)).convert("L")).mean[0]
+    assert diff > 25, diff
+    r, g, _ = b.getpixel((60, int(1920 * 0.012) + 3))
+    assert r > 170 and g < 120, (r, g)

@@ -23,6 +23,7 @@ STAGES = {
     "design":           ("character-artist+environment-artist", "agent", ["story_script.json"], ["cast_bible.json", "asset_manifest.json"], ["gate_script"], False),
     "storyboard":       ("director", "agent", ["story_script.json", "cast_bible.json", "asset_manifest.json"], ["storyboard.json"], ["design"], False),
     "animation":        ("animator", "agent", ["storyboard.json"], ["animation_plan.json"], ["storyboard"], False),
+    "motion":           ("motion-designer", "agent", ["story_script.json", "storyboard.json"], ["motion_design.json"], ["storyboard"], False),
     "voice":            ("pipeline", "auto", ["story_script.json", "cast_bible.json"], ["audio_timeline.json"], ["gate_script"], False),
     "storyboard_review": ("continuity-auditor", "review", ["storyboard.json", "animation_plan.json"], [], ["animation"], False),
     "compile":          ("pipeline", "auto", ["story_script.json", "cast_bible.json", "asset_manifest.json", "storyboard.json", "animation_plan.json", "audio_timeline.json"], ["shot_manifest.json"], ["storyboard_review", "voice"], False),
@@ -31,10 +32,10 @@ STAGES = {
     "prototype":        ("pipeline", "auto", ["shot_manifest.json"], ["renders/prototype.mp4"], ["compile", "gate_lookdev"], False),
     "gate_prototype":   ("human", "gate", ["shot_manifest.json"], [], ["prototype"], True),
     "shots_check":      ("pipeline", "auto", ["shot_manifest.json"], ["checks/shots_contact.png"], ["gate_prototype"], False),
-    "first_cut":        ("pipeline", "auto", ["shot_manifest.json"], ["renders/first_cut.mp4"], ["shots_check"], False),
+    "first_cut":        ("pipeline", "auto", ["shot_manifest.json", "motion_design.json"], ["renders/first_cut.mp4"], ["shots_check", "motion"], False),
     "reviews":          ("visual-critic+continuity-auditor+retention-editor", "review", ["renders/first_cut.mp4"], [], ["first_cut"], False),
     "gate_first_cut":   ("human", "gate", ["renders/first_cut.mp4"], [], ["reviews"], True),
-    "final":            ("pipeline", "auto", ["shot_manifest.json"], ["renders/final.mp4"], ["gate_first_cut"], False),
+    "final":            ("pipeline", "auto", ["shot_manifest.json", "motion_design.json"], ["renders/final.mp4"], ["gate_first_cut"], False),
     "delivery":         ("pipeline", "auto", ["renders/final.mp4"], ["episode_manifest.json"], ["final"], False),
 }
 ORDER = list(STAGES)
@@ -194,6 +195,9 @@ class State:
                 changed.append((name, "interrupted"))
             if s["status"] in DONE + ("needs_review",):
                 cur = _hash_inputs(self.dir, STAGES[name][2])
+                if s.get("inputs"):
+                    # entrée ajoutée au DAG après coup et toujours absente : pas un changement (épisodes existants)
+                    cur = {k: v for k, v in cur.items() if k in s["inputs"] or v is not None}
                 if s.get("inputs") and s["inputs"] != cur:
                     s["status"] = "stale"
                     changed.append((name, "stale:inputs"))

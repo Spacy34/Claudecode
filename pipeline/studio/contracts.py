@@ -23,6 +23,7 @@ ARTIFACTS = {
     "asset_manifest": "asset_manifest.json",
     "storyboard": "storyboard.json",
     "animation_plan": "animation_plan.json",
+    "motion_design": "motion_design.json",
     "audio_timeline": "audio_timeline.json",
     "shot_manifest": "shot_manifest.json",
     "render_manifest": "render_manifest.json",
@@ -205,6 +206,25 @@ def cross_errors(arts):
             for p in block.get("props", []):
                 if p["prop"] not in placed:
                     errs.append(f"animation_plan {sid} : accessoire {p['prop']} non placé dans le storyboard du plan")
+    md = arts.get("motion_design")
+    if md:
+        ids = [e["id"] for e in md.get("elements", [])]
+        if len(set(ids)) != len(ids):
+            errs.append("motion_design : identifiants d'éléments dupliqués")
+        for e in md.get("elements", []):
+            anchors = [("at", e["at"])] + ([("until", e["until"])] if e.get("until") else []) + \
+                      [(f"messages[{i}].at", m["at"]) for i, m in enumerate(e.get("messages", [])) if m.get("at")]
+            for name, a in anchors:
+                if script and a["line"] not in line_ids:
+                    errs.append(f"motion_design {e['id']} : {name} vise une réplique inconnue {a['line']}")
+                elif script and a.get("word", 0) >= words.get(a["line"], 0):
+                    errs.append(f"motion_design {e['id']} : {name}.word {a.get('word')} hors de {a['line']}")
+            if e.get("until") and e["until"]["line"] < e["at"]["line"]:
+                errs.append(f"motion_design {e['id']} : 'until' avant 'at'")
+            if e["type"] == "phone" and e.get("screen") in ("chat", "notification") and not e.get("messages") and not e.get("text"):
+                errs.append(f"motion_design {e['id']} : écran {e['screen']} sans 'messages'")
+            if e["type"] == "phone" and e.get("screen") == "search" and not (e.get("query") or e.get("text")):
+                errs.append(f"motion_design {e['id']} : écran search sans 'query'")
     return errs
 
 
@@ -231,6 +251,12 @@ def capability_errors():
         ("hair", cb["properties"]["characters"]["items"]["properties"]["design"]["properties"]["hair"]["properties"]["style"]["enum"], R.HAIR_STYLES),
         ("accessories", cb["properties"]["characters"]["items"]["properties"]["design"]["properties"]["accessories"]["items"]["enum"], R.ACCESSORIES),
     ]
+    from . import motion
+    md = read_json(SCHEMAS / "motion_design.schema.json")
+    el = md["properties"]["elements"]["items"]["properties"]
+    pairs += [("motion_types", el["type"]["enum"], motion.TYPES), ("motion_screens", el["screen"]["enum"], motion.PHONE_SCREENS),
+              ("motion_stickers", el["icon"]["enum"], motion.STICKERS), ("motion_positions", el["position"]["enum"], motion.POSITIONS),
+              ("motion_text_styles", el["style"]["enum"], motion.TEXT_STYLES)]
     for name, a, b in pairs:
         if list(a) != list(b):
             errs.append(f"vocabulaire '{name}' : schéma {sorted(set(a) ^ set(b))} diffère du moteur")

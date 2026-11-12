@@ -34,7 +34,8 @@ Répéter : `scripts/studio status <ep>` → pour chaque étape prête :
 | script_review | script-critic | — |
 | design | character-artist + environment-artist | entre eux, et `voice` |
 | storyboard | director | `voice`, `lookdev` |
-| animation | animator | `lookdev` |
+| animation | animator | `lookdev`, `motion` |
+| motion (couche 2D TikTok) | motion-designer | `animation`, `lookdev` |
 | storyboard_review | continuity-auditor | — |
 | reviews (first cut) | visual-critic + continuity-auditor + retention-editor | entre eux |
 | échecs rendu/QA | pipeline-engineer | — |
