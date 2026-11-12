@@ -653,6 +653,19 @@ def cmd_asset_add(a):
     return 1 if meta["status"] == "rejected" else 0
 
 
+def cmd_tts_test(a):
+    """Synthétise une phrase avec le moteur de voix configuré (pour écouter avant de produire un épisode)."""
+    from . import tts as _tts
+    c = cfg()
+    backend = a.backend or _tts.pick_backend(c)
+    out_p = Path(a.out).resolve()
+    vcfg = {"piper_model": a.model} if a.model else {}
+    if a.speaker is not None:
+        vcfg["piper_speaker"] = a.speaker
+    desc = _tts.synth(backend, c, a.text, out_p, {"id": "l000", "delivery": {"emotion": a.emotion}}, vcfg)
+    out({"backend": backend, "voice": desc.get("voice"), "fichier": str(out_p), "licence": desc.get("license")})
+
+
 def build_parser():
     ap = argparse.ArgumentParser(prog="studio", description="Studio TikTok 3D : pipeline déterministe")
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -748,6 +761,14 @@ def build_parser():
     x.add_argument("--commercial-confirmed", action="store_true")
     x.add_argument("--force", action="store_true", help="accepter malgré les problèmes d'inspection")
     x.set_defaults(fn=cmd_asset_add)
+    x = sp.add_parser("tts-test", help="écouter la voix configurée sur une phrase")
+    x.add_argument("--text", default="Mon coloc a essayé de rendre notre grille-pain célèbre sur TikTok.")
+    x.add_argument("--out", default="test_voix.wav")
+    x.add_argument("--backend", default="")
+    x.add_argument("--model", default="", help="chemin relatif au dépôt d'un modèle .onnx (sinon celui de la config)")
+    x.add_argument("--speaker", type=int, default=None)
+    x.add_argument("--emotion", default="neutral")
+    x.set_defaults(fn=cmd_tts_test)
     x = sp.add_parser("cache")
     x.add_argument("--prune", action="store_true")
     x.set_defaults(fn=cmd_cache)

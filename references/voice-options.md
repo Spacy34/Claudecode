@@ -2,7 +2,7 @@
 
 | Option | Local | Qualité FR | Matériel | Licence / coût | Statut dans le pipeline |
 |---|---|---|---|---|---|
-| **Piper** (OHF-Voice/piper1-gpl, `pip install piper-tts`) | oui | bonne, naturelle pour de la narration ; expressivité limitée | CPU suffit (temps réel) | moteur GPL-3.0 ; **chaque voix a sa propre licence** (voir sa fiche MODEL_CARD : certaines voix FR sont utilisables commercialement, d'autres non) | backend `piper` implémenté, **non testé dans l'environnement de développement** (modèles non téléchargeables ici) |
+| **Piper** (OHF-Voice/piper1-gpl, `pip install piper-tts`) | oui | bonne, naturelle pour de la narration ; expressivité limitée | CPU suffit (temps réel) | moteur GPL-3.0 ; **chaque voix a sa propre licence** (voir sa fiche MODEL_CARD : certaines voix FR sont utilisables commercialement, d'autres non) | backend `piper` implémenté (CLI vérifiée sur piper-tts 1.8.0), synthèse **non testée ici** (modèles non téléchargeables) ; `studio tts-test` pour écouter |
 | **espeak-ng** | oui | robotique | négligeable | GPL-3.0 (outil) | backend `espeak` implémenté et **testé** — développement/tests uniquement |
 | **Voix humaine enregistrée** | oui | la meilleure expressivité | micro | vous | backend `recorded` : `episodes/<ep>/audio/recorded/l001.wav`… |
 | TTS neuronaux plus expressifs (ex. modèles de clonage/expressifs open source) | oui (GPU conseillé) | variable, souvent meilleure prosodie | GPU 6–12 Go | licences de poids souvent NON commerciales : vérifier une par une | via backend `command` (adaptateur) |

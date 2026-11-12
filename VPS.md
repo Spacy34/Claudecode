@@ -46,12 +46,32 @@ Blender** dans `/opt` (somme SHA-256 vérifiée), règle les variables (`BLENDER
 lance `doctor` et les tests (rapides + rendus Blender réels). Il doit finir avec des tests verts.
 
 ## 3. Voix de production (Piper)
+Commandes vérifiées sur le code de piper-tts 1.8.0 (synthèse non testable dans l'environnement de développement).
 ```bash
-.venv/bin/pip install piper-tts
+cd /opt/studio && .venv/bin/python -m pip install piper-tts
 ```
-Place une voix française (`.onnx` + `.onnx.json`) dans `assets/voices/` **après avoir vérifié sa licence
-commerciale**, puis dans `config/studio.toml` : `backend = "piper"` et `piper_model = "assets/voices/<voix>.onnx"`.
-Test : `studio voice ep_demo_grillepain --force`.
+Lister les voix françaises disponibles :
+```bash
+.venv/bin/python -m piper.download_voices | grep fr_FR
+```
+Télécharger une voix (exemple) dans `assets/voices/` :
+```bash
+.venv/bin/python -m piper.download_voices fr_FR-siwis-medium --download-dir assets/voices
+```
+**Licence** : chaque voix a sa fiche (MODEL_CARD) sur huggingface.co/rhasspy/piper-voices, dossier `fr/fr_FR/<voix>/<qualité>/`.
+Ne garde que les voix dont la fiche autorise l'usage commercial.
+Écouter avant de produire :
+```bash
+studio tts-test --backend piper --model assets/voices/fr_FR-siwis-medium.onnx --out test_voix.wav
+```
+Puis l'activer pour tout le studio dans `config/studio.toml` :
+```toml
+[tts]
+backend = "piper"
+piper_model = "assets/voices/fr_FR-siwis-medium.onnx"
+```
+Voix différente par personnage : dans `cast_bible.json`, `"voice": {"piper_model": "assets/voices/<autre>.onnx"}` (et
+`"piper_speaker": N` pour une voix multi-locuteurs). Les répliques déjà synthétisées sont recalculées automatiquement.
 
 ## 4. Installer et connecter Codex
 ```bash

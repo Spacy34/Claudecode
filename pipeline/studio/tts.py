@@ -59,8 +59,13 @@ def synth(backend, cfg, text, out_wav, line, voice_cfg=None, ep_dir=None):
             os.unlink(tf.name)
         return {"backend": "espeak", "voice": v, "license": "espeak-ng GPL-3.0 (outil) ; audio généré utilisable"}
     if backend == "piper":
-        model = ROOT / cfg["tts"]["piper_model"]
-        exe = [which("piper")] if which("piper") else ["python3", "-m", "piper"]
+        # voix par personnage possible (cast_bible[*].voice.piper_model), sinon la voix du narrateur (config)
+        model = ROOT / voice_cfg.get("piper_model", cfg["tts"]["piper_model"])
+        if not model.exists():
+            raise RuntimeError(f"modèle Piper introuvable : {model} (voir VPS.md §3)")
+        import sys as _sys
+        # même interpréteur que le pipeline (.venv) : c'est là que piper-tts est installé
+        exe = [_sys.executable, "-m", "piper"] if _python_has("piper") else [which("piper") or "piper"]
         cmd = exe + ["--model", str(model), "--output_file", str(out_wav), "--length_scale", f"{1.0 / rate:.3f}"]
         if "piper_speaker" in voice_cfg:
             cmd += ["--speaker", str(voice_cfg["piper_speaker"])]
