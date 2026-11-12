@@ -83,6 +83,8 @@ td.nw{white-space:nowrap}
     <label class="switch" title="true = aucune validation humaine : la production va jusqu'à la vidéo finale">
       <input type="checkbox" id="auto"> Mode autonome</label>
     <label>Modèle Codex <input type="text" id="model" placeholder="(défaut de Codex)"></label>
+    <label class="switch" title="Économe : orchestrateur Codex en effort bas, 1 seul tour de correction par revue (au lieu de 2)">
+      <input type="checkbox" id="eco"> Économe</label>
     <label>Rendu final <select id="fprof"><option value="final">final (1080p)</option><option value="preview">preview (rapide)</option><option value="draft">draft</option></select></label>
     <button class="small" id="saveSettings">Enregistrer</button>
   </div>
@@ -114,6 +116,7 @@ async function api(path, opts={}){
   return j;
 }
 const post = (path, json) => api(path, {method:"POST", json});
+const fmtTok = (n) => n >= 1e6 ? (n/1e6).toFixed(1).replace(".", ",") + " M" : n >= 1e4 ? Math.round(n/1e3) + " k" : String(n);
 
 // ---------------------------------------------------------------- en-tête
 function renderMachine(){
@@ -127,11 +130,11 @@ function renderMachine(){
     if (d.gpu) chips.push(`<span class="chip ok">GPU ${esc(d.gpu.split(",")[0])}</span>`);
   } else chips.push(`<span class="chip">diagnostic machine ${esc(d.status||"…")}</span>`);
   $("machine").innerHTML = chips.join("");
-  if (!S.settingsTouched){ $("auto").checked = S.ov.autonomous; $("model").value = S.ov.model || ""; $("fprof").value = S.ov.final_profile || "final"; }
+  if (!S.settingsTouched){ $("auto").checked = S.ov.autonomous; $("eco").checked = S.ov.economy; $("model").value = S.ov.model || ""; $("fprof").value = S.ov.final_profile || "final"; }
 }
-["auto","model","fprof"].forEach(id => $(id).addEventListener("input", () => S.settingsTouched = true));
+["auto","eco","model","fprof"].forEach(id => $(id).addEventListener("input", () => S.settingsTouched = true));
 $("saveSettings").onclick = async () => {
-  try { await post("/api/settings", {autonomous: $("auto").checked, model: $("model").value, final_profile: $("fprof").value});
+  try { await post("/api/settings", {autonomous: $("auto").checked, economy: $("eco").checked, model: $("model").value, final_profile: $("fprof").value});
     S.settingsTouched = false; toast("Réglages enregistrés dans config/local.toml"); refresh(); } catch(e){ toast("Erreur : " + e.message); }
 };
 
@@ -143,7 +146,7 @@ function renderList(){
       <b>${esc(e.title)}</b><small>${esc(e.id)}</small>
       <div class="bar"><i style="width:${Math.round(e.progress*100)}%"></i></div>
       <span class="phase ${e.phase.normalize("NFD").replace(/[^a-z]/g,"")}">${e.running?'<span class="dot"></span>':""}${esc(e.phase)}</span>
-      <small> · ${e.done}/${e.total} étapes${e.final?" · 🎬":""}</small>
+      <small> · ${e.done}/${e.total} étapes${e.tokens?` · ${fmtTok(e.tokens)} tokens`:""}${e.final?" · 🎬":""}</small>
     </div>`).join("") : `<div class="hint">Aucun épisode pour l'instant.</div>`;
   document.querySelectorAll(".ep").forEach(el => el.onclick = () => { S.view="ep"; S.ep=el.dataset.ep; S.sig={}; S.detail=null; renderList(); loadDetail(); });
 }
@@ -206,7 +209,7 @@ function renderEpisode(){
   }
   $("epTitle").textContent = d.title;
   $("epBar").style.width = Math.round(d.progress*100) + "%";
-  $("epBanner").innerHTML = `${d.running?'<span class="dot"></span>':""}<b>${esc(d.phase)}</b> — ${esc(d.message)} <span class="hint">(${d.done}/${d.total} étapes${d.brief.imposed?" · script imposé":""}${d.brief.duration?` · ~${d.brief.duration} s`:""})</span>`;
+  $("epBanner").innerHTML = `${d.running?'<span class="dot"></span>':""}<b>${esc(d.phase)}</b> — ${esc(d.message)} <span class="hint">(${d.done}/${d.total} étapes${d.brief.imposed?" · script imposé":""}${d.brief.duration?` · ~${d.brief.duration} s`:""}${d.tokens?` · Codex : ${fmtTok(d.tokens)} tokens`:""})</span>`;
   $("bLaunch").disabled = d.running; $("bStop").disabled = !d.running;
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === S.tab));
   const views = {progress: tabProgress, checks: tabChecks, media: tabMedia, audio: tabAudio, log: tabLog};

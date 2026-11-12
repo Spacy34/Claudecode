@@ -19,3 +19,6 @@
 [codex]
 # Modèle utilisé par scripts/produire.sh (doit être disponible pour VOTRE compte : vérifier avec /model dans codex).
 # model = "<nom-du-modele>"
+# Effort de raisonnement de l'orchestrateur (il délègue surtout) : "low" (défaut, économe), "medium", ou "default"
+# (= celui de ~/.codex/config.toml). Les rôles gardent leur effort (.codex/agents/*.toml).
+# orchestrator_effort = "low"

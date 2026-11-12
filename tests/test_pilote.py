@@ -92,3 +92,17 @@ def test_pilot_reports_codex_startup_error(tmp_path, episode):
     assert r.returncode == 8, r.stdout[-1500:]
     assert "is not supported" in r.stdout and "modèle Codex refusé" in r.stdout
     assert "--skip-git-repo-check" in args.read_text()
+    assert 'model_reasoning_effort="low"' in args.read_text(), "orchestrateur en effort bas par défaut"
+
+
+def test_token_parsing_and_accounting(episode):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("pilote", ROOT / "scripts" / "pilote.py")
+    pil = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pil)
+    assert pil.parse_tokens("codex\nOK\ntokens used\n18\u202f143\n") == 18143
+    assert pil.parse_tokens("tokens used: 2,500") == 2500
+    assert pil.parse_tokens("rien") is None
+    (episode / "checks").mkdir(exist_ok=True)
+    assert pil.record_tokens(episode.name, ["script"], 1000) == 1000
+    assert pil.record_tokens(episode.name, ["design"], 2500) == 3500

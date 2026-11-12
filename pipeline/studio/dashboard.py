@@ -96,8 +96,20 @@ def episode_overview(p):
     done = sum(1 for n in STAGES if st.st(n)["status"] in DONE)
     running = launcher.pilot_running(p.name)
     phase, msg = _phase(st, running)
-    return {"id": p.name, "title": _title(p), "progress": round(done / len(STAGES), 3), "done": done, "total": len(STAGES),
+    return {"id": p.name, "title": _title(p), "progress": round(done / len(STAGES), 3), "done": done, "total": len(STAGES), "tokens": _tokens(p),
             "running": running, "phase": phase, "message": msg, "final": (p / "renders" / "final.mp4").exists()}
+
+
+def _tokens(p):
+    f = p / "checks" / "codex_tokens.jsonl"
+    total = 0
+    if f.exists():
+        for l in f.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                total += int(json.loads(l).get("tokens") or 0)
+            except ValueError:
+                pass
+    return total
 
 
 def _script_lines(p):
@@ -255,7 +267,8 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/overview":
                 cfg = load_config()
                 inbox = episode_dir(cfg, "_inbox")
-                return self._send(200, {"autonomous": bool(cfg["quality"].get("autonomous")), "model": cfg.get("codex", {}).get("model", ""),
+                eco = cfg.get("codex", {}).get("orchestrator_effort", "low") == "low" and int(cfg["quality"]["max_revision_rounds"]) <= 1
+                return self._send(200, {"autonomous": bool(cfg["quality"].get("autonomous")), "model": cfg.get("codex", {}).get("model", ""), "economy": eco,
                                         "final_profile": cfg["render"].get("final_profile"), "codex": bool(launcher.codex_path()),
                                         "doctor": _DOCTOR, "episodes": [episode_overview(p) for p in _episodes(cfg)],
                                         "inbox": sorted(x.name for x in inbox.glob("*.txt")) if inbox.is_dir() else []})
@@ -365,6 +378,10 @@ class Handler(BaseHTTPRequestHandler):
                     if m and not re.match(r"^[A-Za-z0-9._:-]{1,60}$", m):
                         return self._err(400, "nom de modèle invalide")
                     set_local_value("codex", "model", m)
+                if "economy" in body:
+                    # Économe : orchestrateur en effort bas + 1 seul tour de correction par revue ; Normal : défauts du studio
+                    set_local_value("codex", "orchestrator_effort", "low" if body["economy"] else "medium")
+                    set_local_value("quality", "max_revision_rounds", 1 if body["economy"] else 2)
                 if body.get("final_profile") in ("draft", "preview", "final"):
                     set_local_value("render", "final_profile", body["final_profile"])
                 return self._send(200, {"ok": True})

@@ -138,6 +138,15 @@ scripts\studio.cmd arreter ep_xxx
 ```
 Mode non autonome : les validations se font dans PowerShell, par toi, avec `scripts\studio.cmd approve <ep> <gate>`.
 
+## 10. Économiser les tokens Codex
+- **Économe** (case en haut du tableau de bord) : l'orchestrateur raisonne en effort bas (il ne fait surtout que
+  déléguer) et chaque revue n'a droit qu'à 1 tour de correction au lieu de 2. Les rôles gardent leur propre effort.
+- Le total de tokens s'affiche par épisode (liste et bandeau) ; le journal donne le coût de chaque session Codex.
+- Un script imposé coûte moins cher qu'une histoire libre (pas d'écriture à faire).
+- Les rendus, la voix, le montage et les contrôles ne consomment AUCUN token : seules l'écriture, la mise en scène
+  et les critiques passent par Codex.
+- Ta consommation et tes limites : tape `/status` dans `codex`.
+
 ## Problèmes fréquents
 | Message | Solution |
 |---|---|

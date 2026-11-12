@@ -8,6 +8,7 @@ absence de progrès (même état deux tours de suite).
 """
 import argparse
 import collections
+import re
 import json
 import os
 import subprocess
@@ -85,6 +86,8 @@ CODEX_HINTS = [
     (("n'est pas reconnu", "is not recognized", "node: not found", "cannot find module"), "Node.js/Codex mal installé : `winget install --id OpenJS.NodeJS.LTS -e`, puis "
                                                           "`npm install -g @openai/codex`, puis rouvrir PowerShell."),
     (("rate limit", "usage limit", "quota", "429"), "limite d'utilisation de Codex atteinte : réessayer plus tard."),
+    (("reasoning effort", "reasoning_effort", "unsupported value"), "effort de raisonnement refusé par ce modèle : décochez « Économe » "
+                                                                     "ou mettez [codex] orchestrator_effort = \"default\" dans config/local.toml."),
 ]
 
 
@@ -105,6 +108,10 @@ def run_codex(ep, prompt, model, logf):
     cmd = [exe, "exec", "--skip-git-repo-check"]   # dossier issu d'un ZIP (pas un dépôt Git) : autorisé explicitement
     if model:
         cmd += ["-c", f'model="{model}"']
+    # l'orchestrateur délègue surtout : effort réduit (les rôles gardent le leur, .codex/agents/*.toml)
+    effort = str(load_config().get("codex", {}).get("orchestrator_effort", "low")).strip()
+    if effort and effort != "default":
+        cmd += ["-c", f'model_reasoning_effort="{effort}"']
     # consigne transmise sur l'entrée standard (« - ») : aucun problème d'échappement (cmd.exe, $, retours à la ligne)
     cmd += ["--output-last-message", str(ep_dir(ep) / "checks" / "codex_rapport_final.md"), "-"]
     log("session Codex : " + prompt.splitlines()[4] if len(prompt.splitlines()) > 4 else "session Codex")
@@ -129,6 +136,39 @@ def run_codex(ep, prompt, model, logf):
                 tail.append(line.rstrip())
         rc = p.wait()
     return rc, "\n".join(tail)
+
+
+def parse_tokens(out):
+    """Nombre affiché par `codex exec` après « tokens used » (ex. « 18 143 »), ou None."""
+    lines = out.splitlines()
+    for i, l in enumerate(lines):
+        if "tokens used" in l.lower():
+            for cand in [l] + lines[i + 1:i + 3]:
+                digits = re.sub(r"[^0-9]", "", cand.split("used")[-1] if cand is l else cand)
+                if digits:
+                    return int(digits)
+    return None
+
+
+def record_tokens(ep, stages, tokens):
+    """Journal des tokens Codex de l'épisode (checks/codex_tokens.jsonl) -> total."""
+    f = ep_dir(ep) / "checks" / "codex_tokens.jsonl"
+    with open(f, "a", encoding="utf-8") as h:
+        h.write(json.dumps({"at": time.strftime("%Y-%m-%dT%H:%M:%S"), "stages": stages, "tokens": tokens}, ensure_ascii=False) + "\n")
+    return episode_tokens(ep)
+
+
+def episode_tokens(ep):
+    f = ep_dir(ep) / "checks" / "codex_tokens.jsonl"
+    if not f.exists():
+        return 0
+    total = 0
+    for l in f.read_text(encoding="utf-8").splitlines():
+        try:
+            total += int(json.loads(l).get("tokens") or 0)
+        except ValueError:
+            pass
+    return total
 
 
 def main():
@@ -168,6 +208,11 @@ def main():
             rc, out = run_codex(ep, codex_prompt(ep, n), a.modele, logf)
             if rc == 127:
                 return 6
+            tok = parse_tokens(out)
+            if tok:
+                stages = [x["stage"] for x in n["agent"] + n["review"]] + list(n["failed"])
+                total = record_tokens(ep, stages, tok)
+                log(f"session Codex : {tok:,} tokens (total de l'épisode : {total:,})".replace(",", " "))
             if rc != 0:
                 last = [l for l in out.splitlines() if l.strip()][-6:]
                 log(f"Codex a terminé avec le code {rc}. Ses derniers messages :")
