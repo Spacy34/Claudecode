@@ -14,3 +14,11 @@ assets/voices/*.onnx.json
 !episodes/ep_demo_grillepain/renders/prototype.ass
 config/local.toml
 memory/local/
+# Production sur la machine : épisodes, scripts déposés, essais de voix (seule la démo est versionnée)
+episodes/ep_*/
+!episodes/ep_demo_grillepain/
+episodes/ep_demo_grillepain/qa_*.json
+!episodes/ep_demo_grillepain/qa_prototype.json
+episodes/_inbox/*
+!episodes/_inbox/README.md
+/*.wav
