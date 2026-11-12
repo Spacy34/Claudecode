@@ -39,6 +39,15 @@ def blender_invocation(cfg):
     return "module", [sys.executable, str(ENGINE_DIR / "run_shot.py")]
 
 
+def blender_script_cmd(cfg, script_name):
+    """Commande pour exécuter un autre script du moteur (ex. inspect_model.py) avec le même Blender."""
+    mode, cmd = blender_invocation(cfg)
+    script = str(ENGINE_DIR / script_name)
+    if mode == "binary":
+        return cmd[:cmd.index("--python") + 1] + [script, "--"]
+    return [cmd[0], script]
+
+
 def has_gpu():
     if which("nvidia-smi"):
         r = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True)

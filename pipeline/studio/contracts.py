@@ -102,6 +102,23 @@ def cross_errors(arts):
     char_ids = {c["id"] for c in cast["characters"]} if cast else set()
     set_ids = {s["id"] for s in assets["sets"]} if assets else set()
     prop_ids = {p["id"] for p in assets["props"]} if assets else set()
+    if assets:
+        for pr in assets["props"]:
+            if pr["type"] == "composite" and not pr.get("parts"):
+                errs.append(f"asset_manifest : {pr['id']} est 'composite' mais n'a pas de 'parts'")
+            if pr["type"] == "custom" or pr.get("source") == "external":
+                if not pr.get("external_path"):
+                    errs.append(f"asset_manifest : {pr['id']} externe sans 'external_path'")
+                elif not (ROOT / "assets" / pr["external_path"]).exists():
+                    errs.append(f"asset_manifest : modèle introuvable assets/{pr['external_path']} ({pr['id']})")
+                if not pr["license"].get("commercial_use"):
+                    errs.append(f"asset_manifest : {pr['id']} : licence sans usage commercial, refusé")
+        for st_ in assets["sets"]:
+            if st_["kit"].startswith("generic_") and not st_.get("surfaces"):
+                errs.append(f"asset_manifest : {st_['id']} ({st_['kit']}) doit définir 'surfaces'")
+            for it in st_.get("dressing", []):
+                if it["type"] == "composite" and not it.get("parts"):
+                    errs.append(f"asset_manifest : habillage composite sans 'parts' dans {st_['id']}")
     if script and cast:
         for l in script["lines"]:
             if l["speaker"] != "narrator" and l["speaker"] not in char_ids:

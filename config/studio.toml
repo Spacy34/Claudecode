@@ -27,6 +27,7 @@ shot_timeout_s = 3600           # au-delà, le plan est marqué failed
 max_cache_gb = 20               # purge LRU au-delà (studio cache --prune)
 max_ram_gb = 0                  # 0 = 75 % de la RAM détectée
 max_threads = 0                 # 0 = tous les cœurs ; sinon limite Cycles
+max_external_faces = 150000     # au-delà, un modèle externe est refusé (rendu trop lourd)
 
 [tts]
 # "auto" : piper si un modèle .onnx est configuré et installé, sinon espeak-ng (qualité robotique, dev/test uniquement)

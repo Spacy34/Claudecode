@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from .contracts import CONTRACT_VERSION, provenance_deps
-from .util import ROOT, now, read_json, sha256_json, write_json
+from .util import ROOT, now, read_json, sha256_file, sha256_json, write_json
 
 sys.path.insert(0, str(ROOT / "blender"))
 from engine import kitdata, registry  # noqa: E402
@@ -127,7 +127,13 @@ def compile_episode(ep_dir, cfg):
             pos = resolve(p["mark"]) if p.get("mark") else None
             if isinstance(pos, dict):
                 raise CompileError(f"{s['id']} : position d'accessoire invalide")
+            ext_abs = None
+            if a.get("external_path"):
+                ext_abs = str((ROOT / "assets" / a["external_path"]).resolve())
             props.append({"id": p["id"], "type": a["type"], "color": a.get("color"), "scale": a.get("scale", 1.0), "label": a.get("label"),
+                          "parts": a.get("parts"), "external_path_abs": ext_abs, "target_height": a.get("target_height"),
+                          "rot_offset_deg": a.get("rot_offset_deg", 0.0),
+                          "external_sha256": sha256_file(ROOT / "assets" / a["external_path"]) if a.get("external_path") else None,
                           "pos": pos, "height": p.get("height", 0.0), "held_by": p.get("held_by"), "hand": p.get("hand", "R"), "rot_deg": p.get("rot_deg", 0.0)})
         block = ap["shots"].get(s["id"], {})
         T = (lambda at: loc(_anchor_time(at, words, segs, t0, t1)))

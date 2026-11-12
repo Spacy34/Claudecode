@@ -120,3 +120,48 @@ def test_camera_looks_over_foreground_obstacle(compiled):
     rec = render.render_shot(cfg, ep, {"id": "sh_008", "spec_path": "shots/injected_fg2.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
     ids = [c["id"] for c in rec["scene_report"]["checks"] if c["status"] == "fail"]
     assert not any(i.startswith(("char_never_visible", "foreground_occluder")) for i in ids), ids
+
+
+CUBE_OBJ = """o cube
+v -0.5 -0.5 0
+v 0.5 -0.5 0
+v 0.5 0.5 0
+v -0.5 0.5 0
+v -0.5 -0.5 1
+v 0.5 -0.5 1
+v 0.5 0.5 1
+v -0.5 0.5 1
+f 1 2 3 4
+f 5 8 7 6
+f 1 5 6 2
+f 2 6 7 3
+f 3 7 8 4
+f 4 8 5 1
+"""
+
+
+def test_vocab_composite_external_animal(compiled, tmp_path):
+    """Objet improvisé (composite), modèle externe (OBJ fabriqué par le test), animal, nouveau lieu."""
+    ep, cfg, man = compiled
+    model = tmp_path / "cube.obj"
+    model.write_text(CUBE_OBJ)
+    spec = read_json(ep / next(s for s in man["shots"] if s["id"] == "sh_001")["spec_path"])
+    spec["set"] = {"id": "set_resto", "kit": "restaurant", "source": "procedural", "license": {"spdx": "original", "commercial_use": True}}
+    spec["props"] = [
+        {"id": "pr_machine", "type": "composite", "pos": [1.0, 1.2], "height": 0, "parts": [
+            {"shape": "box", "size": [0.5, 0.4, 0.8], "pos": [0, 0, 0.4], "color": "#C0C0C0"},
+            {"shape": "cone", "size": [0.3, 0, 0.3], "pos": [0, 0, 0.95], "color": "#E63946"},
+            {"shape": "text", "size": [0.08, 0, 0], "pos": [0, -0.22, 0.6], "text": "OK", "glow": True}]},
+        {"id": "pr_cube", "type": "custom", "external_path_abs": str(model), "target_height": 0.4, "pos": [-1.0, 1.2], "height": 0},
+        {"id": "pr_dog", "type": "dog", "pos": [-0.4, 0.4], "height": 0}]
+    spec["prop_actions"], spec["actions"], spec["fx"] = [], [], []
+    write_json(ep / "shots" / "vocab.json", spec)
+    rec = render.render_shot(cfg, ep, {"id": "sh_001", "spec_path": "shots/vocab.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
+    assert rec["status"] == "rendered", rec.get("error")
+    assert not rec["scene_report"].get("warnings"), rec["scene_report"].get("warnings")
+    # fichier externe manquant : repli VISIBLE + avertissement, jamais un plan vide silencieux
+    spec["props"][1]["external_path_abs"] = str(tmp_path / "absent.glb")
+    write_json(ep / "shots" / "vocab2.json", spec)
+    rec2 = render.render_shot(cfg, ep, {"id": "sh_001", "spec_path": "shots/vocab2.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
+    assert rec2["status"] == "rendered"
+    assert any("pr_cube" in w for w in rec2["scene_report"]["warnings"])

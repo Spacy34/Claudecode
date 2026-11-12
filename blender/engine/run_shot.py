@@ -61,7 +61,10 @@ class Shot:
         if k == "char":
             return self.cas[t["id"]].root_xy(f)
         if k == "prop":
-            o = self.props[t["id"]]
+            o = self.props.get(t["id"])
+            if o is None:
+                self.report["warnings"].append(f"cible absente du plan : {t['id']} (ignorée)")
+                return None
             return Vector((o.location.x, o.location.y))
         if k == "point":
             return Vector((t["pos"][0], t["pos"][1]))
@@ -70,9 +73,12 @@ class Shot:
     def target_world(self, t, f):
         """Position monde évaluée (scène positionnée à f)."""
         k = t.get("kind")
-        if k == "char":
+        if k == "char" and t["id"] in self.chars:
             return self.chars[t["id"]].landmarks_world()["head"]
-        if k == "prop":
+        if k in ("char", "prop"):
+            self.report["warnings"].append(f"effet sur une cible absente : {t['id']} (placé au centre)")
+            return Vector((0, 0.5, 1.0))
+        if k == "prop" and t["id"] in self.props:
             lo, hi = core.world_bbox(self.props[t["id"]])
             return Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, hi.z + 0.1))
         p = t["pos"]
@@ -113,7 +119,10 @@ class Shot:
         pcol = bpy.data.collections.new("PROPS")
         self.sc.collection.children.link(pcol)
         for p in sp.get("props", []):
-            o = props.build(p["type"], p["id"], p.get("color"), p.get("scale", 1.0), p.get("label"), pcol)
+            ext = {"path": p["external_path_abs"], "target_height": p.get("target_height"), "rot_offset_deg": p.get("rot_offset_deg", 0.0)} if p.get("external_path_abs") else None
+            o = props.build(p["type"], p["id"], p.get("color"), p.get("scale", 1.0), p.get("label"), pcol, parts=p.get("parts"), external=ext)
+            if o.get("external_failed"):
+                self.report["warnings"].append(f"modèle externe non chargé pour {p['id']} : repli affiché")
             pos = p.get("pos") or [0, 0]
             o.location = (pos[0], pos[1], p.get("height", 0.0))
             o.rotation_euler = (0, 0, D(p.get("rot_deg", 0.0)))
@@ -258,6 +267,18 @@ class Shot:
                 else:
                     if st["held"]:
                         st["held"] = None
+        # animaux : jamais figés (petit rebond + pivot de tête/corps), sauf s'ils sont tenus ou lancés
+        from engine.registry import ANIMALS
+        for pid, st in self.props_state.items():
+            o = st["obj"]
+            if o.get("prop_type") not in ANIMALS or by_prop.get(pid) or st.get("held"):
+                continue
+            z0, rz0 = o.location.z, o.rotation_euler.z
+            k = 0
+            for f in range(1, self.N + 1, 6):
+                pa.key(o, 'location', 2, f, z0 + (0.012 if k % 2 else 0.0) * o.scale.z)
+                pa.key(o, 'rotation_euler', 2, f, rz0 + D(6) * math.sin(k * 0.9))
+                k += 1
         pa.apply()
 
     def _drop(self, o, f):

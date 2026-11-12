@@ -20,6 +20,12 @@ far_right (2.4,0.6), offscreen_left (-6,0), offscreen_right (6,0).
 - park : bench (0.2,1.8), tree (-2.6,2.0), path (0,0.5)
 - supermarket : aisle (0,1.6), cart (1.5,0)
 - studio_void : fond uni (lookdev, plans « abstraits »)
+- restaurant : table_left (-2.3,0.4), table_right (2.3,0.4), kitchen_pass (1.4,1.9), entrance (3.3,0.6) [tables nappées, bar, ardoise menu]
+- classroom : teacher (0,1.9) [devant le tableau], blackboard (0,2.4), desk_left (-2.2,0.6), desk_right (2.2,0.6)
+- beach : towel (-1.6,1.0), parasol (1.4,0.8), sandcastle (-0.9,0), water_edge (0,5.5) [mer, île, palmiers, poste de secours]
+- car_interior : driver (-0.42,0.25), passenger (0.42,0.25), back_left (-0.42,1.15), back_right (0.42,1.15) —
+  personnages en `start_pose: "sit"`, cadrages medium_close/close_up/two_shot conseillés (vue depuis le pare-brise)
+- generic_interior / generic_exterior : lieu À COMPOSER (voir « Improviser »)
 Personnalisation : `palette`, `dressing` (accessoires supplémentaires), `marks`, `use_kit_dressing:false`
 (désactive aussi l'habillage d'ambiance), `seed` (variante d'habillage reproductible).
 Habillage automatique v2 : sols et murs texturés procéduralement (parquet, carrelage, papier peint rayé,
@@ -33,7 +39,24 @@ Hauteurs de surfaces : table/desk 0.76, counter/stove 0.92, bed 0.55, sofa 0.45,
 ## Accessoires (`type`)
 sofa, table, chair, tv, fridge, stove, counter, toaster, plant, lamp, door, window, car, tree, bush, bench,
 desk, computer, phone, mug, bed, toilet, box (avec `label`), trash_can, cake, sign (avec `label`), pigeon, cat,
-frying_pan, fire_extinguisher, shopping_cart, shelf, rug, streetlight, building, painting.
+frying_pan, fire_extinguisher, shopping_cart, shelf, rug, streetlight, building, painting,
+restaurant_table, wine_glass, plate_food, menu_board (label), cooking_pot, school_desk, blackboard (label = texte à la craie),
+backpack, globe, parasol, beach_towel, sandcastle, palm_tree, beach_ball, surfboard, cooler, lifeguard_tower (label),
+guitar, pizza, burger, trophy, money_stack, skateboard, bucket.
+Animaux (rebond automatique, jamais figés) : pigeon, cat, dog, chicken, duck, rat, fish, cow.
+
+## Improviser ce qui n'existe pas (sans écrire de code)
+- **Objet inconnu → `type: "composite"` + `parts`** : l'agent décrit l'objet comme un assemblage de formes
+  simples (box, ball, cyl, cone, torus, text) avec `size`, `pos` (centre, sol = z 0, avant = -Y), `rot_deg`,
+  `color`, `glow` (écran, néon, flamme), `text`. 40 pièces max. Ex. sous-marin = cyl allongé couché + box
+  (kiosque) + cyl fin (périscope) + ball (hublots, glow). Utilisable comme accessoire d'histoire ou dans `dressing`.
+- **Lieu inconnu → `kit: "generic_interior"` ou `"generic_exterior"`** + `surfaces` {floor, wall : planks, tiles,
+  noise, grass, bricks, wood, stripes ; wainscot} + `palette` + `dressing` (types existants et composites) +
+  `backdrop` pour l'extérieur (skyline, hills, trees, sea, clouds) + `marks`. Ex. hôpital = generic_interior
+  carrelage blanc/vert + lits (bed) + composites (moniteur, perfusion).
+- **Modèle 3D libre → `type: "custom"`, `source: "external"`, `external_path`** (via `scripts/studio asset-add`,
+  licence vérifiée) + `target_height` + `rot_offset_deg`. Fichier manquant → caisse rose « MODELE ? » visible
+  + avertissement (jamais un trou silencieux).
 `scale` 0.2–5, `color`. Un objet sans type dédié = `box`/`sign` + `label` (ex : enceinte « BASS »).
 
 ## Personnages (cast_bible.design)

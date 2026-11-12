@@ -564,9 +564,12 @@ def cmd_kits(a):
     for k in kits:
         spec = {"shot_id": "sh_950", "episode_id": "ep_kits_gallery", "fps": 30, "frames": 2, "engine_version": "kits",
                 "set": {"id": f"set_{k}", "kit": k, "source": "procedural", "license": {"spdx": "original", "commercial_use": True}, "seed": 3},
-                "mood": "interior_warm" if k in ("living_room", "kitchen", "bedroom", "bathroom") else ("office_flat" if k in ("office", "supermarket") else "day_warm"),
-                "characters": [{"id": "ch_scale", "design": demo["design"], "pos": [0.6, 0.9], "facing_deg": -20.0, "facing_target": None, "start_pose": "stand"}],
-                "props": [], "camera": {"framing": "wide", "subject": {"kind": "point", "pos": [0.0, 1.2, 1.1]}, "angle": "eye", "move": "static", "motivation": "galerie"},
+                "mood": "interior_warm" if k in ("living_room", "kitchen", "bedroom", "bathroom", "restaurant", "classroom", "generic_interior", "car_interior")
+                else ("office_flat" if k in ("office", "supermarket") else "day_warm"),
+                "characters": [{"id": "ch_scale", "design": demo["design"], "pos": [-0.42, 0.25] if k == "car_interior" else [0.6, 0.9],
+                                "facing_deg": 0.0 if k == "car_interior" else -20.0, "facing_target": None, "start_pose": "sit" if k == "car_interior" else "stand"}],
+                "props": [], "camera": ({"framing": "medium", "subject": {"kind": "char", "id": "ch_scale"}, "angle": "eye", "side_deg": 15, "move": "static", "motivation": "galerie"}
+                                        if k == "car_interior" else {"framing": "wide", "subject": {"kind": "point", "pos": [0.0, 1.2, 1.1]}, "angle": "eye", "move": "static", "motivation": "galerie"}),
                 "actions": [], "expressions": [{"char": "ch_scale", "expr": "happy", "frame": 1, "intensity": 1.0}], "prop_actions": [], "fx": [], "talk": [],
                 "auto_idle": False, "transition_out": "cut"}
         sp = out_dir / f"{k}.json"
@@ -578,6 +581,76 @@ def cmd_kits(a):
         items.append((Path(rec["frames_dir"]) / "f0001.png", k))
     sheet = qframes.contact_sheet(items, out_dir / "kits_contact.png", cols=4, title="Décors disponibles (galerie des kits)")
     out({"contact_sheet": str(sheet), "kits": [k for _, k in items]})
+
+
+LICENSE_OK = {"CC0-1.0", "CC-BY-4.0", "CC-BY-3.0", "MIT", "Apache-2.0", "original"}
+
+
+def _inspect(path, target_height=0.0):
+    import subprocess
+    c = cfg()
+    out_dir = cache_dir(c) / "inspect" / sha256_file(path)[:16]
+    cmd = render.blender_script_cmd(c, "inspect_model.py") + ["--model", str(path), "--out", str(out_dir)]
+    if target_height:
+        cmd += ["--target-height", str(target_height)]
+    subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    rp = out_dir / "inspection.json"
+    return read_json(rp) if rp.exists() else {"import_ok": False, "error": "inspection impossible (voir Blender)"}
+
+
+def _verdict(rep, c):
+    issues = []
+    if not rep.get("import_ok"):
+        issues.append("import impossible")
+    if rep.get("faces", 0) > int(c["limits"].get("max_external_faces", 150000)):
+        issues.append(f"trop lourd : {rep['faces']} faces")
+    if rep.get("missing_textures"):
+        issues.append(f"textures manquantes : {rep['missing_textures'][:3]}")
+    if rep.get("armatures"):
+        issues.append("contient une armature : le moteur ne l'anime pas (objet statique uniquement)")
+    return issues
+
+
+def cmd_asset_inspect(a):
+    rep = _inspect(Path(a.file).resolve(), a.target_height)
+    rep["issues"] = _verdict(rep, cfg())
+    out(rep)
+    return 0 if rep.get("import_ok") else 1
+
+
+def cmd_asset_add(a):
+    """Ajoute un modèle 3D externe à la bibliothèque après contrôle de licence et inspection. Ne télécharge rien."""
+    import shutil as _sh
+    src = Path(a.file).resolve()
+    if src.suffix.lower() not in (".glb", ".gltf", ".obj"):
+        sys.exit("formats acceptés : .glb (recommandé), .gltf, .obj")
+    if a.license not in LICENSE_OK and not a.commercial_confirmed:
+        sys.exit(f"licence {a.license} non reconnue comme compatible usage commercial ({sorted(LICENSE_OK)}). "
+                 "Vérifiez la licence puis relancez avec --commercial-confirmed si elle l'autorise.")
+    if a.license.startswith("CC-BY") and not a.attribution:
+        sys.exit("licence CC-BY : --attribution obligatoire (crédit à afficher)")
+    name = a.name.strip().lower().replace(" ", "_")
+    dst_dir = ROOT / "assets" / "library" / "external" / name
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    dst = dst_dir / f"model{src.suffix.lower()}"
+    _sh.copy2(src, dst)
+    if src.suffix.lower() == ".gltf":   # fichiers .bin / textures voisins
+        for f in src.parent.iterdir():
+            if f.suffix.lower() in (".bin", ".png", ".jpg", ".jpeg", ".webp", ".ktx2"):
+                _sh.copy2(f, dst_dir / f.name)
+    rep = _inspect(dst, a.target_height)
+    issues = _verdict(rep, cfg())
+    meta = {"name": name, "file": str(dst.relative_to(ROOT / "assets")), "sha256": sha256_file(dst), "added_at": now(),
+            "license": {"spdx": a.license, "commercial_use": True, "attribution": a.attribution or "", "source_url": a.source_url or ""},
+            "target_height": a.target_height or None, "inspection": rep, "issues": issues, "status": "rejected" if issues and not a.force else "ok"}
+    write_json(dst_dir / "asset.json", meta)
+    if rep.get("thumbnail") and Path(rep["thumbnail"]).exists():
+        _sh.copy2(rep["thumbnail"], dst_dir / "thumbnail.png")
+    snippet = {"id": f"pr_{name}"[:35], "type": "custom", "source": "external", "external_path": meta["file"],
+               "target_height": a.target_height or rep.get("dimensions_m", [0, 0, 1])[2], "license": meta["license"]}
+    out({"status": meta["status"], "issues": issues, "inspection": {k: rep.get(k) for k in ("faces", "materials", "textures", "dimensions_m", "armatures")},
+         "thumbnail": str(dst_dir / "thumbnail.png"), "asset_manifest_prop": snippet})
+    return 1 if meta["status"] == "rejected" else 0
 
 
 def build_parser():
@@ -661,6 +734,20 @@ def build_parser():
     x.add_argument("--kits", default="")
     x.add_argument("--profile", default="draft")
     x.set_defaults(fn=cmd_kits)
+    x = sp.add_parser("asset-inspect", help="inspecter un modèle 3D externe (géométrie, textures, vignette)")
+    x.add_argument("file")
+    x.add_argument("--target-height", type=float, default=0.0)
+    x.set_defaults(fn=cmd_asset_inspect)
+    x = sp.add_parser("asset-add", help="ajouter un modèle 3D externe à la bibliothèque (licence + inspection)")
+    x.add_argument("file")
+    x.add_argument("--name", required=True)
+    x.add_argument("--license", required=True, help="identifiant SPDX : CC0-1.0, CC-BY-4.0, MIT…")
+    x.add_argument("--attribution", default="")
+    x.add_argument("--source-url", default="")
+    x.add_argument("--target-height", type=float, default=0.0)
+    x.add_argument("--commercial-confirmed", action="store_true")
+    x.add_argument("--force", action="store_true", help="accepter malgré les problèmes d'inspection")
+    x.set_defaults(fn=cmd_asset_add)
     x = sp.add_parser("cache")
     x.add_argument("--prune", action="store_true")
     x.set_defaults(fn=cmd_cache)

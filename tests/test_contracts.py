@@ -47,3 +47,26 @@ def test_review_report_schema():
     assert contracts.schema_errors("review_report", r) == []
     r["inspected"] = []
     assert contracts.schema_errors("review_report", r)
+
+
+def test_cross_rules_composite_external_generic():
+    arts = contracts.load_episode(DEMO)
+    a = copy.deepcopy(arts)
+    lic = {"spdx": "CC-BY-NC-4.0", "commercial_use": False}
+    a["asset_manifest"]["props"].append({"id": "pr_x", "type": "composite", "source": "procedural", "license": {"spdx": "original", "commercial_use": True}})
+    a["asset_manifest"]["props"].append({"id": "pr_y", "type": "custom", "source": "external", "external_path": "library/external/absent/model.glb", "license": lic})
+    a["asset_manifest"]["sets"].append({"id": "set_z", "kit": "generic_interior", "source": "procedural", "license": {"spdx": "original", "commercial_use": True}})
+    errs = contracts.cross_errors(a)
+    assert any("pr_x" in e and "parts" in e for e in errs)
+    assert any("pr_y" in e and "introuvable" in e for e in errs)
+    assert any("pr_y" in e and "commercial" in e for e in errs)
+    assert any("set_z" in e and "surfaces" in e for e in errs)
+
+
+def test_asset_add_refuses_non_commercial_license(tmp_path):
+    import pytest
+    from studio import cli
+    f = tmp_path / "m.obj"
+    f.write_text("o x\nv 0 0 0\n")
+    with pytest.raises(SystemExit):
+        cli.main(["asset-add", str(f), "--name", "x", "--license", "CC-BY-NC-4.0"])
