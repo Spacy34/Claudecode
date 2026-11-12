@@ -16,6 +16,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 STUDIO = str(ROOT / "scripts" / "studio")
+sys.path.insert(0, str(ROOT / "pipeline"))
+from studio.util import episode_dir, load_config  # noqa: E402  (respecte paths.episodes_dir et ses surcharges)
+
+
+def ep_dir(ep):
+    return episode_dir(load_config(), ep)
 
 
 def log(msg):
@@ -43,7 +49,7 @@ def codex_prompt(ep, n):
         lines.append(f"- revue `{rv['stage']}` : critique(s) {rv['owner']} en lecture seule (rapports dans reviews/, puis submit --review)")
     for st, err in n["failed"].items():
         lines.append(f"- `{st}` a échoué au tour précédent : {err}. Fais corriger par le `fix_owner` des findings, puis refais l'étape.")
-    brief = ROOT / "episodes" / ep / "episode_brief.json"
+    brief = ep_dir(ep) / "episode_brief.json"
     if brief.exists() and json.loads(brief.read_text(encoding="utf-8")).get("script_lock"):
         lines.append("ATTENTION : script IMPOSÉ par l'utilisateur (episode_brief.script_lock) : ne jamais modifier texte, ordre ni locuteurs.")
     lines.append("Respecte AGENTS.md (jamais `studio approve`). Termine par un rapport court : fait / vérifié / bloquant.")
@@ -54,7 +60,7 @@ def run_codex(ep, prompt, model, logf):
     cmd = ["codex", "exec"]
     if model:
         cmd += ["-c", f'model="{model}"']
-    cmd += ["--output-last-message", str(ROOT / "episodes" / ep / "checks" / "codex_rapport_final.md"), prompt]
+    cmd += ["--output-last-message", str(ep_dir(ep) / "checks" / "codex_rapport_final.md"), prompt]
     log("session Codex : " + prompt.splitlines()[4] if len(prompt.splitlines()) > 4 else "session Codex")
     with open(logf, "a", encoding="utf-8") as f:
         p = subprocess.run(cmd, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, text=True)
@@ -68,7 +74,7 @@ def main():
     ap.add_argument("--max-tours", type=int, default=25)
     a = ap.parse_args()
     ep = a.episode
-    logf = ROOT / "episodes" / ep / "checks" / "codex_journal.log"
+    logf = ep_dir(ep) / "checks" / "codex_journal.log"
     logf.parent.mkdir(parents=True, exist_ok=True)
     last_fp, stale = None, 0
     for tour in range(1, a.max_tours + 1):
@@ -76,7 +82,7 @@ def main():
         r = studio("run", ep)
         n = nxt(ep)
         if n["done"]:
-            log("ÉPISODE LIVRÉ : episodes/%s/renders/final.mp4" % ep)
+            log(f"ÉPISODE LIVRÉ : {ep_dir(ep) / 'renders' / 'final.mp4'}")
             return 0
         if n["needs_review"]:
             log(f"ARRÊT : intervention humaine requise sur {n['needs_review']} (budget de corrections ou validation refusée).")
