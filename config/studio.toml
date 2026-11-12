@@ -21,6 +21,7 @@ default_profile = "preview"
 # puis rendu final sur une machine plus puissante.
 prototype_profile = "preview"
 first_cut_profile = "preview"
+final_profile = "final"          # petit VPS : "preview" (540x960 rendu, agrandi en 1080x1920 à l'export)
 fps = 30
 # moteur : "auto" choisit EEVEE si un GPU est utilisable par Blender, sinon Cycles CPU.
 engine = "auto"
@@ -62,6 +63,11 @@ highlight_color = "&H0000E5FF"   # ASS BGR : jaune
 base_color = "&H00FFFFFF"
 
 [quality]
-max_revision_rounds = 2          # au-delà : escalade humaine
+# Mode autonome : true = plus AUCUNE validation humaine. Les gates sont validées automatiquement par
+# `studio run` dès que les critiques ont approuvé (sans bloquant) et que la QA technique n'est pas bloquante,
+# et le rendu final s'enchaîne. La publication reste manuelle dans tous les cas.
+autonomous = false
+human_gates = ["gate_script", "gate_lookdev", "gate_prototype", "gate_first_cut"]   # ignoré si autonomous = true
+max_revision_rounds = 2          # au-delà : arrêt (escalade humaine), même en mode autonome
 min_dimension_score = 6          # un score < seuil sur une dimension critique bloque
 blocker_severities = ["blocker"]

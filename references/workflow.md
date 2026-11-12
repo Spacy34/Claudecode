@@ -34,6 +34,13 @@ Gate 2 (storyboard) = `storyboard_review` (critique, pas d'humain). Gate 5 = `sh
 automatiques + revue visuelle de la planche). Gates 6/7 = `first_cut` + `reviews`. Gate 8 = corrections
 ciblées. Gate 9 = `final` (refusé sans validations humaines valides). Gate 10 = `delivery`.
 
+## Mode autonome
+`[quality] autonomous = true` : les gates ne sont plus humaines. `studio run` valide `gate_script` et
+`gate_lookdev` dès que leur dépendance est terminée (revue approuvée / lookdev rendu), `gate_prototype` et
+`gate_first_cut` seulement si `qa_prototype.json` / `qa_first_cut.json` ne sont pas bloquants, puis exécute
+`final` (profil `render.final_profile`) et `delivery`. Validation enregistrée `by: auto:studio`, liée aux hashes
+comme une validation humaine. Refus → gate `needs_review` et arrêt. Publication : toujours manuelle.
+
 ## Tableau des étapes
 
 | Étape | Entrées | Responsable | Sorties | Bloquant si | Reprise |

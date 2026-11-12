@@ -26,6 +26,24 @@ def cfg():
     return CFG
 
 
+def human_gates():
+    q = cfg()["quality"]
+    if q.get("autonomous"):
+        return []
+    return q.get("human_gates", ["gate_script", "gate_lookdev", "gate_prototype", "gate_first_cut"])
+
+
+def auto_gate_ok(p, gate):
+    """Mode autonome : conditions objectives pour valider une gate sans humain."""
+    if gate == "gate_prototype":
+        q = p / "qa_prototype.json"
+        return q.exists() and not read_json(q)["summary"]["blocking"], "QA du prototype bloquante"
+    if gate == "gate_first_cut":
+        q = p / "qa_first_cut.json"
+        return q.exists() and not read_json(q)["summary"]["blocking"], "QA du first cut bloquante"
+    return True, ""   # gate_script / gate_lookdev : la revue indépendante (dépendance) a déjà approuvé
+
+
 def ep_path(ep):
     p = episode_dir(cfg(), ep)
     if not p.exists():
@@ -154,7 +172,7 @@ def cmd_approve(a):
     gate = a.gate
     if gate not in STAGES or STAGES[gate][1] != "gate":
         sys.exit(f"{gate} n'est pas une gate")
-    human = cfg()["quality"].get("human_gates", ["gate_script", "gate_lookdev", "gate_prototype", "gate_first_cut"])
+    human = human_gates()
     if a.by != "human" and gate in human:
         sys.exit(f"{gate} exige une validation HUMAINE (config quality.human_gates)")
     if a.by == "human":
@@ -324,7 +342,7 @@ def _require_gates(st, gates):
 
 def stage_final(p, st):
     _require_gates(st, ["gate_script", "gate_prototype", "gate_first_cut"])
-    return _render_and_assemble(p, None, "final", "renders/final.mp4", "final")
+    return _render_and_assemble(p, None, cfg()["render"].get("final_profile", "final"), "renders/final.mp4", "final")
 
 
 def stage_delivery(p, st):
@@ -358,7 +376,7 @@ AUTO = {"voice": stage_voice, "compile": stage_compile, "lookdev": stage_lookdev
 NEXT_HINT = {
     "agent": "agent `{owner}` : produire {outs}, puis `studio submit {ep} {stage}`",
     "review": "critique(s) `{owner}` (lecture seule) : écrire reviews/<role>_<gate>_rN.json, puis `studio submit {ep} {stage} --review <fichiers>`",
-    "gate": "HUMAIN : inspecter puis lancer soi-même `studio approve {ep} {stage}` dans un terminal",
+    "gate": "HUMAIN : inspecter puis lancer soi-même `studio approve {ep} {stage}` dans un terminal (ou activer quality.autonomous)",
 }
 
 
@@ -382,9 +400,25 @@ def cmd_run(a):
     st.refresh()
     stop_after = read_json(p / "episode_brief.json").get("stop_after")
     executed = []
+    autonomous = bool(cfg()["quality"].get("autonomous"))
     while True:
         ready = st.ready()
-        auto = [r for r in ready if STAGES[r][1] == "auto" and r != "final"]
+        # gates non humaines (mode autonome) : validées automatiquement si les conditions objectives sont réunies
+        auto_gates = [r for r in ready if STAGES[r][1] == "gate" and r not in human_gates()]
+        if auto_gates:
+            g = auto_gates[0]
+            ok, why = auto_gate_ok(p, g)
+            if not ok:
+                st.finish(g, "needs_review", note=f"validation automatique refusée : {why}")
+                print(f"⚠ {g} : validation automatique refusée ({why}) — arrêt")
+                break
+            st.approve(g, "auto:studio", "mode autonome : revues approuvées et QA non bloquante")
+            print(f"✔ {g} validée automatiquement")
+            executed.append((g, {"auto_approved": True}))
+            if stop_after and g == f"gate_{stop_after}":
+                break
+            continue
+        auto = [r for r in ready if STAGES[r][1] == "auto" and (r != "final" or autonomous)]
         if a.until and a.until in [e for e, _ in executed]:
             break
         if not auto:
@@ -404,7 +438,7 @@ def cmd_run(a):
     for r in st.ready():
         owner, kind, _, outs, _, _ = STAGES[r]
         if kind == "auto":
-            pending.append(f"{r} : `studio final {a.episode}` (exige les validations humaines)" if r == "final" else f"{r} : automatique")
+            pending.append(f"{r} : `studio final {a.episode}` (exige les validations)" if r == "final" else f"{r} : automatique")
         else:
             pending.append(f"{r} : " + NEXT_HINT[kind].format(owner=owner, outs=outs, ep=a.episode, stage=r))
     print("\nÀ faire ensuite :\n  " + "\n  ".join(pending or ["rien : épisode terminé ou bloqué (voir `studio status`)"]))

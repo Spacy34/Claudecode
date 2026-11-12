@@ -9,6 +9,12 @@ tmux new -A -s studio
 ## 0. Préparer (une fois par VPS)
 Dans `config/studio.toml`, petit VPS : `prototype_profile = "draft"` et `first_cut_profile = "draft"`.
 
+### Mode autonome (aucune validation humaine)
+Dans `config/studio.toml` : `[quality] autonomous = true`. Petit VPS : `[render] final_profile = "preview"`.
+Codex enchaîne alors tout seul jusqu'à `renders/final.mp4` ; l'étape 3 ci-dessous disparaît. Les critiques
+indépendants et la QA technique décident à ta place : si l'un d'eux bloque, Codex s'arrête et te fait un rapport.
+Message à Codex : « … Mode autonome : va jusqu'à la vidéo finale sans m'attendre. »
+
 ## 1. Écrire l'histoire (panneau droit)
 ```bash
 cd /opt/studio && git pull

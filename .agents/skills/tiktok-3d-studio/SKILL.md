@@ -42,9 +42,14 @@ qu'une commande `studio` règle. Pour une petite retouche (1 réplique, 1 plan),
 à un seul rôle sans relancer toute la chaîne.
 
 ## 2. Gates et arrêt
-Gates humaines : script → lookdev → prototype (extrait 5–10 s animé avec voix et sous-titres) → first cut.
-Ne jamais lancer `scripts/studio final` sans les validations valides (la commande le refuse de toute façon).
-Respecter `stop_after` du brief. Budget : 2 tours de correction par revue, puis escalade humaine.
+Lire `[quality] autonomous` dans `config/studio.toml` :
+- **false (défaut)** : gates humaines script → lookdev → prototype → first cut. S'arrêter, présenter les preuves,
+  demander à l'utilisateur de lancer `scripts/studio approve <ep> <gate>`. Jamais `studio final` sans validations.
+- **true (autonome)** : créer l'épisode avec `--stop-after final` ; après chaque revue approuvée, relancer
+  `scripts/studio run <ep>` : il valide les gates seul (si revues OK et QA non bloquante) et enchaîne jusqu'à
+  `renders/final.mp4`. Les critiques restent obligatoires et exigeants : en autonome, ils sont le seul filet.
+  Si `run` refuse une validation ou si le budget de corrections est épuisé : s'arrêter et faire un rapport.
+Respecter `stop_after` du brief. Budget : 2 tours de correction par revue.
 
 ## 3. Corrections ciblées
 Finding → rôle `fix_owner` modifie SON artefact → `scripts/studio validate` → `studio run` : seuls les plans dont

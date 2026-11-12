@@ -53,9 +53,11 @@ Un agent ne modifie jamais l'artefact d'un autre rôle : il signale le problème
 
 ## Règles absolues
 1. **Aucune publication** automatique, jamais. Le livrable s'arrête à `renders/final.mp4` + `episode_manifest.json`.
-2. **Validations humaines** : `gate_script`, `gate_lookdev`, `gate_prototype`, `gate_first_cut` se valident
-   UNIQUEMENT par l'utilisateur dans un terminal (`scripts/studio approve …`). Un agent ne lance jamais `approve`
-   et ne contourne jamais une gate (`--force` est réservé aux itérations de travail, jamais au rendu final).
+2. **Validations** : par défaut, `gate_script`, `gate_lookdev`, `gate_prototype`, `gate_first_cut` se valident
+   UNIQUEMENT par l'utilisateur dans un terminal (`scripts/studio approve …`). Si `config/studio.toml`
+   `[quality] autonomous = true`, c'est `scripts/studio run` qui les valide automatiquement (revues approuvées +
+   QA non bloquante) et enchaîne jusqu'au rendu final. Dans les deux cas, un agent ne lance JAMAIS `approve`,
+   ne modifie jamais ce réglage lui-même et ne contourne jamais une gate (`--force` = itérations de travail).
 3. **Critiques indépendants et en lecture seule** : un critique n'édite que son rapport ; il n'évalue jamais un
    travail qu'il a produit ; il ne « valide » pas par défaut.
 4. **Honnêteté d'inspection** : ne jamais affirmer avoir vu une vidéo. On inspecte des IMAGES extraites
