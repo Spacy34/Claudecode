@@ -276,7 +276,8 @@ def _prototype_shots(man, seconds):
     return sel
 
 
-def stage_prototype(p, st, shots=None, seconds=8.0, profile="preview"):
+def stage_prototype(p, st, shots=None, seconds=8.0, profile=None):
+    profile = profile or cfg()["render"].get("prototype_profile", "preview")
     man = _manifest(p)
     sel = shots or _prototype_shots(man, seconds)
     return _render_and_assemble(p, sel, profile, "renders/prototype.mp4", "prototype")
@@ -310,7 +311,8 @@ def stage_shots_check(p, st, profile="draft"):
     return {"contact_sheet": str(sheet), "issues": len(all_checks)}
 
 
-def stage_first_cut(p, st, profile="preview"):
+def stage_first_cut(p, st, profile=None):
+    profile = profile or cfg()["render"].get("first_cut_profile", "preview")
     return _render_and_assemble(p, None, profile, "renders/first_cut.mp4", "first_cut")
 
 
@@ -703,7 +705,7 @@ def build_parser():
     x.add_argument("--note", default="")
     x.add_argument("--override", action="store_true")
     x.set_defaults(fn=cmd_approve)
-    for name, fn, prof in (("lookdev", cmd_lookdev, "preview"), ("check-shots", cmd_check_shots, "draft"), ("first-cut", cmd_first_cut, "preview")):
+    for name, fn, prof in (("lookdev", cmd_lookdev, "preview"), ("check-shots", cmd_check_shots, "draft"), ("first-cut", cmd_first_cut, None)):
         x = sp.add_parser(name)
         x.add_argument("episode")
         x.add_argument("--profile", default=prof)
@@ -713,7 +715,7 @@ def build_parser():
     x.add_argument("episode")
     x.add_argument("--shots", default="")
     x.add_argument("--seconds", type=float, default=8.0)
-    x.add_argument("--profile", default="preview")
+    x.add_argument("--profile", default=None)
     x.add_argument("--force", action="store_true")
     x.set_defaults(fn=cmd_prototype)
     x = sp.add_parser("render", help="rendu de travail hors DAG")

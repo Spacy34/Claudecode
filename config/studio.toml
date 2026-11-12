@@ -17,6 +17,10 @@ min_version = "4.2"
 
 [render]
 default_profile = "preview"
+# Profils utilisés par les étapes automatiques (studio run). Petit VPS : "draft" pour aller vite,
+# puis rendu final sur une machine plus puissante.
+prototype_profile = "preview"
+first_cut_profile = "preview"
 fps = 30
 # moteur : "auto" choisit EEVEE si un GPU est utilisable par Blender, sinon Cycles CPU.
 engine = "auto"
