@@ -109,5 +109,5 @@ puis sur ton PC `ssh -L 8765:127.0.0.1:8765 studio@IP_DU_VPS` et ouvre `http://l
 | Codex : erreur de sandbox | VPS non-KVM (conteneur) : changer d'offre |
 | Accents bizarres dans le terminal | `export LANG=C.UTF-8` |
 
-**Non testé ici** : le script complet sur un VPS réel, le mode « binaire Blender » (le développement a utilisé
-le module `bpy`), EEVEE/GPU, Piper. Le premier passage de `setup_vps.sh` (tests Blender inclus) sert de vérification.
+**Validé sur un VPS réel** (Ubuntu 26.04, 2 cœurs, 3 Go RAM) : installation complète, binaire Blender 5.2.3,
+tests rapides et tests de rendu Blender verts. **Toujours non testé** : EEVEE/GPU, Piper.
