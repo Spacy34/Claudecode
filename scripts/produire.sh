@@ -22,11 +22,23 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-[ -n "$FILE" ] && [ -f "$FILE" ] || { echo "Usage : scripts/produire.sh <fichier.txt> [--libre] [--nom ep_xxx] [--duree 45]"; exit 1; }
+# Reprise par nom d'épisode : scripts/produire.sh ep_chloe
+RESUME=""
+if [ -n "$FILE" ] && [ ! -f "$FILE" ] && [ -d "episodes/$(basename "$FILE")" ]; then
+  EP="$(basename "$FILE")"; RESUME=1
+fi
+if [ -z "$RESUME" ] && { [ -z "$FILE" ] || [ ! -f "$FILE" ]; }; then
+  echo "Usage : scripts/produire.sh <fichier.txt> [--libre] [--nom ep_xxx] [--duree 45]"
+  echo "        scripts/produire.sh <ep_existant>              (reprendre un épisode)"
+  [ -n "$FILE" ] && echo "Introuvable : '$FILE' (ni fichier, ni épisode existant)."
+  echo "Fichiers disponibles dans episodes/_inbox/ :"; ls -1 episodes/_inbox/ 2>/dev/null | grep -v README | sed 's/^/  /'
+  echo "Épisodes existants :"; ls -1d episodes/ep_* 2>/dev/null | sed 's#episodes/#  #'
+  exit 1
+fi
 
 # nom d'épisode dérivé du fichier : episodes/_inbox/La Poule.txt -> ep_la_poule
 if [ -z "$EP" ]; then
-  base="$(basename "$FILE" .txt | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null || basename "$FILE" .txt)"
+  base="$(basename "$FILE" .txt | sed 's/^ep_//' | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null || basename "$FILE" .txt | sed 's/^ep_//')"
   EP="ep_$(echo "$base" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]\+/_/g; s/^_//; s/_$//' | cut -c1-40)"
 fi
 
