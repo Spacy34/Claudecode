@@ -23,3 +23,7 @@ episodes/_inbox/*
 !episodes/_inbox/README.md
 /*.wav
 .studio_locks/
+episodes/*/checks/pilote.*
+episodes/*/checks/motion_preview/
+episodes/*/checks/motion_contact.png
+episodes/*/checks/motion_suggestions.json

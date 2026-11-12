@@ -15,9 +15,10 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-STUDIO = str(ROOT / "scripts" / "studio")
 sys.path.insert(0, str(ROOT / "pipeline"))
-from studio.util import episode_dir, load_config  # noqa: E402  (respecte paths.episodes_dir et ses surcharges)
+from studio.launcher import studio_cmd, studio_env  # noqa: E402  (Windows / macOS / Linux : pas de bash)
+from studio.state import _lock  # noqa: E402
+from studio.util import episode_dir, load_config, which  # noqa: E402  (respecte paths.episodes_dir et ses surcharges)
 
 
 def ep_dir(ep):
@@ -29,7 +30,9 @@ def log(msg):
 
 
 def studio(*args, capture=False):
-    r = subprocess.run([STUDIO, *args], cwd=ROOT, text=True, capture_output=capture)
+    r = subprocess.run(studio_cmd(*args), cwd=ROOT, env=studio_env(), text=True, capture_output=capture, encoding="utf-8", errors="replace")
+    if not capture:
+        sys.stdout.flush()
     return r
 
 
@@ -66,13 +69,19 @@ def codex_prompt(ep, n):
 
 
 def run_codex(ep, prompt, model, logf):
-    cmd = ["codex", "exec"]
+    exe = which("codex")
+    if not exe:
+        log("Codex introuvable (commande `codex`) : installez-le et connectez-vous (`codex login`), puis relancez.")
+        return 127
+    cmd = [exe, "exec"]
     if model:
         cmd += ["-c", f'model="{model}"']
-    cmd += ["--output-last-message", str(ep_dir(ep) / "checks" / "codex_rapport_final.md"), prompt]
+    # consigne transmise sur l'entrée standard (« - ») : aucun problème d'échappement (cmd.exe, $, retours à la ligne)
+    cmd += ["--output-last-message", str(ep_dir(ep) / "checks" / "codex_rapport_final.md"), "-"]
     log("session Codex : " + prompt.splitlines()[4] if len(prompt.splitlines()) > 4 else "session Codex")
+    sys.stdout.flush()
     with open(logf, "a", encoding="utf-8") as f:
-        p = subprocess.run(cmd, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, text=True)
+        p = subprocess.run(cmd, cwd=ROOT, input=prompt, stdout=f, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
     return p.returncode
 
 
@@ -85,6 +94,14 @@ def main():
     ep = a.episode
     logf = ep_dir(ep) / "checks" / "codex_journal.log"
     logf.parent.mkdir(parents=True, exist_ok=True)
+    # verrou « production en cours » (tableau de bord, studio produire) : un seul pilote par épisode
+    lock_h = open(logf.parent / "pilote.lock", "a+b")
+    try:
+        _lock(lock_h)
+    except OSError:
+        log(f"une production de {ep} tourne déjà : arrêt.")
+        return 7
+    (logf.parent / "pilote.pid").write_text(str(os.getpid()), encoding="utf-8")
     last_fp, stale = None, 0
     for tour in range(1, a.max_tours + 1):
         log(f"tour {tour} : étapes automatiques (rendus inclus, peut être long)")
@@ -102,6 +119,8 @@ def main():
             return 3
         if n["agent"] or n["review"] or n["failed"]:
             rc = run_codex(ep, codex_prompt(ep, n), a.modele, logf)
+            if rc == 127:
+                return 6
             if rc != 0:
                 log(f"Codex a terminé avec le code {rc} (voir {logf}).")
         elif r.returncode != 0:

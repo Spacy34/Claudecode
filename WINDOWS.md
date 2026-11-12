@@ -1,5 +1,42 @@
 # Installation sous Windows (pas à pas)
 
+## Tu as déjà installé le studio sur ce PC : mettre à jour + tableau de bord
+
+1. **Mettre à jour le code.** Avec Git (dans PowerShell, dans le dossier du studio) :
+   ```powershell
+   git pull
+   ```
+   Sans Git (installation par ZIP) : retélécharge le ZIP de la branche `claude/awesome-rubin-fftz1l` et décompresse-le
+   **par-dessus** l'ancien dossier (tes `episodes\` et `config\local.toml` sont conservés).
+2. **Compléter l'installation** (nouveautés : Git, Codex en option, raccourci du Bureau) :
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\install_windows.ps1
+   ```
+3. **Connecter Codex** (une fois, si tu l'as installé) : nouveau PowerShell, puis `codex login`, puis lance `codex` une
+   fois dans le dossier du studio et accepte de lui faire confiance (« trusted »), puis quitte avec `/quit`.
+4. **Ouvrir le tableau de bord** : double-clic sur le raccourci **Studio TikTok 3D** du Bureau, ou
+   ```powershell
+   scripts\dashboard.cmd
+   ```
+   Le navigateur s'ouvre sur `http://127.0.0.1:8765`. Tout se fait ensuite à la souris :
+   - **+ Nouvelle vidéo** : colle ton script (une réplique par ligne, `Prénom: réplique` pour un personnage) ou une
+     histoire, coche « Lancer la production tout de suite », clique **Créer la vidéo**.
+   - **Mode autonome** (en haut) : coché = plus aucune validation, la production va jusqu'à la vidéo finale.
+     **Rendu final** : `final` (1080p, lent sans carte graphique) ou `preview` (rapide). Clique **Enregistrer**.
+   - Pour chaque épisode : **Avancement** (où ça en est, étape par étape, bouton « Réessayer »), **Vérifications**
+     (contrôles automatiques et avis des critiques), **Vidéos & images** (prototype, montage, vidéo finale, planches),
+     **Voix & sons** (ta propre voix pour une réplique, ta musique, un bruitage sur un mot précis), **Journal** (en direct).
+   - **Lancer / reprendre** et **Arrêter** : la production tourne en arrière-plan ; fermer le tableau de bord ne
+     l'arrête pas. Relancer reprend là où elle s'était arrêtée (les images déjà rendues sont gardées).
+
+Sans tableau de bord, les mêmes actions en ligne de commande :
+```powershell
+scripts\studio.cmd produire episodes\_inbox\mon_script.txt
+```
+```powershell
+scripts\studio.cmd arreter ep_mon_script
+```
+
 Deux méthodes. **Essaie d'abord la méthode A** (tout dans Windows). Si quelque chose bloque, la méthode B
 (WSL, un Linux intégré à Windows) est celle sur laquelle le pipeline a été testé.
 

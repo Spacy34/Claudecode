@@ -23,8 +23,7 @@ def pick_backend(cfg, ep_dir=None):
     b = cfg["tts"]["backend"]
     if b != "auto":
         return b
-    if ep_dir and (Path(ep_dir) / "audio" / "recorded").is_dir():
-        return "recorded"
+    # (les enregistrements par réplique, audio/recorded/<line_id>.*, remplacent la synthèse ligne par ligne : audio.build_voice)
     model = cfg["tts"].get("piper_model")
     if model and (ROOT / model).exists() and (which("piper") or _python_has("piper")):
         return "piper"
@@ -83,9 +82,24 @@ def synth(backend, cfg, text, out_wav, line, voice_cfg=None, ep_dir=None):
             os.unlink(tf.name)
         return {"backend": "command", "voice": "externe", "license": "à vérifier selon le service externe (coût éventuel à journaliser)"}
     if backend == "recorded":
-        src = Path(ep_dir) / "audio" / "recorded" / f"{line['id']}.wav"
-        if not src.exists():
-            raise RuntimeError(f"enregistrement manquant : {src}")
-        out_wav.write_bytes(src.read_bytes())
+        src = recording_for(ep_dir, line["id"])
+        if src is None:
+            raise RuntimeError(f"enregistrement manquant : {Path(ep_dir) / 'audio' / 'recorded' / (line['id'] + '.wav')}")
+        run(["ffmpeg", "-y", "-v", "error", "-i", str(src), str(out_wav)])
         return {"backend": "recorded", "voice": "humaine", "license": "voix de l'auteur"}
     raise ValueError(backend)
+
+
+AUDIO_EXT = (".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm", ".aac", ".opus")
+
+
+def recording_for(ep_dir, line_id):
+    """Enregistrement fourni par l'utilisateur pour une réplique (audio/recorded/<line_id>.<ext>), ou None."""
+    d = Path(ep_dir) / "audio" / "recorded" if ep_dir else None
+    if not d or not d.is_dir():
+        return None
+    for ext in AUDIO_EXT:
+        p = d / f"{line_id}{ext}"
+        if p.exists():
+            return p
+    return None

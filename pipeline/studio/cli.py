@@ -803,9 +803,8 @@ def cmd_tts_test(a):
     out({"backend": backend, "voice": desc.get("voice"), "fichier": str(out_p), "licence": desc.get("license")})
 
 
-def cmd_next(a):
-    """Résumé machine de ce qu'il reste à faire (utilisé par scripts/pilote.sh)."""
-    p = ep_path(a.episode)
+def next_summary(p):
+    """Ce qu'il reste à faire pour un épisode (pilote, tableau de bord)."""
     st = State(p)
     st.refresh()
     ready = st.ready()
@@ -819,7 +818,56 @@ def cmd_next(a):
            "gates_auto": [r for r in ready if STAGES[r][1] == "gate" and r not in human_gates()],
            "failed": failed, "needs_review": blocked,
            "fingerprint": sha256_json({n: (st.st(n)["status"], st.st(n).get("attempts", 0)) for n in STAGES})}
-    print(json.dumps(res, ensure_ascii=False))
+    return res
+
+
+def cmd_next(a):
+    """Résumé machine de ce qu'il reste à faire (utilisé par scripts/pilote.py)."""
+    print(json.dumps(next_summary(ep_path(a.episode)), ensure_ascii=False))
+
+
+def cmd_produire(a):
+    """Production complète en arrière-plan (Windows, macOS, Linux) : crée l'épisode si besoin puis lance le pilote."""
+    from . import launcher
+    src = Path(a.source)
+    if src.is_file():
+        ep = a.nom or launcher.slug(src.name)
+        if episode_dir(cfg(), ep).exists():
+            print(f"L'épisode {ep} existe déjà : reprise là où il s'est arrêté.")
+        else:
+            ok, txt = launcher.create_episode(ep, src.read_text(encoding="utf-8"), mode="libre" if a.libre else "script",
+                                              duration=a.duree, inbox_name=src.name if src.parent != episode_dir(cfg(), "_inbox") else None)
+            print(txt.strip())
+            if not ok:
+                return 1
+    else:
+        ep = src.name
+        if not episode_dir(cfg(), ep).exists():
+            sys.exit(f"ni fichier, ni épisode existant : {a.source}")
+    if not cfg()["quality"].get("autonomous"):
+        print("ATTENTION : mode autonome désactivé -> la production s'arrêtera à chaque validation humaine.")
+    if not launcher.codex_path():
+        print("ATTENTION : Codex introuvable -> seules les étapes automatiques tourneront (installer Codex puis `codex login`).")
+    try:
+        pid = launcher.start_pilot(ep, a.modele or "")
+    except RuntimeError as e:
+        sys.exit(str(e))
+    print(f"Production lancée en arrière-plan : {ep} (pid {pid})")
+    print(f"  Suivre      : scripts/studio dashboard   (ou le journal {launcher.journal(ep)})")
+    print(f"  Avancement  : scripts/studio status {ep}")
+    print(f"  Arrêter     : scripts/studio arreter {ep}")
+    return 0
+
+
+def cmd_arreter(a):
+    from . import launcher
+    ep_path(a.episode)
+    print("arrêté" if launcher.stop_pilot(a.episode) else "aucune production en cours pour cet épisode")
+
+
+def cmd_dashboard(a):
+    from . import dashboard
+    dashboard.serve(port=a.port, open_browser=not a.no_browser)
 
 
 def cmd_retry(a):
@@ -913,6 +961,20 @@ def build_parser():
     x.add_argument("--video", default="renders/prototype.mp4")
     x.add_argument("--shot", default="sh_002")
     x.set_defaults(fn=cmd_inject)
+    x = sp.add_parser("produire", help="production complète en arrière-plan (fichier .txt ou épisode existant)")
+    x.add_argument("source", help="fichier .txt (script imposé, ou histoire avec --libre) ou nom d'épisode à reprendre")
+    x.add_argument("--libre", action="store_true", help="le fichier est une histoire brute : Codex écrit le script")
+    x.add_argument("--nom")
+    x.add_argument("--duree", type=int)
+    x.add_argument("--modele", default="")
+    x.set_defaults(fn=cmd_produire)
+    x = sp.add_parser("arreter", help="arrêter la production en cours d'un épisode (pilote + rendus)")
+    x.add_argument("episode")
+    x.set_defaults(fn=cmd_arreter)
+    x = sp.add_parser("dashboard", help="tableau de bord local dans le navigateur (http://127.0.0.1:8765)")
+    x.add_argument("--port", type=int, default=8765)
+    x.add_argument("--no-browser", action="store_true")
+    x.set_defaults(fn=cmd_dashboard)
     x = sp.add_parser("motion-suggest", help="moments propices au motion design repérés dans le script")
     x.add_argument("episode")
     x.set_defaults(fn=cmd_motion_suggest)

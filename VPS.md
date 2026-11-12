@@ -97,6 +97,18 @@ studio approve ep_mon_histoire gate_script
 ```
 Détacher sans arrêter : `Ctrl+b` puis `d`. Revenir : `tmux attach -t studio`.
 
+## 5 bis. Tableau de bord du VPS depuis ton PC (tunnel SSH)
+Sur le VPS (dans tmux pour qu'il reste ouvert) :
+```bash
+scripts/dashboard.sh --no-browser
+```
+Sur ton PC (PowerShell), garde cette fenêtre ouverte :
+```bash
+ssh -L 8765:127.0.0.1:8765 ubuntu@ADRESSE_DU_VPS
+```
+Puis ouvre `http://127.0.0.1:8765` dans ton navigateur : avancement, vérifications, vidéos, journal, nouvelle vidéo,
+voix et sons, lancer/arrêter. Le tableau de bord n'écoute que sur 127.0.0.1 (jamais exposé sur Internet).
+
 ## 6. Récupérer et visionner les vidéos sur ton PC
 Copie simple (depuis ton PC, PowerShell ou terminal) :
 ```bash

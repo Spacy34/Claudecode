@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio TikTok 3D</title>
+<style>
+:root{--bg:#f4f5f7;--panel:#fff;--ink:#16181d;--muted:#5d6370;--line:#e2e5ea;--accent:#ff2d55;--accent-ink:#fff;
+--ok:#1f9d55;--warn:#c27c00;--bad:#d64045;--run:#2f6fde;--chip:#eef0f3;--code:#0f1115;--code-ink:#d8dee9;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--panel:#171a21;--ink:#e8eaee;--muted:#9aa1ad;--line:#262b35;--chip:#20242d;
+--ok:#3ecf7a;--warn:#f0b429;--bad:#ff6b6b;--run:#6ea8ff;--code:#0b0d11;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+header h1{font-size:17px;margin:0 12px 0 0;letter-spacing:.2px}
+header h1 span{color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--chip);color:var(--muted);white-space:nowrap}
+.chip.ok{color:var(--ok)}.chip.bad{color:var(--bad)}
+.settings{margin-left:auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px}
+.settings input[type=text],.settings select{padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;width:150px}
+.switch{display:flex;gap:6px;align-items:center;cursor:pointer}
+main{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 58px)}
+@media (max-width:820px){main{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}}
+aside{border-right:1px solid var(--line);padding:14px;background:var(--panel)}
+.newbtn{width:100%;margin-bottom:12px}
+.ep{padding:10px 12px;border-radius:10px;cursor:pointer;margin-bottom:6px;border:1px solid transparent}
+.ep:hover{background:var(--chip)}.ep.sel{border-color:var(--accent);background:var(--chip)}
+.ep b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ep small{color:var(--muted);font-size:12px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:6px 0 4px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.phase{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.phase.encours{color:var(--run)}.phase.termine{color:var(--ok)}.phase.bloque,.phase.areprendre{color:var(--bad)}.phase.enpause{color:var(--muted)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--run);margin-right:6px;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.25}}
+section.content{padding:18px 22px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.head{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.head h2{margin:0;font-size:20px}.head .id{color:var(--muted);font-size:13px}
+.head .actions{margin-left:auto;display:flex;gap:8px}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:8px 14px;cursor:pointer;background:var(--chip);color:var(--ink)}
+button.primary{background:var(--accent);color:var(--accent-ink)}button.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+button.small{padding:4px 10px;font-size:12px;border-radius:8px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.banner{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--chip);font-size:14px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:0 0 14px}
+.tabs button{background:none;border-radius:0;border-bottom:2px solid transparent;color:var(--muted);padding:8px 12px}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td,th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px}
+.st{font-weight:600;white-space:nowrap}
+.st.completed,.st.approved{color:var(--ok)}.st.running{color:var(--run)}.st.failed,.st.needs_review{color:var(--bad)}
+.st.stale,.st.interrupted{color:var(--warn)}.st.pending{color:var(--muted)}
+.note{color:var(--muted);font-size:12.5px;word-break:break-word}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.media{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg)}
+.media video,.media img{display:block;width:100%;max-height:520px;object-fit:contain;background:#000}
+.media div{padding:8px 10px;font-size:13px;font-weight:600}
+pre.log{background:var(--code);color:var(--code-ink);padding:12px;border-radius:10px;max-height:62vh;overflow:auto;font:12px/1.45 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+textarea{width:100%;min-height:260px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:14px/1.5 ui-monospace,Consolas,monospace}
+.form label{display:block;margin:12px 0 4px;font-weight:600;font-size:13px}
+.form input[type=text],.form input[type=number],.form select{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:end}
+.hint{color:var(--muted);font-size:12.5px}
+.sev{font-size:11px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:5px;background:var(--chip)}
+.sev.major,.sev.blocker{color:var(--bad)}.sev.minor{color:var(--warn)}
+audio{height:32px;max-width:220px}
+.toast{position:fixed;right:16px;bottom:16px;max-width:420px;padding:12px 14px;border-radius:12px;background:var(--ink);color:var(--bg);font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.25);display:none;z-index:9}
+.empty{color:var(--muted);text-align:center;padding:40px 10px}
+.upl{display:inline-flex;gap:6px;align-items:center}
+.filebtn{display:inline-block;font-weight:600;font-size:12px;padding:4px 10px;border-radius:8px;background:var(--chip);color:var(--ink);cursor:pointer;white-space:nowrap}
+.filebtn:hover{outline:1px solid var(--accent)}.filebtn input{display:none}
+td.nw{white-space:nowrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>Studio <span>TikTok 3D</span></h1>
+  <div class="chips" id="machine"></div>
+  <div class="settings">
+    <label class="switch" title="true = aucune validation humaine : la production va jusqu'à la vidéo finale">
+      <input type="checkbox" id="auto"> Mode autonome</label>
+    <label>Modèle Codex <input type="text" id="model" placeholder="(défaut de Codex)"></label>
+    <label>Rendu final <select id="fprof"><option value="final">final (1080p)</option><option value="preview">preview (rapide)</option><option value="draft">draft</option></select></label>
+    <button class="small" id="saveSettings">Enregistrer</button>
+  </div>
+</header>
+<main>
+  <aside>
+    <button class="primary newbtn" id="newBtn">+ Nouvelle vidéo</button>
+    <div id="eps"></div>
+  </aside>
+  <section class="content" id="content"><div class="empty">Chargement…</div></section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const TOKEN = "__TOKEN__";
+const S = {ov: null, ep: null, view: "new", tab: "progress", detail: null, sig: {}, logTimer: null};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const STATUS = {completed:"✔ terminé", approved:"✔ validé", running:"… en cours", failed:"✘ échec", needs_review:"? à revoir",
+  stale:"↺ à refaire", interrupted:"⚠ interrompu", pending:"en attente"};
+
+function toast(msg, ms=4000){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",ms);}
+async function api(path, opts={}){
+  const o = Object.assign({headers:{}}, opts);
+  if (o.method === "POST") o.headers["X-Studio-Token"] = TOKEN;
+  if (o.json !== undefined){o.body = JSON.stringify(o.json); o.headers["Content-Type"]="application/json";}
+  const r = await fetch(path, o);
+  const j = await r.json().catch(()=>({error:"réponse invalide"}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+const post = (path, json) => api(path, {method:"POST", json});
+
+// ---------------------------------------------------------------- en-tête
+function renderMachine(){
+  const d = S.ov.doctor || {}; const chips = [];
+  const c = (ok, label) => `<span class="chip ${ok?"ok":"bad"}">${ok?"✓":"✗"} ${esc(label)}</span>`;
+  if (d.status === "ok"){
+    chips.push(c(d.blender_binary || d.bpy_module, "Blender"));
+    chips.push(c(d.ffmpeg, "FFmpeg"));
+    chips.push(c(S.ov.codex, "Codex"));
+    chips.push(c(d.piper_model || d.espeak_ng, d.piper_model ? "Voix Piper" : (d.espeak_ng ? "Voix espeak (test)" : "Voix")));
+    if (d.gpu) chips.push(`<span class="chip ok">GPU ${esc(d.gpu.split(",")[0])}</span>`);
+  } else chips.push(`<span class="chip">diagnostic machine ${esc(d.status||"…")}</span>`);
+  $("machine").innerHTML = chips.join("");
+  if (!S.settingsTouched){ $("auto").checked = S.ov.autonomous; $("model").value = S.ov.model || ""; $("fprof").value = S.ov.final_profile || "final"; }
+}
+["auto","model","fprof"].forEach(id => $(id).addEventListener("input", () => S.settingsTouched = true));
+$("saveSettings").onclick = async () => {
+  try { await post("/api/settings", {autonomous: $("auto").checked, model: $("model").value, final_profile: $("fprof").value});
+    S.settingsTouched = false; toast("Réglages enregistrés dans config/local.toml"); refresh(); } catch(e){ toast("Erreur : " + e.message); }
+};
+
+// ---------------------------------------------------------------- liste
+function renderList(){
+  const eps = S.ov.episodes;
+  $("eps").innerHTML = eps.length ? eps.map(e => `
+    <div class="ep ${S.view==="ep"&&S.ep===e.id?"sel":""}" data-ep="${esc(e.id)}">
+      <b>${esc(e.title)}</b><small>${esc(e.id)}</small>
+      <div class="bar"><i style="width:${Math.round(e.progress*100)}%"></i></div>
+      <span class="phase ${e.phase.normalize("NFD").replace(/[^a-z]/g,"")}">${e.running?'<span class="dot"></span>':""}${esc(e.phase)}</span>
+      <small> · ${e.done}/${e.total} étapes${e.final?" · 🎬":""}</small>
+    </div>`).join("") : `<div class="hint">Aucun épisode pour l'instant.</div>`;
+  document.querySelectorAll(".ep").forEach(el => el.onclick = () => { S.view="ep"; S.ep=el.dataset.ep; S.sig={}; S.detail=null; renderList(); loadDetail(); });
+}
+$("newBtn").onclick = () => { S.view="new"; S.ep=null; renderList(); renderNew(); };
+
+// ---------------------------------------------------------------- nouvelle vidéo
+function renderNew(){
+  const inbox = (S.ov && S.ov.inbox) || [];
+  $("content").innerHTML = `<div class="panel form">
+    <div class="head"><h2>Nouvelle vidéo</h2></div>
+    <div class="row">
+      <div><label>Type de texte</label>
+        <select id="nMode"><option value="script">Mon script (texte imposé, mot pour mot)</option><option value="libre">Une histoire (Codex écrit le script)</option></select></div>
+      <div><label>Nom (facultatif)</label><input type="text" id="nName" placeholder="ex : la poule maire"></div>
+      <div><label>Durée cible (s)</label><input type="number" id="nDur" min="20" max="180" placeholder="auto"></div>
+    </div>
+    <label>Texte</label>
+    <div class="row" style="margin-bottom:8px">
+      <label class="filebtn">Charger un fichier .txt<input type="file" id="nFile" accept=".txt,text/plain"></label>
+      ${inbox.length?`<span class="upl">ou depuis _inbox <select id="nInbox"><option value="">—</option>${inbox.map(f=>`<option>${esc(f)}</option>`).join("")}</select></span>`:""}
+    </div>
+    <textarea id="nText" placeholder="Script imposé : une réplique par ligne.&#10;Narrateur : la ligne telle quelle.&#10;Personnage : « Prénom: sa réplique »&#10;&#10;Chloé avait 47 notifications non lues.&#10;Chloé: Je réponds jamais, c'est un principe."></textarea>
+    <p class="hint">Les voix enregistrées, la musique et les bruitages se fournissent ensuite dans l'onglet « Voix &amp; sons » de l'épisode (avant ou pendant la production).</p>
+    <div class="row"><label class="switch"><input type="checkbox" id="nLaunch" checked> Lancer la production tout de suite</label>
+      <button class="primary" id="nGo">Créer la vidéo</button></div>
+    <pre class="log" id="nOut" style="display:none"></pre>
+  </div>`;
+  $("nFile").onchange = async (ev) => { const f = ev.target.files[0]; if (f){ $("nText").value = await f.text(); if(!$("nName").value) $("nName").value = f.name.replace(/\.txt$/,""); } };
+  if ($("nInbox")) $("nInbox").onchange = async (ev) => { if (!ev.target.value) return; const j = await api("/api/inbox?name="+encodeURIComponent(ev.target.value)); $("nText").value=j.text; if(!$("nName").value) $("nName").value=ev.target.value.replace(/\.txt$/,""); };
+  $("nGo").onclick = async () => {
+    const b = $("nGo"); b.disabled = true; b.textContent = "Création…";
+    try {
+      const j = await post("/api/new", {mode:$("nMode").value, name:$("nName").value, duration:$("nDur").value||null, text:$("nText").value, launch:$("nLaunch").checked});
+      toast(`Épisode ${j.ep} créé${j.pid?" et lancé":""}.`); S.view="ep"; S.ep=j.ep; S.sig={}; await refresh(); loadDetail();
+    } catch(e){ const o=$("nOut"); o.style.display="block"; o.textContent = e.message; b.disabled=false; b.textContent="Créer la vidéo"; }
+  };
+}
+
+// ---------------------------------------------------------------- épisode
+async function loadDetail(){
+  if (S.view !== "ep" || !S.ep) return;
+  try { S.detail = await api("/api/episode?ep=" + encodeURIComponent(S.ep)); } catch(e){ $("content").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  renderEpisode();
+}
+function renderEpisode(){
+  const d = S.detail;
+  if (!$("epShell") || $("epShell").dataset.ep !== d.id){
+    S.sig = {};
+    $("content").innerHTML = `<div id="epShell" data-ep="${esc(d.id)}">
+      <div class="panel"><div class="head"><div><h2 id="epTitle"></h2><div class="id">${esc(d.id)}</div></div>
+        <div class="actions"><button class="primary" id="bLaunch">Lancer / reprendre</button><button class="danger" id="bStop">Arrêter</button></div></div>
+        <div class="bar" style="margin-top:12px"><i id="epBar"></i></div><div class="banner" id="epBanner"></div></div>
+      <div class="tabs" id="tabs">${[["progress","Avancement"],["checks","Vérifications"],["media","Vidéos & images"],["audio","Voix & sons"],["log","Journal"]]
+        .map(([k,l])=>`<button data-t="${k}">${l}</button>`).join("")}</div>
+      <div id="tabBody"></div></div>`;
+    $("bLaunch").onclick = async () => { try { await post("/api/launch",{ep:S.ep}); toast("Production lancée en arrière-plan."); setTimeout(loadDetail,800); refresh(); } catch(e){ toast("Erreur : "+e.message); } };
+    $("bStop").onclick = async () => { if(!confirm("Arrêter la production en cours (rendus compris) ? Elle pourra reprendre plus tard.")) return;
+      try { const j = await post("/api/stop",{ep:S.ep}); toast(j.ok?"Production arrêtée.":"Aucune production en cours."); setTimeout(loadDetail,800); refresh(); } catch(e){ toast("Erreur : "+e.message); } };
+    document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => { S.tab = b.dataset.t; S.sig = {}; renderEpisode(); });
+  }
+  $("epTitle").textContent = d.title;
+  $("epBar").style.width = Math.round(d.progress*100) + "%";
+  $("epBanner").innerHTML = `${d.running?'<span class="dot"></span>':""}<b>${esc(d.phase)}</b> — ${esc(d.message)} <span class="hint">(${d.done}/${d.total} étapes${d.brief.imposed?" · script imposé":""}${d.brief.duration?` · ~${d.brief.duration} s`:""})</span>`;
+  $("bLaunch").disabled = d.running; $("bStop").disabled = !d.running;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === S.tab));
+  const views = {progress: tabProgress, checks: tabChecks, media: tabMedia, audio: tabAudio, log: tabLog};
+  views[S.tab](d);
+}
+function setBody(key, sigObj, html, after){
+  const sig = JSON.stringify(sigObj);
+  if (S.sig[key] === sig) return;
+  S.sig = {[key]: sig};
+  $("tabBody").innerHTML = html; if (after) after();
+}
+function tabProgress(d){
+  const nx = d.next || {};
+  const todo = [...(nx.agent||[]).map(a=>`rédaction : <b>${esc(a.stage)}</b> (${esc(a.owner)})`), ...(nx.review||[]).map(r=>`critique : <b>${esc(r.stage)}</b> (${esc(r.owner)})`),
+                ...(nx.gates_human||[]).map(g=>`validation humaine <b>${esc(g)}</b> : dans un terminal <code>scripts/studio approve ${esc(d.id)} ${esc(g)}</code>`)];
+  setBody("progress", {s:d.stages, todo, r:d.running}, `<div class="panel">
+    ${todo.length?`<p><b>Prochaines étapes de jugement (Codex)</b> : ${todo.join(" · ")}</p>`:""}
+    <table><tr><th>Étape</th><th>État</th><th>Qui</th><th>Détail</th><th></th></tr>
+    ${d.stages.map(s=>`<tr><td>${esc(s.label)}<div class="note">${esc(s.name)}</div></td><td class="st ${s.status}">${STATUS[s.status]||esc(s.status)}</td>
+      <td class="note">${esc(s.owner)}${s.attempts>1?` · ${s.attempts} essais`:""}${s.rounds?` · correction ${s.rounds}`:""}</td>
+      <td class="note">${esc(s.note)}</td>
+      <td>${["failed","needs_review","interrupted"].includes(s.status)&&!d.running?`<button class="small" data-retry="${esc(s.name)}">Réessayer</button>`:""}</td></tr>`).join("")}
+    </table></div>`, () => document.querySelectorAll("[data-retry]").forEach(b => b.onclick = async () => {
+      try { await post("/api/retry",{ep:S.ep, stage:b.dataset.retry}); toast("Étape remise en attente : cliquez sur « Lancer / reprendre »."); loadDetail(); } catch(e){ toast("Erreur : "+e.message); } }));
+}
+function tabChecks(d){
+  const qa = d.qa.map(q=>`<div class="panel"><b>${esc(q.file)}</b> — ${q.summary.blocking?'<span class="st failed">bloquant</span>':'<span class="st completed">non bloquant</span>'}
+    ${q.issues.length?`<table>${q.issues.map(i=>`<tr><td><span class="sev ${esc(i.severity)}">${esc(i.severity||"")}</span></td><td class="note">${esc(i.id)}</td><td>${esc(i.message)}</td></tr>`).join("")}</table>`:'<p class="hint">Aucun défaut signalé.</p>'}</div>`).join("");
+  const rv = d.reviews.length ? `<div class="panel"><b>Revues des critiques</b><table><tr><th>Critique</th><th>Étape</th><th>Verdict</th><th>Note</th><th>Points relevés</th></tr>
+    ${d.reviews.map(r=>`<tr><td>${esc(r.reviewer)}</td><td class="note">${esc(r.gate)}</td><td class="st ${r.verdict==="approve"?"completed":"failed"}">${esc(r.verdict)}</td><td>${r.score??""}</td>
+      <td class="note">${r.findings.map(f=>`<span class="sev ${esc(f.severity)}">${esc(f.severity)}</span> ${esc(f.issue)}`).join("<br>")}</td></tr>`).join("")}</table></div>` : "";
+  const rep = d.report ? `<div class="panel"><b>Dernier rapport de Codex</b><pre class="log">${esc(d.report)}</pre></div>` : "";
+  setBody("checks", {qa:d.qa, rv:d.reviews, rep:d.report}, (qa + rv + rep) || `<div class="empty">Pas encore de vérification : elles apparaissent après le prototype.</div>`);
+}
+function fileUrl(d, path, mt){ return `/file?ep=${encodeURIComponent(d.id)}&path=${encodeURIComponent(path)}${mt?`&v=${mt}`:""}`; }
+function tabMedia(d){
+  setBody("media", d.media, d.media.length ? `<div class="grid">${d.media.map(m=>`<div class="media">${m.kind==="video"
+    ? `<video controls preload="metadata" src="${fileUrl(d,m.path,m.mtime)}"></video>`
+    : `<a href="${fileUrl(d,m.path,m.mtime)}" target="_blank" rel="noopener"><img alt="${esc(m.label)}" src="${fileUrl(d,m.path,m.mtime)}"></a>`}
+    <div>${esc(m.label)}</div></div>`).join("")}</div>` : `<div class="empty">Aucune image ni vidéo pour l'instant (lookdev, prototype, montage…).</div>`);
+}
+function upField(id, label){ return `<label class="filebtn">${esc(label||"Choisir un fichier…")}<input type="file" id="${id}" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac,.opus,.webm"></label>`; }
+async function upload(kind, file, extra={}){
+  const q = new URLSearchParams({ep:S.ep, kind, filename:file.name, ...extra});
+  const r = await fetch("/api/upload?"+q, {method:"POST", headers:{"X-Studio-Token":TOKEN}, body:file});
+  const j = await r.json(); if (!r.ok) throw new Error(j.error); return j;
+}
+function tabAudio(d){
+  const lines = d.lines;
+  setBody("audio", {l:lines, m:d.music}, `<div class="panel">
+    <b>Musique de fond</b> <span class="hint">(remplace la musique générée ; vous devez avoir les droits d'usage)</span>
+    <div class="row" style="margin-top:8px">${d.music.length?`<audio controls src="${fileUrl(d,"audio/music/"+d.music[0])}"></audio> <button class="small danger" id="mDel">Retirer</button>`:'<span class="hint">musique générée par défaut</span>'}
+      ${upField("mUp", d.music.length ? "Changer la musique…" : "Choisir une musique…")}</div></div>
+    <div class="panel"><b>Voix et bruitages par réplique</b>
+    <p class="hint">Voix : votre fichier remplace la voix de synthèse pour cette réplique (le minutage des plans suit). Bruitage : joué sur le mot choisi.
+    Les changements sont pris en compte au prochain « Lancer / reprendre ».</p>
+    ${lines.length?`<table><tr><th>#</th><th>Qui</th><th>Texte</th><th>Voix</th><th>Bruitage</th></tr>${lines.map(l=>`<tr>
+      <td class="note nw">${esc(l.id)}</td><td class="note nw">${esc(l.speaker.replace(/^ch_/,""))}</td><td>${esc(l.text)}</td>
+      <td>${l.recording?`<audio controls src="${fileUrl(d,"audio/recorded/"+l.recording)}"></audio><br><button class="small danger" data-dl="${esc(l.id)}">Retirer</button>`:"synthèse"}
+        <div>${upField("v_"+l.id, l.recording ? "Remplacer…" : "Ma voix…")}</div></td>
+      <td>${l.sfx.map(s=>`<div class="note">mot ${s.word} : ${esc(s.original||s.file)} <button class="small danger" data-ds="${esc(l.id)}" data-w="${s.word}">×</button></div>`).join("")}
+        <div class="upl"><select id="w_${esc(l.id)}">${l.text.split(/\s+/).filter(Boolean).map((w,i)=>`<option value="${i}">${i} · ${esc(w.slice(0,18))}</option>`).join("")}</select>${upField("s_"+l.id, "+ son")}</div></td></tr>`).join("")}</table>`
+      : '<p class="hint">Les répliques apparaîtront ici dès que le script existe.</p>'}</div>`, () => {
+    const done = (j) => { toast(j.note || "Fichier enregistré."); S.sig={}; loadDetail(); };
+    const fail = (e) => toast("Erreur : " + e.message);
+    const m = $("mUp"); if (m) m.onchange = (ev) => ev.target.files[0] && upload("music", ev.target.files[0]).then(done, fail);
+    if ($("mDel")) $("mDel").onclick = () => post("/api/delete",{ep:S.ep, kind:"music"}).then(done, fail);
+    lines.forEach(l => {
+      const v = $("v_"+l.id); if (v) v.onchange = (ev) => ev.target.files[0] && upload("line", ev.target.files[0], {line:l.id}).then(done, fail);
+      const s = $("s_"+l.id); if (s) s.onchange = (ev) => ev.target.files[0] && upload("sfx", ev.target.files[0], {line:l.id, word:$("w_"+l.id).value}).then(done, fail);
+    });
+    document.querySelectorAll("[data-dl]").forEach(b => b.onclick = () => post("/api/delete",{ep:S.ep, kind:"line", line:b.dataset.dl}).then(done, fail));
+    document.querySelectorAll("[data-ds]").forEach(b => b.onclick = () => post("/api/delete",{ep:S.ep, kind:"sfx", line:b.dataset.ds, word:+b.dataset.w}).then(done, fail));
+  });
+}
+function tabLog(d){
+  setBody("log", {}, `<div class="panel"><div class="row" style="justify-content:space-between"><b>Journal de production</b>
+    <label class="switch hint"><input type="checkbox" id="follow" checked> suivre en direct</label></div><pre class="log" id="logPre">…</pre></div>`, loadLog);
+}
+async function loadLog(){
+  if (S.view!=="ep" || S.tab!=="log" || !$("logPre")) return;
+  try { const j = await api("/api/log?ep="+encodeURIComponent(S.ep)+"&n=400"); const pre=$("logPre");
+    const atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 30;
+    if (pre.textContent !== j.log){ pre.textContent = j.log || "(journal vide : la production n'a pas encore été lancée)"; if ($("follow").checked && atEnd || pre._first===undefined){ pre.scrollTop = pre.scrollHeight; pre._first=1; } } } catch(e){}
+}
+
+// ---------------------------------------------------------------- boucle
+async function refresh(){
+  try { S.ov = await api("/api/overview"); renderMachine(); renderList(); } catch(e){ toast("Serveur injoignable : " + e.message); }
+}
+(async () => {
+  await refresh();
+  if (S.ov && S.ov.episodes.length){ S.view="ep"; S.ep=S.ov.episodes[0].id; renderList(); loadDetail(); } else renderNew();
+  setInterval(refresh, 5000);
+  setInterval(() => { if (S.view==="ep") loadDetail(); }, 5000);
+  setInterval(loadLog, 2500);
+})();
+</script>
+</body>
+</html>

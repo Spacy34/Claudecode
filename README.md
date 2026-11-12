@@ -26,6 +26,11 @@ Diagnostic à tout moment :
 scripts/studio doctor
 ```
 
+## 1 bis. Tableau de bord (recommandé)
+`scripts/studio dashboard` (Windows : `scripts\dashboard.cmd`) ouvre http://127.0.0.1:8765 : créer une vidéo depuis un
+script ou une histoire, suivre l'avancement et les vérifications, regarder prototype / montage / vidéo finale, fournir
+ses voix, sa musique et ses bruitages, lancer / arrêter la production (pilote en arrière-plan, Windows/macOS/Linux).
+
 ## 2. Utilisation avec Codex
 Ouvrir Codex à la racine du dépôt (le marquer « trusted » pour charger `.codex/config.toml`), puis :
 

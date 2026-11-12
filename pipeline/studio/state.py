@@ -12,7 +12,7 @@ import errno
 import os
 from pathlib import Path
 
-from .util import now, read_json, sha256_file, write_json
+from .util import now, read_json, sha256_file, sha256_json, write_json
 
 # nom : (propriétaire, type, entrées (fichiers relatifs à l'épisode), sorties, dépendances d'étapes, gate humaine)
 STAGES = {
@@ -24,7 +24,7 @@ STAGES = {
     "storyboard":       ("director", "agent", ["story_script.json", "cast_bible.json", "asset_manifest.json"], ["storyboard.json"], ["design"], False),
     "animation":        ("animator", "agent", ["storyboard.json"], ["animation_plan.json"], ["storyboard"], False),
     "motion":           ("motion-designer", "agent", ["story_script.json", "storyboard.json"], ["motion_design.json"], ["storyboard"], False),
-    "voice":            ("pipeline", "auto", ["story_script.json", "cast_bible.json"], ["audio_timeline.json"], ["gate_script"], False),
+    "voice":            ("pipeline", "auto", ["story_script.json", "cast_bible.json", "audio/recorded", "audio/music", "audio/user_sfx"], ["audio_timeline.json"], ["gate_script"], False),
     "storyboard_review": ("continuity-auditor", "review", ["storyboard.json", "animation_plan.json"], [], ["animation"], False),
     "compile":          ("pipeline", "auto", ["story_script.json", "cast_bible.json", "asset_manifest.json", "storyboard.json", "animation_plan.json", "audio_timeline.json"], ["shot_manifest.json"], ["storyboard_review", "voice"], False),
     "lookdev":          ("pipeline", "auto", ["cast_bible.json", "asset_manifest.json"], ["lookdev/contact_sheet.png"], ["design"], False),
@@ -46,7 +46,11 @@ def _hash_inputs(ep_dir, files):
     out = {}
     for f in files:
         p = Path(ep_dir) / f
-        out[f] = sha256_file(p) if p.exists() else None
+        if p.is_dir():   # dossier (ex : enregistrements de voix) : empreinte de son contenu
+            items = sorted((q.relative_to(p).as_posix(), sha256_file(q)) for q in p.rglob("*") if q.is_file())
+            out[f] = sha256_json(items) if items else None
+        else:
+            out[f] = sha256_file(p) if p.exists() else None
     return out
 
 

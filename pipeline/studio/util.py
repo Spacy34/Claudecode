@@ -84,13 +84,46 @@ def load_config():
     """config/studio.toml (versionné) puis config/local.toml (TES réglages, ignoré par git : jamais de conflit au pull)."""
     with open(ROOT / "config" / "studio.toml", "rb") as f:
         cfg = tomllib.load(f)
-    local = ROOT / "config" / "local.toml"
+    local = local_config_path()
     if local.exists():
         with open(local, "rb") as f:
             _deep_merge(cfg, tomllib.load(f))
     with open(ROOT / "config" / "profiles.toml", "rb") as f:
         cfg["profiles"] = tomllib.load(f)
     return _env_override(cfg)
+
+
+def local_config_path():
+    """config/local.toml (réglages de la machine) ; STUDIO_LOCAL_TOML pour un autre fichier (tests)."""
+    return Path(os.environ["STUDIO_LOCAL_TOML"]) if os.environ.get("STUDIO_LOCAL_TOML") else ROOT / "config" / "local.toml"
+
+
+def set_local_value(section, key, value):
+    """Écrit `key = value` dans [section] de config/local.toml en préservant le reste (commentaires compris)."""
+    p = local_config_path()
+    lit = ("true" if value else "false") if isinstance(value, bool) else (str(value) if isinstance(value, (int, float)) else json.dumps(str(value), ensure_ascii=False))
+    lines = p.read_text(encoding="utf-8").splitlines() if p.exists() else []
+    out, in_sec, done, seen_sec = [], False, False, False
+    for ln in lines:
+        st = ln.strip()
+        if st.startswith("[") and st.endswith("]"):
+            if in_sec and not done:
+                out.append(f"{key} = {lit}")
+                done = True
+            in_sec = st[1:-1].strip() == section
+            seen_sec = seen_sec or in_sec
+        elif in_sec and not done and st.split("=")[0].strip() == key and not st.startswith("#"):
+            out.append(f"{key} = {lit}")
+            done = True
+            continue
+        out.append(ln)
+    if in_sec and not done:
+        out.append(f"{key} = {lit}")
+        done = True
+    if not done:
+        out += ["", f"[{section}]", f"{key} = {lit}"]
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text("\n".join(out).strip("\n") + "\n", encoding="utf-8")
 
 
 def episodes_dir(cfg):
@@ -121,6 +154,7 @@ IS_WINDOWS = os.name == "nt"
 _WIN_CANDIDATES = {
     "blender": [r"C:\Program Files\Blender Foundation\Blender*\blender.exe"],
     "espeak-ng": [r"C:\Program Files\eSpeak NG\espeak-ng.exe", r"C:\Program Files (x86)\eSpeak NG\espeak-ng.exe"],
+    "codex": [r"%APPDATA%\npm\codex.cmd", r"%LOCALAPPDATA%\Programs\codex\codex.exe"],
 }
 
 
@@ -130,7 +164,7 @@ def which(name):
         return p
     import glob
     for pat in _WIN_CANDIDATES.get(name, []):
-        hits = sorted(glob.glob(pat))
+        hits = sorted(glob.glob(os.path.expandvars(pat)))
         if hits:
             return hits[-1]   # version la plus récente
     return None

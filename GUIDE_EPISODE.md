@@ -1,4 +1,19 @@
-# Produire un nouvel épisode (processus complet, sur le VPS)
+# Produire un nouvel épisode (processus complet)
+
+## Le plus simple : le tableau de bord (PC Windows, Mac, Linux ou VPS via tunnel SSH)
+```bash
+scripts/studio dashboard
+```
+(Windows : `scripts\dashboard.cmd` ou le raccourci du Bureau.) « + Nouvelle vidéo » → coller le script ou l'histoire →
+« Créer la vidéo ». Suivi, vérifications, vidéos, journal, voix enregistrées, musique et bruitages : tout est dans la page.
+Équivalent en ligne de commande, sur toutes les machines : `scripts/studio produire <fichier.txt> [--libre]`,
+`scripts/studio arreter <ep>`.
+
+### Motion design TikTok (automatique)
+L'étape `motion` (rôle motion-designer) ajoute la couche 2D : écran de smartphone quand on parle de messages,
+notifications, appels ou réseaux sociaux ; textes qui « pop » ; stickers ; étiquettes des personnages ; compteurs ;
+flèches ; barre de progression. Détails : references/motion-design.md. Planche de contrôle sans rendu 3D :
+`scripts/studio motion-preview <ep>`.
 
 ## Méthode rapide (recommandée) : une seule commande
 ```bash
