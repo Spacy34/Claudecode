@@ -13,6 +13,8 @@ Règles permanentes : `AGENTS.md`. Détails : `references/workflow.md` (lire ava
 1. `scripts/studio doctor` (une fois par machine) ; corriger tout « BLOQUANT ».
 2. Nouvel épisode : écrire l'histoire dans `episodes/_inbox/<slug>.txt`, puis
    `scripts/studio new ep_<slug> --story-file … --duration <s> --stop-after prototype`.
+   Script écrit par l'utilisateur : `scripts/studio new ep_<slug> --script-file <fichier>` (texte importé mot pour
+   mot et verrouillé ; le story-architect l'habille sans le réécrire).
    Épisode existant : `scripts/studio status <ep>` → reprendre à la 1re étape non terminée (`stale`, `failed`,
    `interrupted` compris). Ne refais jamais une étape `completed` dont les entrées n'ont pas changé.
 

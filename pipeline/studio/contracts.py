@@ -119,6 +119,23 @@ def cross_errors(arts):
             for it in st_.get("dressing", []):
                 if it["type"] == "composite" and not it.get("parts"):
                     errs.append(f"asset_manifest : habillage composite sans 'parts' dans {st_['id']}")
+    brief = arts.get("episode_brief")
+    if brief and brief.get("script_lock") and script:
+        locked = [(l["speaker"], l["text"]) for l in brief["script_lock"]["lines"]]
+        got = [(l["speaker"], l["text"]) for l in script["lines"]]
+        if got != locked:
+            diff = next((i for i, (a, b) in enumerate(zip(got, locked)) if a != b), min(len(got), len(locked)))
+            errs.append(f"story_script : le script est IMPOSÉ par l'utilisateur et a été modifié (réplique n°{diff + 1}) : "
+                        "textes, ordre et locuteurs doivent rester identiques à episode_brief.script_lock")
+    if script:
+        for l in script["lines"]:
+            if l["visual_intent"].startswith("À DÉFINIR"):
+                errs.append(f"story_script : {l['id']} : visual_intent encore à définir")
+        for field in ("title", "logline"):
+            if script.get(field, "").startswith("À DÉFINIR"):
+                errs.append(f"story_script : '{field}' encore à définir")
+        if script["content_review"]["notes"].startswith("À DÉFINIR") or any(b["summary"].startswith("À DÉFINIR") for b in script["beats"]):
+            errs.append("story_script : beats ou content_review encore à définir")
     if script and cast:
         for l in script["lines"]:
             if l["speaker"] != "narrator" and l["speaker"] not in char_ids:

@@ -9,6 +9,11 @@ ENTRÉES : episode_brief.json ; references/story-rules.md (lire) ; references/en
 ce que le moteur sait montrer) ; `scripts/studio memory search script hook` (3-5 entrées max).
 SORTIE : story_script.json UNIQUEMENT (propriétaire exclusif). Statut "needs_review", provenance.created_by="story-architect",
 revision incrémentée à chaque correction.
+MODE SCRIPT IMPOSÉ (episode_brief.script_lock présent) : l'utilisateur a écrit le texte. Tu NE CHANGES NI les
+textes, NI l'ordre, NI les locuteurs des répliques (studio validate le refuse). Tu HABILLES le squelette déjà créé :
+title, logline, hook.technique/why_it_works, beats (rôles et résumés, regroupements cohérents), visual_intent de
+chaque réplique, delivery (émotion, débit, pauses), sfx, emphasis_words, content_review. Si une réplique te semble
+faible, dis-le dans ton compte rendu, sans la modifier.
 RÈGLES D'ÉCRITURE :
 - Hook = l001, compréhensible en < 2 s, concret, absurde ; pas de « Bonjour » ni de contexte avant.
 - Escalade par paliers visibles ; un retournement ; payoff + button final qui peut boucler sur le début.

@@ -12,6 +12,9 @@ rythme oral, faisabilité visuelle avec le moteur (references/engine-capabilitie
 (references/platform-policy.md), originalité.
 FINDINGS : précis et localisés (line_id, citation), sévérité blocker/major/minor/info, recommandation
 concrète (réécriture proposée), fix_owner="story-architect" (ou "human" pour une décision créative).
+SCRIPT IMPOSÉ (episode_brief.script_lock) : le texte appartient à l'utilisateur. Les remarques sur la formulation
+sont au plus de sévérité "info" (fix_owner "human") ; tu peux bloquer seulement pour un risque droits/plateforme
+ou une intention visuelle infaisable. Juge surtout l'habillage (intentions visuelles, rythme, sfx, mots forts).
 VERDICT : "approve" seulement si aucun blocker/major et toutes les dimensions ≥ 6. Sinon "revise" ; "block"
 pour un risque juridique/plateforme sérieux. Les notes sont des appréciations, pas des mesures.
 target.sha256 = sha256 du story_script.json évalué (`sha256sum`). inspected = [{path, method:"read_text"}].

@@ -25,6 +25,16 @@ nano episodes/_inbox/mon_histoire.txt
 ```
 Colle l'histoire brute (quelques lignes suffisent), `Ctrl+O` Entrée, `Ctrl+X`.
 
+### Variante : ton propre script, mot pour mot
+Écris le fichier `episodes/_inbox/mon_script.txt` : une réplique par ligne ; `Prénom: texte` (deux-points collé)
+quand un personnage parle ; sans préfixe = narrateur ; lignes `#` = commentaires. Puis :
+```bash
+studio new ep_mon_script --script-file episodes/_inbox/mon_script.txt
+```
+Le texte est importé et VERROUILLÉ (durée estimée et personnages affichés). Message à Codex :
+« Utilise $tiktok-3d-studio. L'épisode ep_mon_script existe avec MON script verrouillé : habille-le sans changer
+le texte, puis enchaîne toute la production. »
+
 ## 2. Lancer Codex (panneau gauche)
 ```bash
 cd /opt/studio && codex

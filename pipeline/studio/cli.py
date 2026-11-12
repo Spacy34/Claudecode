@@ -68,9 +68,24 @@ def cmd_new(a):
     p = episode_dir(cfg(), ep)
     if p.exists() and any(p.iterdir()):
         sys.exit(f"{p} existe déjà")
-    story = Path(a.story_file).read_text(encoding="utf-8") if a.story_file else a.story
+    locked = chars = None
+    if a.script_file:
+        from . import script_import
+        raw = Path(a.script_file).read_text(encoding="utf-8")
+        try:
+            locked, chars = script_import.parse(raw)
+        except ValueError as e:
+            sys.exit(str(e))
+        story = raw
+        a.kind = "user_script"
+        if a.duration is None:
+            a.duration = max(8, min(180, script_import.estimate_duration(locked)))
+    else:
+        story = Path(a.story_file).read_text(encoding="utf-8") if a.story_file else a.story
     if not story:
-        sys.exit("--story ou --story-file requis")
+        sys.exit("--story, --story-file ou --script-file requis")
+    if a.duration is None:
+        a.duration = 90
     for d in ("reviews", "renders", "checks", "lookdev", "shots", "audio"):
         (p / d).mkdir(parents=True, exist_ok=True)
     brief = {"contract": "episode_brief", "contract_version": contracts.CONTRACT_VERSION, "episode_id": ep, "status": "approved",
@@ -79,12 +94,24 @@ def cmd_new(a):
              "style": {"visual": "cartoon 3D low-poly goofy, couleurs saturées, contours encrés, expressions exagérées",
                        "tone": ["absurde", "WTF", "humour noir"], "references_to_avoid_copying": ["personnages/assets de chaînes existantes"]},
              "voice": {"narrator_gender": "any", "energy": "lively"}, "stop_after": a.stop_after}
+    if locked:
+        from . import script_import
+        brief["script_lock"] = script_import.lock(locked)
+        brief["title_hint"] = "script imposé par l'utilisateur"
     errs = contracts.schema_errors("episode_brief", brief)
     if errs:
         sys.exit("\n".join(errs))
     write_json(p / "episode_brief.json", brief)
     st = State(p, ep)
     st.finish("brief")
+    if locked:
+        write_json(p / "story_script.json", script_import.skeleton(ep, locked, now()))
+        print(f"Script imposé importé et VERROUILLÉ : {len(locked)} répliques, durée estimée {a.duration:.0f} s.")
+        print("Personnages détectés : " + (", ".join(f"{k} ({v})" for k, v in chars.items()) or "aucun (narration seule)"))
+        for i, l in enumerate(locked, 1):
+            print(f"  l{i:03d} [{l['speaker']}] {l['text']}")
+        print(f"Étape suivante : story-architect HABILLE le script (sans changer le texte), puis `studio submit {ep} script`.")
+        return
     print(f"Épisode créé : {p}\nÉtape suivante : story-architect écrit story_script.json, puis `studio submit {ep} script`.")
 
 
@@ -710,7 +737,8 @@ def build_parser():
     x.add_argument("episode")
     x.add_argument("--story")
     x.add_argument("--story-file")
-    x.add_argument("--duration", type=float, default=90)
+    x.add_argument("--script-file", help="script IMPOSÉ (texte verrouillé, une réplique par ligne, 'Prénom: texte')")
+    x.add_argument("--duration", type=float, default=None, help="défaut : 90 s, ou estimée depuis le script imposé")
     x.add_argument("--kind", default="original_user_story", choices=["original_user_story", "idea", "reddit_style_paraphrase", "other"])
     x.add_argument("--stop-after", default="prototype", choices=["script", "storyboard", "lookdev", "prototype", "first_cut", "final"])
     x.set_defaults(fn=cmd_new)
