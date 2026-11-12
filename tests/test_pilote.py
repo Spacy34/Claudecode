@@ -7,6 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+POSIX = __import__("pytest").mark.skipif(os.name == "nt", reason="faux Codex en script shell (Linux/macOS)")
+
+
+@POSIX
 def test_pilot_stops_without_progress(tmp_path, episode):
     stub = tmp_path / "bin"
     stub.mkdir()
@@ -24,6 +28,7 @@ def test_pilot_stops_without_progress(tmp_path, episode):
     assert "studio run" in journal and "ne lances PAS" in journal
 
 
+@POSIX
 def test_pilot_without_codex_stops_cleanly(tmp_path, episode):
     """PC sans Codex : le pilote s'arrête avec un message clair (code 6) au lieu de planter."""
     script = tmp_path / "s.txt"
@@ -40,6 +45,7 @@ def test_pilot_without_codex_stops_cleanly(tmp_path, episode):
     assert "Codex introuvable" in r.stdout
 
 
+@POSIX
 def test_launcher_start_stop_and_lock(tmp_path, episode, monkeypatch):
     """Lancement détaché, verrou « production en cours » (pas de double lancement), arrêt de l'arbre de processus."""
     import time

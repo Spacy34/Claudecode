@@ -64,6 +64,8 @@ def codex_prompt(ep, n):
     lines.append(f"PÉRIMÈTRE : pendant cette production, ne modifie AUCUN fichier hors de episodes/{ep}/ (ni pipeline/, blender/, "
                  "tests/, schemas/, config/, .codex/, mémoire versionnée). Si le moteur ou un contrôle te semble fautif, "
                  "décris-le dans ton rapport (et `scripts/studio memory add`) au lieu de modifier le code.")
+    if os.name == "nt":
+        lines.append("WINDOWS : lance toujours `scripts\\studio.cmd <commande>` (jamais `scripts/studio`, script bash inexécutable sous PowerShell).")
     lines.append("Respecte AGENTS.md (jamais `studio approve`). Termine par un rapport court : fait / vérifié / bloquant.")
     return "\n".join(lines)
 

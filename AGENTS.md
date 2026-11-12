@@ -35,6 +35,8 @@ scripts/studio frames <ep> <video> --per-shot  # frames horodatées pour les cri
 scripts/studio memory search <mots>
 python3 -m pytest -q tests                      # tests automatiques
 ```
+**Windows (PowerShell)** : toujours `scripts\studio.cmd` à la place de `scripts/studio` (mêmes arguments) ;
+`scripts/studio` est un script bash, PowerShell ne sait pas l'exécuter.
 
 ## Propriété des fichiers (un seul écrivain par artefact)
 | Artefact | Propriétaire |

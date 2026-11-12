@@ -4,7 +4,7 @@
 ```bash
 scripts/studio dashboard
 ```
-(Windows : `scripts\dashboard.cmd` ou le raccourci du Bureau.) « + Nouvelle vidéo » → coller le script ou l'histoire →
+(Windows : `scripts\dashboard.cmd` ou le raccourci du Bureau — guide complet : WINDOWS.md.) « + Nouvelle vidéo » → coller le script ou l'histoire →
 « Créer la vidéo ». Suivi, vérifications, vidéos, journal, voix enregistrées, musique et bruitages : tout est dans la page.
 Équivalent en ligne de commande, sur toutes les machines : `scripts/studio produire <fichier.txt> [--libre]`,
 `scripts/studio arreter <ep>`.
@@ -15,7 +15,7 @@ notifications, appels ou réseaux sociaux ; textes qui « pop » ; stickers ; é
 flèches ; barre de progression. Détails : references/motion-design.md. Planche de contrôle sans rendu 3D :
 `scripts/studio motion-preview <ep>`.
 
-## Méthode rapide (recommandée) : une seule commande
+## Sur un serveur Linux (VPS) : une seule commande dans tmux
 ```bash
 scripts/produire.sh episodes/_inbox/mon_script.txt
 ```

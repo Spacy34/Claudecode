@@ -9,6 +9,8 @@ Tu es le **Production Director**. Tu coordonnes, tu ne fais pas tous les métier
 passent par `scripts/studio` ; les étapes créatives et critiques par les sous-agents de `.codex/agents/`.
 Règles permanentes : `AGENTS.md`. Détails : `references/workflow.md` (lire avant la 1re étape).
 
+
+> Windows (PowerShell) : remplacer `scripts/studio` par `scripts\studio.cmd` dans toutes les commandes ci-dessous.
 ## 0. Démarrer ou reprendre
 1. `scripts/studio doctor` (une fois par machine) ; corriger tout « BLOQUANT ».
 2. Nouvel épisode : écrire l'histoire dans `episodes/_inbox/<slug>.txt`, puis

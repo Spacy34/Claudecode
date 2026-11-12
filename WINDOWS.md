@@ -1,80 +1,69 @@
-# Installation sous Windows (pas à pas)
+# Le studio sur ton PC Windows (machine principale)
 
-## Tu as déjà installé le studio sur ce PC : mettre à jour + tableau de bord
+Tout se fait sur le PC : écriture et critiques (Codex), rendu 3D (Blender, avec ta carte graphique), voix, montage,
+vidéo finale. Le pilotage se fait dans un **tableau de bord** (page web locale). Le VPS n'est plus nécessaire.
 
-1. **Mettre à jour le code.** Avec Git (dans PowerShell, dans le dossier du studio) :
-   ```powershell
-   git pull
-   ```
-   Sans Git (installation par ZIP) : retélécharge le ZIP de la branche `claude/awesome-rubin-fftz1l` et décompresse-le
-   **par-dessus** l'ancien dossier (tes `episodes\` et `config\local.toml` sont conservés).
-2. **Compléter l'installation** (nouveautés : Git, Codex en option, raccourci du Bureau) :
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\install_windows.ps1
-   ```
-3. **Connecter Codex** (une fois, si tu l'as installé) : nouveau PowerShell, puis `codex login`, puis lance `codex` une
-   fois dans le dossier du studio et accepte de lui faire confiance (« trusted »), puis quitte avec `/quit`.
-4. **Ouvrir le tableau de bord** : double-clic sur le raccourci **Studio TikTok 3D** du Bureau, ou
-   ```powershell
-   scripts\dashboard.cmd
-   ```
-   Le navigateur s'ouvre sur `http://127.0.0.1:8765`. Tout se fait ensuite à la souris :
-   - **+ Nouvelle vidéo** : colle ton script (une réplique par ligne, `Prénom: réplique` pour un personnage) ou une
-     histoire, coche « Lancer la production tout de suite », clique **Créer la vidéo**.
-   - **Mode autonome** (en haut) : coché = plus aucune validation, la production va jusqu'à la vidéo finale.
-     **Rendu final** : `final` (1080p, lent sans carte graphique) ou `preview` (rapide). Clique **Enregistrer**.
-   - Pour chaque épisode : **Avancement** (où ça en est, étape par étape, bouton « Réessayer »), **Vérifications**
-     (contrôles automatiques et avis des critiques), **Vidéos & images** (prototype, montage, vidéo finale, planches),
-     **Voix & sons** (ta propre voix pour une réplique, ta musique, un bruitage sur un mot précis), **Journal** (en direct).
-   - **Lancer / reprendre** et **Arrêter** : la production tourne en arrière-plan ; fermer le tableau de bord ne
-     l'arrête pas. Relancer reprend là où elle s'était arrêtée (les images déjà rendues sont gardées).
-
-Sans tableau de bord, les mêmes actions en ligne de commande :
-```powershell
-scripts\studio.cmd produire episodes\_inbox\mon_script.txt
-```
-```powershell
-scripts\studio.cmd arreter ep_mon_script
-```
-
-Deux méthodes. **Essaie d'abord la méthode A** (tout dans Windows). Si quelque chose bloque, la méthode B
-(WSL, un Linux intégré à Windows) est celle sur laquelle le pipeline a été testé.
+Il te faut : Windows 10 ou 11, ~20 Go libres, une connexion Internet pour l'installation, ton compte ChatGPT
+(pour Codex). Une carte graphique NVIDIA/AMD récente accélère beaucoup le rendu, mais n'est pas obligatoire.
 
 ---
 
-## Méthode A — Windows natif (environ 20 minutes)
+## 1. Récupérer le projet (une fois)
+Ouvre PowerShell (menu Démarrer → « PowerShell »). Si Git n'est pas encore installé :
+```powershell
+winget install --id Git.Git -e
+```
+Ferme puis rouvre PowerShell, puis :
+```powershell
+git clone -b claude/awesome-rubin-fftz1l https://github.com/Spacy34/Claudecode.git C:\studio
+```
+```powershell
+cd C:\studio
+```
+Dossier simple, sans espaces ni accents, hors OneDrive. Tu avais déjà une ancienne copie par ZIP ? Garde-la de côté
+(tu pourras y reprendre un épisode, §7) et travaille désormais dans `C:\studio` : les mises à jour se feront avec `git pull`.
 
-### Étape 1 : télécharger le projet
-1. Va sur `https://github.com/Spacy34/Claudecode`.
-2. Clique sur le menu des branches et choisis **`claude/awesome-rubin-fftz1l`**.
-3. Bouton vert **Code** → **Download ZIP**.
-4. Décompresse le ZIP dans un dossier **simple et sans espaces ni accents**, par exemple `C:\studio`.
-   (Évite OneDrive, Bureau et Documents s'ils sont synchronisés.)
-
-### Étape 2 : ouvrir PowerShell dans le dossier
-Dans l'explorateur, ouvre `C:\studio`, clique dans la barre d'adresse, tape `powershell` puis Entrée.
-
-### Étape 3 : lancer l'installateur
+## 2. Installer (environ 20 minutes)
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\install_windows.ps1
 ```
-Il installe avec `winget` (l'outil officiel de Microsoft) : Python 3.12, FFmpeg, Blender, puis les
-bibliothèques Python. Accepte les fenêtres d'autorisation qui s'ouvrent.
+Il installe avec `winget` (l'outil officiel de Microsoft) Python 3.12, FFmpeg, Blender, Git, puis te pose des questions :
+- **Piper** (voix française naturelle, gratuite, locale) : réponds **O**.
+- **Codex** (les agents qui écrivent, mettent en scène, critiquent) : réponds **O**.
+- **Mode autonome** (aucune validation humaine, jusqu'à la vidéo finale) : réponds **O**.
 
-**espeak-ng** (voix de test) doit être installé à la main : télécharge `espeak-ng.msi` sur
-`https://github.com/espeak-ng/espeak-ng/releases` et double-clique dessus.
+Il crée aussi `config\local.toml` (tes réglages, jamais écrasés par une mise à jour) et un raccourci
+**Studio TikTok 3D** sur le Bureau. Accepte les fenêtres d'autorisation de Windows.
 
-### Étape 4 : FERMER et ROUVRIR PowerShell
-Obligatoire : sinon Windows ne trouve pas les programmes qui viennent d'être installés.
-Rouvre PowerShell dans `C:\studio` (étape 2).
+Facultatif : **espeak-ng** (voix robotique de secours) s'installe avec le `.msi` de
+`https://github.com/espeak-ng/espeak-ng/releases`.
 
-### Étape 5 : vérifier
+## 3. Fermer et rouvrir PowerShell, puis vérifier
+Obligatoire, sinon Windows ne voit pas les nouveaux programmes.
+```powershell
+cd C:\studio
+```
 ```powershell
 scripts\studio.cmd doctor
 ```
-Regarde la fin du résultat : `"blocking": false` = c'est bon. Sinon, la section `"advice"` dit quoi installer.
+En bas du résultat : `"blocking": false` = c'est bon. Sinon, `"advice"` dit quoi installer.
 
-### Étape 6 : premier test réel
+## 4. Connecter Codex (une fois)
+```powershell
+codex login
+```
+Puis lance Codex **une fois** dans le dossier du studio, pour qu'il lui fasse confiance :
+```powershell
+codex
+```
+Réponds oui quand il demande s'il peut faire confiance au dossier ; s'il propose de configurer son bac à sable
+Windows, accepte. Tape `/model` pour voir les modèles disponibles avec ton compte (note-en un), puis `/quit`.
+
+## 5. Test rapide (5 minutes)
+```powershell
+scripts\studio.cmd tts-test --out test_voix.wav
+```
+Écoute `test_voix.wav` (voix Piper). Puis un plan de la démo, rendu par Blender :
 ```powershell
 scripts\studio.cmd voice ep_demo_grillepain --force
 ```
@@ -84,55 +73,86 @@ scripts\studio.cmd compile ep_demo_grillepain --force
 ```powershell
 scripts\studio.cmd render ep_demo_grillepain --shots sh_001 --profile draft --out renders/test.mp4
 ```
-Ouvre ensuite `episodes\ep_demo_grillepain\renders\test.mp4` : tu dois voir Kevin animé, avec voix et sous-titres.
+Ouvre `episodes\ep_demo_grillepain\renders\test.mp4` : Kevin animé, avec voix et sous-titres.
 
-Sous Windows, remplace toujours `scripts/studio` (dans la doc) par `scripts\studio.cmd`.
-
----
-
-## Méthode B — WSL (Linux dans Windows), la plus fiable
-
-### Étape 1 : installer WSL
-PowerShell **en administrateur** (clic droit sur PowerShell → Exécuter en tant qu'administrateur) :
+## 6. Produire une vidéo : le tableau de bord
+Double-clic sur **Studio TikTok 3D** (Bureau), ou :
 ```powershell
-wsl --install -d Ubuntu-24.04
+scripts\dashboard.cmd
 ```
-Redémarre le PC, ouvre « Ubuntu » dans le menu Démarrer, choisis un nom d'utilisateur et un mot de passe.
+Le navigateur s'ouvre sur `http://127.0.0.1:8765` (page locale, invisible depuis Internet). Laisse la fenêtre noire
+ouverte tant que tu utilises la page.
 
-### Étape 2 : dans la fenêtre Ubuntu
-```bash
-git clone -b claude/awesome-rubin-fftz1l https://github.com/Spacy34/Claudecode.git
-```
-```bash
-cd Claudecode && scripts/install.sh
-```
-Quand il propose le module `bpy`, réponds `o`. Puis :
-```bash
-scripts/studio doctor
-```
-Tes fichiers sont visibles depuis l'explorateur Windows à l'adresse `\\wsl$\Ubuntu-24.04\home\<ton-nom>\Claudecode`.
+1. En haut : coche **Mode autonome**, choisis **Rendu final** (`final` = 1080p ; `preview` = plus rapide), mets le
+   **Modèle Codex** vu avec `/model` (ou laisse vide = modèle par défaut de ton compte), clique **Enregistrer**.
+2. **+ Nouvelle vidéo** : colle ton script (une réplique par ligne ; `Prénom: réplique` pour un personnage, la ligne
+   telle quelle pour le narrateur) ou choisis « Une histoire » pour que Codex écrive le script. Clique **Créer la vidéo**.
+3. Suis l'épisode :
+   - **Avancement** : chaque étape (script, personnages, storyboard, animation, motion design, voix, rendus…),
+     qui travaille dessus, les erreurs, bouton **Réessayer** si une étape est bloquée ;
+   - **Vérifications** : contrôles automatiques des rendus et avis des critiques ;
+   - **Vidéos & images** : planches de contrôle, prototype, premier montage, **vidéo finale** ;
+   - **Voix & sons** : ta propre voix pour une réplique, ta musique, un bruitage sur un mot précis ;
+   - **Journal** : ce que font le pilote et Codex, en direct.
+4. **Arrêter** coupe proprement (rendus compris) ; **Lancer / reprendre** repart là où ça s'était arrêté (les images
+   déjà rendues sont gardées). Fermer le tableau de bord n'arrête PAS une production en cours.
 
-Limite : sous WSL, le rendu se fait sur le processeur (plus lent que la carte graphique de la méthode A).
+La vidéo finale : `C:\studio\episodes\<épisode>\renders\final.mp4`. Rien n'est jamais publié automatiquement.
 
----
-
-## Ouvrir le projet dans Codex
-Ouvre Codex dans le dossier du projet (`C:\studio`, ou le dossier WSL), accepte de lui faire confiance,
-puis écris ta demande (voir `README.md` §2). Les validations se font dans PowerShell :
+## 7. Reprendre un épisode commencé ailleurs (ex. ep_chloe sur le VPS)
+Depuis PowerShell, dans `C:\studio` (remplace l'adresse ; `scp` est inclus dans Windows) :
 ```powershell
-scripts\studio.cmd approve <episode> gate_script
+scp -r ubuntu@ADRESSE_DU_VPS:/opt/studio/episodes/ep_chloe episodes\
 ```
+Leçons apprises par les agents sur le VPS (facultatif) :
+```powershell
+scp -r ubuntu@ADRESSE_DU_VPS:/opt/studio/memory/local memory\
+```
+L'épisode apparaît dans le tableau de bord ; **Lancer / reprendre**. Les rendus sont refaits sur le PC (le cache du VPS
+n'est pas copié). Pour garder exactement la même voix, utilise la même voix Piper que sur le VPS
+(`config\local.toml`, section `[tts]`). Depuis une ancienne copie ZIP sur le PC : copie simplement le dossier
+`episodes\<épisode>` dans `C:\studio\episodes\`.
+
+## 8. Mettre à jour
+Ferme le tableau de bord, puis :
+```powershell
+cd C:\studio
+```
+```powershell
+git pull
+```
+Tes épisodes et `config\local.toml` ne sont jamais touchés. Si une mise à jour ajoute des dépendances :
+`py -3.12 -m pip install -r requirements.txt`.
+
+## 9. Sans tableau de bord (ligne de commande)
+Sous Windows, chaque `scripts/studio` de la documentation devient `scripts\studio.cmd`.
+```powershell
+scripts\studio.cmd produire episodes\_inbox\mon_script.txt
+```
+(`--libre` pour une histoire brute, `--duree 60`, `--nom ep_xxx`.) Reprendre : `scripts\studio.cmd produire ep_xxx`.
+```powershell
+scripts\studio.cmd status ep_xxx
+```
+```powershell
+scripts\studio.cmd arreter ep_xxx
+```
+Mode non autonome : les validations se font dans PowerShell, par toi, avec `scripts\studio.cmd approve <ep> <gate>`.
 
 ## Problèmes fréquents
 | Message | Solution |
 |---|---|
-| `No module named 'tomllib'` | Python trop ancien (3.8/3.9/3.10). Installe Python 3.12 : `winget install --id Python.Python.3.12 -e`, rouvre PowerShell, puis `py -3.12 -m pip install -r requirements.txt`. `studio.cmd` choisit ensuite automatiquement Python 3.12. |
+| `No module named 'tomllib'` | Python trop ancien. `winget install --id Python.Python.3.12 -e`, rouvre PowerShell, `py -3.12 -m pip install -r requirements.txt`. |
 | `winget n'est pas reconnu` | Installe « App Installer » depuis le Microsoft Store. |
-| `python` / `ffmpeg` introuvable après installation | Ferme et rouvre PowerShell (étape 4). Sinon redémarre le PC. |
-| `l'exécution de scripts est désactivée` | Utilise exactement la commande de l'étape 3 (avec `-ExecutionPolicy Bypass`). |
-| `doctor` : « installer Blender » alors qu'il est installé | Indique le chemin : `setx BLENDER_BIN "C:\Program Files\Blender Foundation\Blender 4.5\blender.exe"` (adapter la version), puis rouvre PowerShell. |
-| `doctor` : « aucun moteur TTS » | Installe espeak-ng (.msi), ou configure Piper (`references/voice-options.md`). |
-| Erreur `pip` sur un paquet | `py -3 -m pip install --upgrade pip` puis relance l'étape 3. |
-| Accents illisibles dans la console | Lance `chcp 65001` avant les commandes. |
+| `codex` / `ffmpeg` / `git` introuvable juste après l'installation | Ferme et rouvre PowerShell ; sinon redémarre le PC. |
+| Tableau de bord : « ✗ Codex » | `npm install -g @openai/codex` (Node.js : `winget install --id OpenJS.NodeJS.LTS -e`), rouvre PowerShell, `codex login`. |
+| Journal : « Codex introuvable » ou modèle refusé | Même chose ; pour le modèle : `/model` dans `codex`, puis le recopier dans le tableau de bord (ou laisser vide). |
+| `l'exécution de scripts est désactivée` | Utilise exactement la commande du §2 (avec `-ExecutionPolicy Bypass`). |
+| `doctor` : « installer Blender » alors qu'il l'est | `setx BLENDER_BIN "C:\Program Files\Blender Foundation\Blender 4.5\blender.exe"` (adapter la version), rouvre PowerShell. |
+| `doctor` : « aucun moteur TTS » | Relance l'installateur et réponds O pour Piper (ou installe espeak-ng). |
+| Rendu très lent | Sans carte graphique, mets **Rendu final = preview** dans le tableau de bord. |
+| Le port 8765 est occupé | Le tableau de bord prend automatiquement le suivant (l'adresse est affichée dans la fenêtre noire). |
+| Accents illisibles dans la console | `chcp 65001` avant les commandes. |
 
-Si ça bloque encore : copie le message d'erreur exact (ou une capture d'écran) et envoie-le.
+Si ça bloque : envoie le message d'erreur exact, ou une capture, avec la sortie de `scripts\studio.cmd doctor`.
+Plan B si Windows natif résiste : WSL (Linux dans Windows), `wsl --install -d Ubuntu-24.04`, puis suivre `VPS.md` §2
+dans la fenêtre Ubuntu (rendu sur le processeur uniquement).
