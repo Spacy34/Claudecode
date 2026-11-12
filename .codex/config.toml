@@ -23,9 +23,6 @@ max_depth = 1                      # pas de sous-agent qui relance des sous-agen
 [features]
 multi_agent = true
 
-# Profils de session (codex --profile <nom>)
-[profiles.studio-fast]
-model_reasoning_effort = "low"
-
-[profiles.studio-deep]
-model_reasoning_effort = "high"
+# Note : les [profiles] ne sont pas acceptés dans une config de PROJET par Codex (avertissement constaté) ;
+# les définir dans ~/.codex/config.toml si besoin. Le modèle se choisit dans config/local.toml [codex] model
+# (utilisé par scripts/produire.sh) ou dans ~/.codex/config.toml.

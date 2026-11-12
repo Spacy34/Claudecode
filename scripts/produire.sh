@@ -69,11 +69,19 @@ et les critiques indépendants, jusqu'à renders/final.mp4 si le mode autonome e
 validation humaine). Respecte AGENTS.md. Si une étape est refusée ou bloquée, arrête-toi et écris un rapport clair : \
 ce qui est fait, ce qui bloque, preuves."
 
+# Modèle Codex : config/local.toml [codex] model, ou variable CODEX_MODEL (sinon celui de ~/.codex/config.toml)
+MODEL="${CODEX_MODEL:-$(".venv/bin/python" -c "import sys;sys.path.insert(0,'pipeline');from studio.util import load_config as l;print(l().get('codex',{}).get('model',''))" 2>/dev/null || true)}"
+MODEL_OPT=""
+if [ -n "$MODEL" ]; then
+  MODEL_OPT="-c model='\"$MODEL\"'"
+  echo "Modèle Codex : $MODEL"
+fi
+
 # Le message passe par un fichier : aucun caractère ($, apostrophes…) n'est réinterprété par le shell de tmux
 PFILE="episodes/$EP/checks/codex_consigne.txt"
 printf '%s\n' "$PROMPT" > "$PFILE"
 tmux new-session -d -s "$EP" -c "$ROOT" \
-  "codex exec --output-last-message '$LAST' \"\$(cat '$PFILE')\" 2>&1 | tee -a '$LOG'; echo; echo '=== PRODUCTION TERMINÉE (rapport : $LAST) ==='; '$STUDIO' status '$EP'; read -r -p 'Entrée pour fermer' _"
+  "codex exec $MODEL_OPT --output-last-message '$LAST' \"\$(cat '$PFILE')\" 2>&1 | tee -a '$LOG'; echo; echo '=== PRODUCTION TERMINÉE (rapport : $LAST) ==='; '$STUDIO' status '$EP'; read -r -p 'Entrée pour fermer' _"
 
 echo
 echo "Production lancée en arrière-plan : épisode $EP"

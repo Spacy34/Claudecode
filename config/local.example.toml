@@ -15,3 +15,7 @@
 
 [limits]
 # max_parallel_renders = 1
+
+[codex]
+# Modèle utilisé par scripts/produire.sh (doit être disponible pour VOTRE compte : vérifier avec /model dans codex).
+# model = "<nom-du-modele>"
