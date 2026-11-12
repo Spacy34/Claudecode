@@ -152,6 +152,8 @@ def cmd_status(a):
         mark = {"completed": "✔", "approved": "✔", "running": "…", "failed": "✘", "stale": "↺", "interrupted": "⚠", "needs_review": "?"}.get(status, " ")
         print(f" {mark} {name:<18} {status:<12} {kind:<7} {owner:<45} {note[:60]}")
     print("Prêtes :", ", ".join(st.ready()) or "aucune")
+    for d in st.data.get("human_decisions", []):
+        print(f"Décision humaine ({d['gate']}, {d['at'][:16]}) : {d['note']}")
     return 0
 
 
@@ -231,6 +233,15 @@ def cmd_approve(a):
     deps = [d for d in STAGES[gate][4] if st.st(d)["status"] not in ("completed", "approved")]
     if deps and not a.override:
         sys.exit(f"pré-requis non satisfaits {deps} ; `--override` (humain) possible avec une note")
+    if deps:
+        # décision humaine qui lève un blocage (ex. risque de droits assumé) : consignée, transmise aux agents
+        if a.by != "human" or not (a.note or "").strip():
+            sys.exit("--override exige une validation humaine et une note expliquant la décision (--note \"...\")")
+        for d in deps:
+            if st.st(d)["status"] in ("needs_review", "failed"):
+                st.st(d).update(status="completed", note=f"levé par décision humaine : {a.note}"[:300])
+        st.data.setdefault("human_decisions", []).append({"gate": gate, "waived": deps, "note": a.note, "at": now()})
+        st.log("human_override", gate=gate, waived=deps, note=a.note[:300])
     st.approve(gate, a.by, a.note or "")
     print(f"{gate} approuvée par {a.by} (liée aux hashes actuels des artefacts).")
 

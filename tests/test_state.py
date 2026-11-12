@@ -213,3 +213,32 @@ def test_new_optional_input_does_not_invalidate_existing_episode(episode):
     (episode / "motion_design.json").write_text("{}")
     st = State(episode)
     assert ("first_cut", "stale:inputs") in st.refresh(), "une fois créé, motion_design.json invalide bien le montage"
+
+
+def test_human_override_waives_blocked_review_and_is_recorded(episode, monkeypatch):
+    """Revue bloquée après 2 tours (ex. droits) : l'humain tranche avec --override + note ; le blocage est levé,
+    la décision consignée et le pilote n'est plus arrêté par ce `needs_review`."""
+    import studio.cli as cli
+    st = State(episode)
+    for s in ("brief", "script"):
+        st.finish(s)
+    st.finish("script_review", "needs_review", note="F01 droits")
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda *_: episode.name)
+    with pytest.raises(SystemExit):   # note obligatoire
+        cli.main(["approve", episode.name, "gate_script", "--override"])
+    with pytest.raises(SystemExit) as e:
+        cli.main(["approve", episode.name, "gate_script", "--override", "--note", "parodie assumée, aucun visuel copié"])
+    assert not e.value.code
+    st = State(episode)
+    assert st.st("gate_script")["status"] == "approved"
+    assert st.st("script_review")["status"] == "completed"
+    assert st.data["human_decisions"][0]["note"] == "parodie assumée, aucun visuel copié"
+    assert "design" in st.ready()
+    assert cli.next_summary(episode)["needs_review"] == []
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("pilote", Path(__file__).resolve().parents[1] / "scripts" / "pilote.py")
+    pil = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pil)
+    prompt = pil.codex_prompt(episode.name, {"agent": [{"stage": "design", "owner": "character-artist", "outputs": ["cast_bible.json"]}], "review": [], "failed": {}})
+    assert "DÉCISION HUMAINE" in prompt and "aucun visuel copié" in prompt

@@ -78,6 +78,9 @@ Un agent ne modifie jamais l'artefact d'un autre rôle : il signale le problème
     fichiers de `episodes/<ep>/` sont modifiables. Code, tests, schémas, config et `.codex/` ne se modifient que si
     l'utilisateur le demande explicitement (rôle pipeline-engineer) ; sinon, signaler le problème dans le rapport.
 11. **Correction ciblée** : corriger le plus petit artefact responsable ; le cache ne re-rend que les plans changés.
+12. **Décisions humaines** : une gate validée par l'utilisateur avec `approve --override --note …` consigne une décision
+    (affichée par `studio status`, transmise par le pilote). Elle s'impose à tous, critiques compris : ne plus bloquer
+    pour ce motif, seulement vérifier que ses conditions (ex. « aucun visuel copié ») sont respectées.
 
 ## Contenu trash / humour noir
 Analyse contextuelle (voir `references/platform-policy.md`) : signaler les vrais risques (personnes réelles

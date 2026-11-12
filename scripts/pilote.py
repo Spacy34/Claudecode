@@ -59,6 +59,11 @@ def codex_prompt(ep, n):
                          "ne lance AUCUN rendu : le pilote re-rendra les plans modifiés et revérifiera.")
         else:
             lines.append(f"- `{st}` a échoué au tour précédent : {err}. Fais corriger par le `fix_owner` des findings, puis refais l'étape.")
+    stp = ep_dir(ep) / "state.json"
+    decisions = json.loads(stp.read_text(encoding="utf-8")).get("human_decisions", []) if stp.exists() else []
+    for d in decisions:
+        lines.append(f"DÉCISION HUMAINE (s'impose à tous les rôles, critiques compris ; ne pas re-bloquer pour ce motif, "
+                     f"seulement vérifier que ses conditions sont respectées) : {d['note']}")
     brief = ep_dir(ep) / "episode_brief.json"
     if brief.exists() and json.loads(brief.read_text(encoding="utf-8")).get("script_lock"):
         lines.append("ATTENTION : script IMPOSÉ par l'utilisateur (episode_brief.script_lock) : ne jamais modifier texte, ordre ni locuteurs.")
