@@ -72,3 +72,9 @@ tags: animation, point, visage, profil, camera
 date: 2026-11-12
 
 Rendu VPS de la démo : en pointant le grille-pain derrière lui, Kevin montrait sa nuque (rotation 50°, non détectée car face_away se déclenche à ~80°). Correctif : corps limité à 35°, tête ramenée vers la caméra (60 % de la rotation) pendant le geste ; nouveau contrôle face_profile (sujet trop de profil en plan rapproché).
+
+## Ne jamais faire surveiller un long rendu par Codex
+tags: codex, rendu, timeout, pilote, vps
+date: 2026-11-12
+
+Premier épisode autonome réel (ep_chloe) : toutes les étapes créatives réussies, mais prototype 'interrupted' : le rendu lancé depuis une commande Codex dépasse sa durée max (et Codex + Blender sur 3 Go de RAM). Correctif : scripts/pilote.py exécute les rendus hors Codex et n'appelle Codex que pour les étapes agent/revue (sessions courtes).

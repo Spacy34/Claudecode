@@ -729,6 +729,25 @@ def cmd_tts_test(a):
     out({"backend": backend, "voice": desc.get("voice"), "fichier": str(out_p), "licence": desc.get("license")})
 
 
+def cmd_next(a):
+    """Résumé machine de ce qu'il reste à faire (utilisé par scripts/pilote.sh)."""
+    p = ep_path(a.episode)
+    st = State(p)
+    st.refresh()
+    ready = st.ready()
+    blocked = [n for n in STAGES if st.st(n)["status"] == "needs_review"]
+    failed = {n: st.st(n).get("error") for n in ready if st.st(n)["status"] == "failed"}
+    res = {"done": st.st("delivery")["status"] == "completed",
+           "auto": [r for r in ready if STAGES[r][1] == "auto"],
+           "agent": [{"stage": r, "owner": STAGES[r][0], "outputs": STAGES[r][3]} for r in ready if STAGES[r][1] == "agent"],
+           "review": [{"stage": r, "owner": STAGES[r][0]} for r in ready if STAGES[r][1] == "review"],
+           "gates_human": [r for r in ready if STAGES[r][1] == "gate" and r in human_gates()],
+           "gates_auto": [r for r in ready if STAGES[r][1] == "gate" and r not in human_gates()],
+           "failed": failed, "needs_review": blocked,
+           "fingerprint": sha256_json({n: (st.st(n)["status"], st.st(n).get("attempts", 0)) for n in STAGES})}
+    print(json.dumps(res, ensure_ascii=False))
+
+
 def build_parser():
     ap = argparse.ArgumentParser(prog="studio", description="Studio TikTok 3D : pipeline déterministe")
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -833,6 +852,9 @@ def build_parser():
     x.add_argument("--speaker", type=int, default=None)
     x.add_argument("--emotion", default="neutral")
     x.set_defaults(fn=cmd_tts_test)
+    x = sp.add_parser("next", help="ce qu'il reste à faire (JSON, pour le pilote)")
+    x.add_argument("episode")
+    x.set_defaults(fn=cmd_next)
     x = sp.add_parser("cache")
     x.add_argument("--prune", action="store_true")
     x.set_defaults(fn=cmd_cache)

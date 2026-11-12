@@ -60,7 +60,7 @@
       "revision_rounds": 0
     },
     "compile": {
-      "status": "completed",
+      "status": "stale",
       "attempts": 5,
       "revision_rounds": 0,
       "pid": null,
@@ -449,6 +449,16 @@
       "event": "finish",
       "stage": "compile",
       "status": "completed"
+    },
+    {
+      "at": "2026-11-12T14:36:30+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "compile",
+          "stale:upstream"
+        ]
+      ]
     }
   ],
   "cost_log": []

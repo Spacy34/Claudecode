@@ -4,8 +4,8 @@
 ```bash
 scripts/produire.sh episodes/_inbox/mon_script.txt
 ```
-Importe ton script (verrouillé ; `--libre` pour une histoire brute que Codex réécrit), puis lance Codex en arrière-plan
-(tmux + `codex exec`) jusqu'à la vidéo finale si `autonomous = true`. Suivi : `tmux attach -t <ep>`,
+Importe ton script (verrouillé ; `--libre` pour une histoire brute que Codex réécrit), puis lance le PILOTE en arrière-plan (tmux) : il exécute lui-même les rendus
+(sans limite de temps) et n'appelle Codex (`codex exec`, sessions courtes) que pour l'écriture et les critiques, jusqu'à la vidéo finale si `autonomous = true`. Suivi : `tmux attach -t <ep>`,
 `scripts/studio status <ep>`, journal `episodes/<ep>/checks/codex_journal.log`, rapport `checks/codex_rapport_final.md`.
 Relancer la même commande reprend un épisode interrompu. Prérequis : avoir ouvert `codex` une fois
 dans le dossier pour le marquer « trusted ».
