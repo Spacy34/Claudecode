@@ -64,7 +64,7 @@ Ne garde que les voix dont la fiche autorise l'usage commercial.
 ```bash
 studio tts-test --backend piper --model assets/voices/fr_FR-siwis-medium.onnx --out test_voix.wav
 ```
-Puis l'activer pour tout le studio dans `config/studio.toml` :
+Puis l'activer pour tout le studio dans `config/local.toml` (ignoré par git) :
 ```toml
 [tts]
 backend = "piper"
@@ -114,7 +114,7 @@ puis sur ton PC `ssh -L 8765:127.0.0.1:8765 studio@IP_DU_VPS` et ouvre `http://l
 - Cache des rendus : `studio cache` (taille), purge auto chaque nuit :
   `crontab -e` → `30 3 * * * cd ~/studio && ./scripts/studio cache --prune >/dev/null 2>&1`
 - Sauvegarde : les artefacts d'épisode (JSON) se versionnent avec git ; les vidéos se rapatrient (§6).
-- Rendus parallèles : `config/studio.toml [limits] max_parallel_renders` = valeur recommandée par `doctor`.
+- Rendus parallèles : `config/local.toml [limits] max_parallel_renders` = valeur recommandée par `doctor`.
 
 ## 8. Dépannage
 | Symptôme | Cause / solution |

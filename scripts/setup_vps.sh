@@ -76,8 +76,12 @@ alias studio="${ROOT}/scripts/studio"
 RC
 export BLENDER_BIN="${BLENDER_DIR}/blender" STUDIO_PYTHON="${ROOT}/.venv/bin/python" STUDIO_BLENDER_MODE=binary
 
-if [ "$(nproc)" -le 2 ]; then   # petite machine : un seul rendu à la fois
-  sed -i 's/^max_parallel_renders = .*/max_parallel_renders = 1        # processus Blender simultanés/' config/studio.toml
+# Réglages propres à CETTE machine : config/local.toml (ignoré par git, donc jamais de conflit au `git pull`)
+if [ ! -f config/local.toml ]; then
+  cp config/local.example.toml config/local.toml
+  if [ "$(nproc)" -le 2 ]; then   # petite machine : brouillons pour les étapes intermédiaires
+    sed -i 's/^# prototype_profile = .*/prototype_profile = "draft"/; s/^# first_cut_profile = .*/first_cut_profile = "draft"/; s/^# final_profile = .*/final_profile = "preview"/' config/local.toml
+  fi
 fi
 
 echo "== 5/6 Diagnostic"

@@ -71,9 +71,23 @@ def _env_override(cfg, prefix="STUDIO"):
     return cfg
 
 
+def _deep_merge(base, over):
+    for k, v in over.items():
+        if isinstance(v, dict) and isinstance(base.get(k), dict):
+            _deep_merge(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+
 def load_config():
+    """config/studio.toml (versionné) puis config/local.toml (TES réglages, ignoré par git : jamais de conflit au pull)."""
     with open(ROOT / "config" / "studio.toml", "rb") as f:
         cfg = tomllib.load(f)
+    local = ROOT / "config" / "local.toml"
+    if local.exists():
+        with open(local, "rb") as f:
+            _deep_merge(cfg, tomllib.load(f))
     with open(ROOT / "config" / "profiles.toml", "rb") as f:
         cfg["profiles"] = tomllib.load(f)
     return _env_override(cfg)

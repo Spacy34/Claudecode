@@ -1,0 +1,17 @@
+# Copiez ce fichier en config/local.toml (ignoré par git) : vos réglages s'appliquent PAR-DESSUS
+# config/studio.toml, et `git pull` ne crée plus jamais de conflit. Ne mettez ici que ce que vous changez.
+
+[render]
+# prototype_profile = "draft"        # petit VPS : brouillons pour les étapes intermédiaires
+# first_cut_profile = "draft"
+# final_profile = "preview"          # petit VPS : 540x960 rendu, agrandi en 1080x1920 à l'export
+
+[tts]
+# backend = "piper"
+# piper_model = "assets/voices/fr_FR-siwis-medium.onnx"
+
+[quality]
+# autonomous = true                  # plus aucune validation humaine (voir GUIDE_EPISODE.md)
+
+[limits]
+# max_parallel_renders = 1
