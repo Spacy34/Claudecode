@@ -117,6 +117,7 @@
     }
   ],
   "talk": [],
+  "punches": [],
   "auto_idle": true,
   "transition_out": "smash_cut"
 }

@@ -82,7 +82,10 @@
       "delivery": {
         "emotion": "deadpan"
       },
-      "visual_intent": "Kevin en pied, bras croisés, sûr de lui : portrait du personnage."
+      "visual_intent": "Kevin en pied, bras croisés, sûr de lui : portrait du personnage.",
+      "emphasis_words": [
+        2
+      ]
     },
     {
       "id": "l003",
@@ -120,7 +123,10 @@
       "delivery": {
         "emotion": "neutral"
       },
-      "visual_intent": "Plan large de la cuisine : Kevin rejoint le plan de travail, le grille-pain trône sur une enceinte, Kevin danse."
+      "visual_intent": "Plan large de la cuisine : Kevin rejoint le plan de travail, le grille-pain trône sur une enceinte, Kevin danse.",
+      "emphasis_words": [
+        11
+      ]
     },
     {
       "id": "l006",
@@ -161,6 +167,10 @@
           "name": "thud",
           "word": 11
         }
+      ],
+      "emphasis_words": [
+        4,
+        11
       ]
     },
     {
@@ -177,6 +187,10 @@
           "name": "sparkle",
           "word": 5
         }
+      ],
+      "emphasis_words": [
+        4,
+        5
       ]
     },
     {
@@ -197,6 +211,9 @@
           "name": "ding",
           "word": 11
         }
+      ],
+      "emphasis_words": [
+        3
       ]
     }
   ],

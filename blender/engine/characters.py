@@ -130,8 +130,9 @@ class Character:
         for s in (1, -1):
             self._mesh(core.ball(f"{self.id}_ear{'L' if s > 0 else 'R'}", (r * 0.16, r * 0.09, r * 0.22), m["skin"], (s * r * 0.97, 0, 0), parent=head, coll=self.coll, ink=self.ink * 0.6, detail=1))
         self._face(head)
-        self._hair(head)
-        self._accessories(head, spine, neck)
+        follow = self._j("head_follow", (0, 0, 0), head)   # cheveux/chapeaux : retard animé (follow-through)
+        self._hair(follow)
+        self._accessories(head, spine, neck, hat_parent=follow)
         # bras
         for side, s in (("L", 1), ("R", -1)):
             sh = self._j(f"shoulder_{side}", (s * self.torso_w * 0.92, 0, self.torso_h * 0.82), spine)
@@ -265,12 +266,13 @@ class Character:
                 rr = math.sqrt(max(1 - h * h, 0)) * r
                 self._mesh(core.ball(f"{self.id}_curl{i}", (r * 0.3,) * 3, m["hair"], (math.cos(a) * rr, math.sin(a) * rr + r * 0.1, h * r + r * 0.1), parent=head, coll=self.coll, detail=1, ink=self.ink * 0.5))
 
-    def _accessories(self, head, spine, neck):
+    def _accessories(self, head, spine, neck, hat_parent=None):
         d, m, r = self.d, self.m, self.head_r
+        hat = hat_parent or head
         acc = set(d.get("accessories", []))
         if "cap" in acc:
-            self._mesh(core.uvball(f"{self.id}_cap", (r * 1.1, r * 1.08, r * 1.0), m["accent"], (0, r * 0.06, r * 0.2), parent=head, coll=self.coll, ink=self.ink, seg=12, rings=8, zmin=0.38, smooth=False))
-            self._mesh(core.box(f"{self.id}_visor", (r * 1.0, r * 0.65, r * 0.05), m["accent"], (0, -r * 0.9, r * 0.66), (D(-12), 0, 0), parent=head, coll=self.coll, ink=self.ink * 0.6))
+            self._mesh(core.uvball(f"{self.id}_cap", (r * 1.1, r * 1.08, r * 1.0), m["accent"], (0, r * 0.06, r * 0.2), parent=hat, coll=self.coll, ink=self.ink, seg=12, rings=8, zmin=0.38, smooth=False))
+            self._mesh(core.box(f"{self.id}_visor", (r * 1.0, r * 0.65, r * 0.05), m["accent"], (0, -r * 0.9, r * 0.66), (D(-12), 0, 0), parent=hat, coll=self.coll, ink=self.ink * 0.6))
         if "glasses" in acc:
             for s in (1, -1):
                 self._mesh(core.torus(f"{self.id}_glass{s}", r * 0.24, r * 0.025, m["dark"], (s * r * 0.36, -r * 1.07, r * 0.16), (D(90), 0, 0), parent=head, coll=self.coll))
@@ -285,18 +287,18 @@ class Character:
         if "beard" in acc:
             self._mesh(core.uvball(f"{self.id}_beard", (r * 0.75, r * 0.6, r * 0.55), m["hair"], (0, -r * 0.35, -r * 0.55), (D(180), 0, 0), parent=head, coll=self.coll, seg=10, rings=6, zmin=0.0, smooth=False, ink=self.ink))
         if "chef_hat" in acc:
-            self._mesh(core.cyl(f"{self.id}_chefband", r * 0.8, r * 0.85, r * 0.5, m["chef"], (0, 0, r * 0.95), parent=head, coll=self.coll, ink=self.ink, seg=12))
-            self._mesh(core.ball(f"{self.id}_chefpuff", (r * 1.0, r * 1.0, r * 0.6), m["chef"], (0, 0, r * 1.4), parent=head, coll=self.coll, ink=self.ink, detail=2))
+            self._mesh(core.cyl(f"{self.id}_chefband", r * 0.8, r * 0.85, r * 0.5, m["chef"], (0, 0, r * 0.95), parent=hat, coll=self.coll, ink=self.ink, seg=12))
+            self._mesh(core.ball(f"{self.id}_chefpuff", (r * 1.0, r * 1.0, r * 0.6), m["chef"], (0, 0, r * 1.4), parent=hat, coll=self.coll, ink=self.ink, detail=2))
         if "headband" in acc:
-            self._mesh(core.torus(f"{self.id}_headband", r * 1.0, r * 0.06, m["accent"], (0, 0, r * 0.45), parent=head, coll=self.coll))
+            self._mesh(core.torus(f"{self.id}_headband", r * 1.0, r * 0.06, m["accent"], (0, 0, r * 0.45), parent=hat, coll=self.coll))
         if "earrings" in acc:
             for s in (1, -1):
                 self._mesh(core.ball(f"{self.id}_earring{s}", (r * 0.06,) * 3, m["gold"], (s * r * 1.0, -r * 0.02, -r * 0.25), parent=head, coll=self.coll, detail=1))
         if "crown" in acc:
-            self._mesh(core.cyl(f"{self.id}_crownband", r * 0.62, r * 0.66, r * 0.2, m["gold"], (0, 0, r * 0.98), parent=head, coll=self.coll, ink=self.ink, seg=10))
+            self._mesh(core.cyl(f"{self.id}_crownband", r * 0.62, r * 0.66, r * 0.2, m["gold"], (0, 0, r * 0.98), parent=hat, coll=self.coll, ink=self.ink, seg=10))
             for i in range(5):
                 a = 2 * math.pi * i / 5
-                self._mesh(core.cyl(f"{self.id}_crownspike{i}", r * 0.1, 0.0, r * 0.3, m["gold"], (math.cos(a) * r * 0.6, math.sin(a) * r * 0.6, r * 1.2), parent=head, coll=self.coll, seg=4))
+                self._mesh(core.cyl(f"{self.id}_crownspike{i}", r * 0.1, 0.0, r * 0.3, m["gold"], (math.cos(a) * r * 0.6, math.sin(a) * r * 0.6, r * 1.2), parent=hat, coll=self.coll, seg=4))
         if "tie" in acc or d["outfit"]["top"]["type"] == "suit":
             self._mesh(core.box(f"{self.id}_tie", (self.torso_w * 0.22, 0.012, self.torso_h * 0.55), m["accent"], (0, -self.torso_d * 1.0, self.torso_h * 0.62), (D(6), 0, 0), parent=spine, coll=self.coll, ink=self.ink * 0.5))
         if "bowtie" in acc:

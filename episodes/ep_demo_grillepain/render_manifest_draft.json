@@ -5,31 +5,31 @@
   "status": "generated",
   "provenance": {
     "created_by": "studio render",
-    "created_at": "2026-11-10T09:40:04+00:00",
+    "created_at": "2026-11-12T08:44:21+00:00",
     "depends_on": [
       {
         "path": "shot_manifest.json",
-        "sha256": "30eac8312cb0146d69f17167142ec7c7a775e7c753c22aaefe55f0d3dad12ad7"
+        "sha256": "ef68e76049a8167ab1ddf90e4c9b25f943b3dffe75c8826292de359f08e68512"
       }
     ]
   },
   "profile": "draft",
-  "engine_version": "d60e78a67360",
+  "engine_version": "c00a8f6f9571",
   "shots": [
     {
-      "id": "sh_001",
-      "cache_key": "aef07c8c2e5c3ab821c941440d75edd712b515fda36e8d33208b52f02f4bee13",
-      "frames_dir": "/home/user/Claudecode/.studio_cache/shots/aef07c8c2e5c3ab821c941440d75edd712b515fda36e8d33208b52f02f4bee13",
+      "id": "sh_008",
+      "cache_key": "9807cb83f56029aa7dc771a60e8c12a3f4a6c09f5c03fee0cb895e3038002649",
+      "frames_dir": "/home/user/Claudecode/.studio_cache/shots/9807cb83f56029aa7dc771a60e8c12a3f4a6c09f5c03fee0cb895e3038002649",
       "render_engine": "cycles",
-      "render_seconds": 134.0,
+      "render_seconds": 70.8,
       "status": "rendered",
       "scene_report": {
-        "shot_id": "sh_001",
+        "shot_id": "sh_008",
         "events": [
           {
             "char": "ch_kevin",
-            "frame": 57,
-            "what": "action:point"
+            "frame": 32,
+            "what": "action:celebrate"
           },
           {
             "char": "ch_kevin",
@@ -38,40 +38,50 @@
           },
           {
             "char": "ch_kevin",
-            "frame": 9,
-            "what": "expr:happy"
+            "frame": 5,
+            "what": "expr:laugh"
+          },
+          {
+            "char": "ch_lea",
+            "frame": 1,
+            "what": "expr:neutral"
+          },
+          {
+            "char": "ch_lea",
+            "frame": 26,
+            "what": "expr:shocked"
           }
         ],
         "warnings": [],
         "camera": {
-          "framing": "medium",
+          "framing": "two_shot",
           "move": "push_in",
-          "lens": 35.0,
+          "lens": 30.0,
           "keys": [
             {
               "frame": 1,
               "pos": [
-                0.625,
-                -1.23,
-                0.69
+                -0.015,
+                -3.778,
+                0.354
               ],
               "aim": [
-                0.625,
-                1.597,
-                0.887
+                -0.015,
+                1.005,
+                0.689
               ]
             },
             {
-              "frame": 116,
+              "frame": 63,
               "pos": [
-                0.6,
-                -0.653,
-                0.87
+                -0.042,
+                -2.751,
+                0.68
               ],
               "aim": [
-                0.6,
-                1.6,
-                1.028
+                -0.042,
+                1.049,
+                0.946
               ]
             }
           ]
@@ -79,15 +89,15 @@
         "checks": [],
         "sample_frames": [
           1,
-          58,
-          65,
-          116
+          31,
+          40,
+          63
         ],
         "blender_version": "5.2.3 LTS",
         "engine_version": "0.3.0",
         "render_engine": "CYCLES",
-        "frames": 116,
-        "build_seconds": 0.18,
+        "frames": 63,
+        "build_seconds": 0.35,
         "rendered_frames": [
           1,
           3,
@@ -120,37 +130,10 @@
           57,
           59,
           61,
-          63,
-          65,
-          67,
-          69,
-          71,
-          73,
-          75,
-          77,
-          79,
-          81,
-          83,
-          85,
-          87,
-          89,
-          91,
-          93,
-          95,
-          97,
-          99,
-          101,
-          103,
-          105,
-          107,
-          109,
-          111,
-          113,
-          115,
-          116
+          63
         ],
-        "render_seconds": 133.14,
-        "seconds_per_frame": 2.257
+        "render_seconds": 69.64,
+        "seconds_per_frame": 2.176
       }
     }
   ],

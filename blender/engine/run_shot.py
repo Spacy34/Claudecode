@@ -151,6 +151,26 @@ class Shot:
         for t in sp.get("talk", []):
             if t["char"] in self.cas:
                 self.cas[t["char"]].talk([tuple(w) for w in t["words"]])
+        # gestes automatiques quand un personnage parle sans action prévue (jamais de bras ballants en dialogue)
+        for t in sp.get("talk", []):
+            ca = self.cas.get(t["char"])
+            if ca is None or not t["words"]:
+                continue
+            busy = [(a["frame"], a["frame"] + max(int(a.get("duration_frames") or 0), 30)) for a in sp.get("actions", []) if a["char"] == t["char"]]
+            spans, cur = [], [t["words"][0][0], t["words"][0][1]]
+            for w0, w1 in t["words"][1:]:
+                if w0 - cur[1] < 12:
+                    cur[1] = w1
+                else:
+                    spans.append(cur)
+                    cur = [w0, w1]
+            spans.append(cur)
+            for a0, a1 in spans:
+                if a1 - a0 >= 24 and not any(b0 < a1 and a0 < b1 for b0, b1 in busy):
+                    ca.act_talk_gesture(int(a0), int(a1 - a0), 0.8, None, None)
+                    self.report["events"].append({"char": t["char"], "frame": a0, "what": "auto:talk_gesture"})
+        for ca in self.cas.values():
+            ca.follow_through(1, self.N)
         for ca in self.cas.values():
             ca.blinks(1, self.N)
             self.report["events"] += [{"char": ca.c.id, "frame": f, "what": w} for f, w in ca.events]
@@ -322,10 +342,25 @@ class Shot:
             rig.key(1, *p0)
             rig.key(self.N, *p1)
         self.cam.data.lens = rig.keys[0][3]
+        # montage nerveux : zoom « punch » sur les mots forts (calculés à la compilation)
+        for pnch in self.spec.get("punches", []):
+            fp = int(pnch["frame"])
+            face = None
+            if subj is not None and cs["subject"].get("kind") == "char":
+                # visage au moment le plus haut de la tenue du zoom (sauts, célébrations)
+                zs = []
+                for fr in range(fp, min(self.N, fp + 26) + 1, 4):
+                    zs.append((subj(fr)["lm"]["eyes"].z, subj(fr)["lm"]["eyes"]))
+                face = max(zs, key=lambda z: z[0])[1] if zs else None
+            rig.add_punch(fp, float(pnch.get("strength", 1.0)), face=face, framing=cs["framing"])
+        impacts = [a["frame"] for a in self.spec.get("actions", []) if a["action"] in ("take_hit", "fall_back", "slip_fall", "stomp", "shocked_jump")]
+        impacts = [f + (21 if a["action"] == "shocked_jump" else 2) for f, a in zip(impacts, [a for a in self.spec.get("actions", []) if a["action"] in ("take_hit", "fall_back", "slip_fall", "stomp", "shocked_jump")])]
+        impacts += [e["frame"] for e in self.spec.get("fx", []) if e["type"] in ("explosion", "impact_star")]
         if move == "shake":
-            impacts = [a["frame"] for a in self.spec.get("actions", []) if a["action"] in ("take_hit", "fall_back", "slip_fall", "stomp", "shocked_jump")]
-            impacts += [e["frame"] for e in self.spec.get("fx", []) if e["type"] in ("explosion", "impact_star")]
             rig.add_shake(min(impacts) if impacts else max(1, self.N // 3), 14, 2.5)
+        else:
+            for fi in sorted(set(impacts)):   # secousse automatique, synchronisée avec l'impact (et son bruitage)
+                rig.add_shake(min(self.N, fi), 9, 1.3)
         if move == "handheld":
             rig.add_handheld()
         rig.a.apply()

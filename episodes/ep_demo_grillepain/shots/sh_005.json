@@ -181,6 +181,13 @@
   "prop_actions": [],
   "fx": [],
   "talk": [],
+  "punches": [
+    {
+      "frame": 103,
+      "strength": 1.0,
+      "word": "quatre"
+    }
+  ],
   "auto_idle": true,
   "transition_out": "cut"
 }

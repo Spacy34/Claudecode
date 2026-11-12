@@ -60,3 +60,9 @@ date: 2026-11-10
 
 [make-short] libass ne charge pas les woff2. Utiliser une police OTF/TTF libre (Inter ExtraBold ici) ou en
 déposer une dans assets/fonts/.
+
+## Zoom punch : viser le visage, pas le centre du cadre
+tags: camera, punch, zoom, montage, saut
+date: 2026-11-12
+
+Un zoom vers le centre du cadre coupe la tête si le personnage saute (célébration). add_punch vise le point le plus haut des yeux du sujet pendant la tenue du zoom et réduit l'amplitude en plan large/two_shot.

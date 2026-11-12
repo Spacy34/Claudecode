@@ -65,6 +65,17 @@ mots des répliques du personnage présent dans le plan (approximation syllabiqu
 | throw | élan + lancer (combiner avec prop throw) | 0,9 s | cible |
 `intensity` 0.2–2 amplifie la pose.
 
+## Couche « cartoon » automatique (rien à écrire dans les contrats)
+- Écrasement-étirement (pivot aux pieds) : sauts (anticipation, décollage, réception), take_hit, stomp,
+  célébration, et sursaut du corps sur les expressions shocked/scared (étirement), angry/evil_grin, laugh (rebonds).
+- Cheveux et chapeaux en retard sur la tête et le corps (follow-through) ; repos avec rebond.
+- Gestes automatiques (talk_gesture) quand un personnage parle ≥ 0,8 s sans action prévue.
+- Montage nerveux : zoom « punch » vers le VISAGE du sujet sur les mots forts (`emphasis_words` du script +
+  détection auto des chiffres, mots en « ! » et MAJUSCULES ; 2 max par plan, espacés de 1,5 s) ;
+  secousse caméra automatique sur chaque impact (take_hit, chutes, stomp, réception de shocked_jump,
+  explosion, impact_star) ; sous-titres qui « pop » et mots forts en rouge agrandis ; avertissement de
+  compilation au-delà de 4 s par plan.
+
 ## Accessoires animés (animation_plan.props)
 attach (dans la main `hand` L/R de `char`), detach, appear, disappear, throw (trajectoire balistique vers
 `target`), fall (tombe sur le support), shake, explode (+ explosion), spin.

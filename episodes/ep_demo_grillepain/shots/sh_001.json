@@ -173,6 +173,7 @@
     }
   ],
   "talk": [],
+  "punches": [],
   "auto_idle": true,
   "transition_out": "cut"
 }

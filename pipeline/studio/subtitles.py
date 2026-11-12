@@ -69,13 +69,18 @@ def build_ass(timeline, cfg, out_path, t_start=0.0, t_end=None, width=1080, heig
             if b <= a:
                 continue
             parts = []
+            emph_col = sc.get("emphasis_color", "&H003A3AFF")   # rouge-orangé (BGR)
             for k, x in enumerate(ch):
                 txt = _esc(x["text"].upper() if upper else x["text"])
-                if k == wi:
+                if x.get("emph"):
+                    sz = 145 if k == wi else 125
+                    pop_t = f"\\fscx{sz + 25}\\fscy{sz + 25}\\t(0,90,\\fscx{sz}\\fscy{sz})" if k == wi else f"\\fscx{sz}\\fscy{sz}"
+                    parts.append(f"{{\\c{emph_col}{pop_t}}}{txt}{{\\c{base}\\fscx100\\fscy100}}")
+                elif k == wi:
                     parts.append(f"{{\\c{hl}\\fscx112\\fscy112}}{txt}{{\\c{base}\\fscx100\\fscy100}}")
                 else:
                     parts.append(txt)
-            pop = "{\\fad(40,0)}" if wi == 0 else ""
+            pop = "{\\fscx70\\fscy70\\t(0,70,\\fscx100\\fscy100)}" if wi == 0 else ""   # le groupe de mots « pop » à l'apparition
             lines.append(f"Dialogue: 0,{_ts(a)},{_ts(b)},TT,,0,0,0,,{{\\pos({width // 2},{y})}}{pop}{' '.join(parts)}")
             events += 1
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)

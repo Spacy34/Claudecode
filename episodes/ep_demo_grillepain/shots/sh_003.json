@@ -198,6 +198,13 @@
       ]
     }
   ],
+  "punches": [
+    {
+      "frame": 58,
+      "strength": 1.0,
+      "word": "danse!"
+    }
+  ],
   "auto_idle": true,
   "transition_out": "whip"
 }

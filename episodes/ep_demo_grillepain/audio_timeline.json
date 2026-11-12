@@ -5,12 +5,12 @@
   "status": "generated",
   "provenance": {
     "created_by": "studio voice",
-    "created_at": "2026-11-10T09:00:52+00:00",
+    "created_at": "2026-11-12T08:39:49+00:00",
     "tool": "tts:espeak",
     "depends_on": [
       {
         "path": "story_script.json",
-        "sha256": "0d4e0595c185eda40396cf34dcce9d6236097f606bd4d3ebea1a25ffc0effb2a"
+        "sha256": "56c5a2f0e777912091c55ee16c0cffe850e2695f46fccd16bd5bda0dd5b1fff5"
       },
       {
         "path": "cast_bible.json",
@@ -23,8 +23,8 @@
   "narration_wav": "audio/narration.wav",
   "tts": {
     "backend": "espeak",
-    "voice": "fr+m3",
-    "license": "espeak-ng GPL-3.0 (outil) ; audio généré utilisable",
+    "voice": "cache",
+    "license": "voir backend",
     "alignment": "proportional_syllables"
   },
   "segments": [
@@ -128,7 +128,8 @@
           "i": 2,
           "text": "vingt-huit",
           "start_s": 4.602,
-          "end_s": 4.987
+          "end_s": 4.987,
+          "emph": true
         },
         {
           "i": 3,
@@ -258,7 +259,8 @@
           "i": 7,
           "text": "danse!",
           "start_s": 10.153,
-          "end_s": 10.381
+          "end_s": 10.381,
+          "emph": true
         }
       ]
     },
@@ -422,7 +424,8 @@
           "i": 11,
           "text": "quatre",
           "start_s": 18.842,
-          "end_s": 19.013
+          "end_s": 19.013,
+          "emph": true
         },
         {
           "i": 12,
@@ -556,7 +559,8 @@
           "i": 4,
           "text": "éjecté",
           "start_s": 25.009,
-          "end_s": 25.422
+          "end_s": 25.422,
+          "emph": true
         },
         {
           "i": 5,
@@ -598,7 +602,8 @@
           "i": 11,
           "text": "tête",
           "start_s": 26.507,
-          "end_s": 26.644
+          "end_s": 26.644,
+          "emph": true
         },
         {
           "i": 12,
@@ -650,13 +655,15 @@
           "i": 4,
           "text": "trois",
           "start_s": 28.293,
-          "end_s": 28.457
+          "end_s": 28.457,
+          "emph": true
         },
         {
           "i": 5,
           "text": "millions",
           "start_s": 28.471,
-          "end_s": 28.8
+          "end_s": 28.8,
+          "emph": true
         },
         {
           "i": 6,
@@ -702,7 +709,8 @@
           "i": 3,
           "text": "expulsés.",
           "start_s": 30.258,
-          "end_s": 30.873
+          "end_s": 30.873,
+          "emph": true
         },
         {
           "i": 4,

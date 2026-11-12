@@ -24,6 +24,12 @@ def syllables(word):
     return max(1, len(VOWELS.findall(w)))
 
 
+def is_emphasis(word, idx, explicit):
+    """Mot fort : explicite (script) ou détecté (chiffre, exclamation, MAJUSCULES)."""
+    core = re.sub(r"[^\w-]", "", word)
+    return idx in explicit or bool(re.search(r"\d", word)) or word.endswith("!") or (len(core) > 2 and core.isupper())
+
+
 def word_timings(words, start, end):
     weights = []
     for w in words:
@@ -79,6 +85,10 @@ def build_voice(ep_dir, cfg, force=False):
         words = line["text"].split()
         seg = {"line_id": line["id"], "speaker": line["speaker"], "wav": str(wav.relative_to(ep_dir)), "text_sha256": sha256_json(line["text"]),
                "start_s": round(t, 3), "end_s": round(t + dur, 3), "words": word_timings(words, t, t + dur)}
+        explicit = set(line.get("emphasis_words", []))
+        for w in seg["words"]:
+            if is_emphasis(w["text"], w["i"], explicit):
+                w["emph"] = True
         segments.append(seg)
         pause = line.get("delivery", {}).get("pause_after_ms")
         if pause is None:

@@ -215,6 +215,37 @@ class CharAnim:
         self.a.key(root, 'rotation_euler', 2, f, cur)
         self.a.key(root, 'rotation_euler', 2, f + frames, ang)
 
+    # ---------------- couche « cartoon » : écrasement-étirement, retard des accessoires
+    def _sq(self, f, v):
+        """v < 0 : écrasé ; v > 0 : étiré. Volume ~conservé ; pivot = pieds (racine) donc le personnage reste au sol."""
+        if f < 1:
+            return
+        root = self.j("root")
+        sz = 1.0 + v
+        sxy = 1.0 / math.sqrt(max(sz, 0.3))
+        self.a.key(root, 'scale', 0, f, sxy)
+        self.a.key(root, 'scale', 1, f, sxy)
+        self.a.key(root, 'scale', 2, f, sz)
+
+    def squash(self, f, amount=0.12, stretch_first=False):
+        s = 1 if stretch_first else -1
+        for fr, v in ((f - 1, 0.0), (f, s * amount), (f + 3, -s * amount * 0.55), (f + 6, s * amount * 0.2), (f + 10, 0.0)):
+            self._sq(fr, v)
+
+    def follow_through(self, f0, f1, k=0.55):
+        """Cheveux/chapeau en retard sur les mouvements de tête et de corps (secondary motion)."""
+        fol = self.c.joints.get("head_follow")
+        if fol is None:
+            return
+        head, spine, root = self.j("head"), self.j("spine"), self.j("root")
+        for f in range(f0, f1 + 1, 2):
+            for ax in (0, 1):
+                cur = self.a.value_at(head, 'rotation_euler', ax, f) + self.a.value_at(spine, 'rotation_euler', ax, f)
+                prev = self.a.value_at(head, 'rotation_euler', ax, f - 4) + self.a.value_at(spine, 'rotation_euler', ax, f - 4)
+                self.a.key(fol, 'rotation_euler', ax, f, max(-D(16), min(D(16), (prev - cur) * k)))
+            dz = self.a.value_at(root, 'location', 2, f - 3) - self.a.value_at(root, 'location', 2, f)
+            self.a.key(fol, 'location', 2, f, max(-0.015, min(0.06, dz * 0.35)) * self.c.H)
+
     # ---------------- couches automatiques
     def idle(self, f0, f1, energy=1.0):
         """Respiration, balancement, micro-mouvements de tête : jamais de personnage figé."""
@@ -225,13 +256,13 @@ class CharAnim:
         while f <= f1:
             ph = math.sin(k * 0.9 + self.rng.random())
             self.rot("spine", 0, f, 1.5 * ph * energy)
-            self.rot("spine", 1, f, 1.8 * math.cos(k * 0.7) * energy)
+            self.rot("spine", 1, f, 2.6 * math.cos(k * 0.7) * energy)
             self.rot("head", 1, f, 3.0 * math.sin(k * 0.6 + 1.3) * energy)
             self.rot("head", 2, f, 4.0 * math.sin(k * 0.45) * energy)
             for side in ("L", "R"):
                 s = 1 if side == "L" else -1
                 self.rot(f"upper_arm_{side}", 1, f, -s * (8 + 2.5 * ph * energy))
-            self.a.key(self.j("hips"), 'location', 2, f, self.c.hip_z + 0.006 * self.c.H * ph * energy)
+            self.a.key(self.j("hips"), 'location', 2, f, self.c.hip_z + 0.012 * self.c.H * ph * energy)   # rebond cartoon
             f += period // 2
             k += 1
 
@@ -269,6 +300,15 @@ class CharAnim:
                     self.a.key(o, 'scale', i, fb, 1.0 if on else 0.001, 'CONSTANT')
         self.set_mouth(fb, mouth)
         self.mouth_base[fb] = mouth
+        if ramp and name in ("shocked", "scared"):
+            self.squash(f, 0.12 * min(1.3, intensity), stretch_first=True)   # sursaut : le corps s'étire
+        elif ramp and name in ("angry", "evil_grin"):
+            self.squash(f, 0.06 * min(1.3, intensity))
+        elif ramp and name == "laugh":
+            for i in range(3):
+                self._sq(f + 1 + i * 6, -0.05)
+                self._sq(f + 4 + i * 6, 0.04)
+            self._sq(f + 20, 0.0)
         self.events.append((f, f"expr:{name}"))
 
     def set_mouth(self, f, shape):
@@ -361,7 +401,9 @@ class CharAnim:
             self.rot("upper_arm_L", 1, f, -(160 - 25 * s))
             self.rot("upper_arm_R", 1, f, 160 + 25 * s)
             self.a.key(self.j("hips"), 'location', 2, f, self.c.hip_z + (0.04 if s > 0 else 0) * self.c.H)
+            self._sq(f, 0.07 if s > 0 else -0.05)
             s, f = -s, f + 5
+        self._sq(f, 0.0)
 
     def act_talk_gesture(self, f0, dur, k, target, world):
         self.hold_current(f0)
@@ -415,6 +457,8 @@ class CharAnim:
         self.a.key(root, 'location', 2, f0 + 21, z, 'LINEAR')
         self.pose("crouch", f0 + 23, blend=0.6)
         self.pose("rest", f0 + 30)
+        for fr, v in ((f0, 0.0), (f0 + 5, -0.14), (f0 + 8, 0.18), (f0 + 13, 0.05), (f0 + 20, 0.08), (f0 + 22, -0.2), (f0 + 25, 0.07), (f0 + 28, -0.03), (f0 + 31, 0.0)):
+            self._sq(fr, v * min(1.3, k))
         return f0 + 30
 
     def act_jump(self, f0, dur, k, target, world):
@@ -436,6 +480,9 @@ class CharAnim:
                 p["legR"], p["legL"] = p["legL"], (0, 0)
             self.pose(p, f + 4, blend=k)
             self.pose("rest", f + 8, interp='LINEAR')
+            self._sq(f + 7, 0.0)
+            self._sq(f + 8, -0.07 * k)
+            self._sq(f + 10, 0.0)
             side = "R" if side == "L" else "L"
             f += 10
         self.pose("rest", f0 + max(dur, 24))
@@ -472,6 +519,7 @@ class CharAnim:
         self.a.key(root, 'location', 0, f0 + 6, x + back.x)
         self.a.key(root, 'location', 1, f0 + 6, y + back.y)
         self.pose("rest", f0 + max(dur, 20))
+        self.squash(f0 + 1, 0.16 * k)
 
     def _fall(self, f0, k, slip=False):
         root = self.j("root")

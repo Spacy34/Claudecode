@@ -155,6 +155,13 @@
   "prop_actions": [],
   "fx": [],
   "talk": [],
+  "punches": [
+    {
+      "frame": 23,
+      "strength": 1.0,
+      "word": "vingt-huit"
+    }
+  ],
   "auto_idle": true,
   "transition_out": "cut"
 }

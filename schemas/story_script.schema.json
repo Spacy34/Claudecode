@@ -2,22 +2,69 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://studio.local/schemas/story_script.schema.json",
   "title": "story_script.json — script narratif structuré (beats + répliques + intentions visuelles)",
-  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/envelope"
+    }
+  ],
   "type": "object",
-  "required": ["contract", "title", "logline", "language", "target_duration_s", "hook", "beats", "lines", "content_review"],
+  "required": [
+    "contract",
+    "title",
+    "logline",
+    "language",
+    "target_duration_s",
+    "hook",
+    "beats",
+    "lines",
+    "content_review"
+  ],
   "properties": {
-    "contract": {"const": "story_script"},
-    "title": {"type": "string", "minLength": 3, "maxLength": 90},
-    "logline": {"type": "string", "minLength": 10, "maxLength": 300},
-    "language": {"const": "fr-FR"},
-    "target_duration_s": {"type": "number", "minimum": 8, "maximum": 180},
+    "contract": {
+      "const": "story_script"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 90
+    },
+    "logline": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 300
+    },
+    "language": {
+      "const": "fr-FR"
+    },
+    "target_duration_s": {
+      "type": "number",
+      "minimum": 8,
+      "maximum": 180
+    },
     "hook": {
       "type": "object",
-      "required": ["line_id", "technique"],
+      "required": [
+        "line_id",
+        "technique"
+      ],
       "properties": {
-        "line_id": {"$ref": "common.schema.json#/$defs/line_id"},
-        "technique": {"enum": ["absurd_claim", "in_media_res", "question", "confession", "paradox", "threat", "shock_image"]},
-        "why_it_works": {"type": "string"}
+        "line_id": {
+          "$ref": "common.schema.json#/$defs/line_id"
+        },
+        "technique": {
+          "enum": [
+            "absurd_claim",
+            "in_media_res",
+            "question",
+            "confession",
+            "paradox",
+            "threat",
+            "shock_image"
+          ]
+        },
+        "why_it_works": {
+          "type": "string"
+        }
       }
     },
     "beats": {
@@ -25,13 +72,33 @@
       "minItems": 3,
       "items": {
         "type": "object",
-        "required": ["id", "role", "summary"],
+        "required": [
+          "id",
+          "role",
+          "summary"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": {"$ref": "common.schema.json#/$defs/beat_id"},
-          "role": {"enum": ["hook", "setup", "escalation", "twist", "climax", "payoff", "button"]},
-          "summary": {"type": "string"},
-          "comic_device": {"type": "string"}
+          "id": {
+            "$ref": "common.schema.json#/$defs/beat_id"
+          },
+          "role": {
+            "enum": [
+              "hook",
+              "setup",
+              "escalation",
+              "twist",
+              "climax",
+              "payoff",
+              "button"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "comic_device": {
+            "type": "string"
+          }
         }
       }
     },
@@ -40,47 +107,137 @@
       "minItems": 2,
       "items": {
         "type": "object",
-        "required": ["id", "beat_id", "speaker", "text", "visual_intent"],
+        "required": [
+          "id",
+          "beat_id",
+          "speaker",
+          "text",
+          "visual_intent"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": {"$ref": "common.schema.json#/$defs/line_id"},
-          "beat_id": {"$ref": "common.schema.json#/$defs/beat_id"},
-          "speaker": {"anyOf": [{"const": "narrator"}, {"$ref": "common.schema.json#/$defs/character_id"}]},
-          "text": {"type": "string", "minLength": 1, "maxLength": 240},
+          "id": {
+            "$ref": "common.schema.json#/$defs/line_id"
+          },
+          "beat_id": {
+            "$ref": "common.schema.json#/$defs/beat_id"
+          },
+          "speaker": {
+            "anyOf": [
+              {
+                "const": "narrator"
+              },
+              {
+                "$ref": "common.schema.json#/$defs/character_id"
+              }
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
           "delivery": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "emotion": {"enum": ["neutral", "deadpan", "excited", "panicked", "angry", "whisper", "smug", "sad", "disgusted"]},
-              "rate": {"type": "number", "minimum": 0.7, "maximum": 1.4},
-              "pitch": {"type": "number", "minimum": 0.7, "maximum": 1.3},
-              "pause_after_ms": {"type": "integer", "minimum": 0, "maximum": 3000}
+              "emotion": {
+                "enum": [
+                  "neutral",
+                  "deadpan",
+                  "excited",
+                  "panicked",
+                  "angry",
+                  "whisper",
+                  "smug",
+                  "sad",
+                  "disgusted"
+                ]
+              },
+              "rate": {
+                "type": "number",
+                "minimum": 0.7,
+                "maximum": 1.4
+              },
+              "pitch": {
+                "type": "number",
+                "minimum": 0.7,
+                "maximum": 1.3
+              },
+              "pause_after_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3000
+              }
             }
           },
-          "visual_intent": {"type": "string", "minLength": 5, "description": "Ce que l'on DOIT voir pendant cette réplique."},
+          "visual_intent": {
+            "type": "string",
+            "minLength": 5,
+            "description": "Ce que l'on DOIT voir pendant cette réplique."
+          },
           "sfx": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["name"],
+              "required": [
+                "name"
+              ],
               "properties": {
-                "name": {"type": "string"},
-                "word": {"type": "integer", "minimum": 0},
-                "gain_db": {"type": "number"}
+                "name": {
+                  "type": "string"
+                },
+                "word": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "gain_db": {
+                  "type": "number"
+                }
               }
             }
+          },
+          "emphasis_words": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "uniqueItems": true,
+            "description": "Index des mots forts (chute, chiffre absurde, mot-clé) : zoom punch + mise en valeur des sous-titres. Les chiffres et mots en '!' sont détectés automatiquement."
           }
         }
       }
     },
     "content_review": {
       "type": "object",
-      "required": ["platform_risk", "notes"],
+      "required": [
+        "platform_risk",
+        "notes"
+      ],
       "properties": {
-        "themes": {"type": "array", "items": {"type": "string"}},
-        "platform_risk": {"enum": ["low", "medium", "high"]},
-        "notes": {"type": "string"},
-        "real_people_or_brands": {"type": "array", "items": {"type": "string"}}
+        "themes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "platform_risk": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        },
+        "real_people_or_brands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     }
   }

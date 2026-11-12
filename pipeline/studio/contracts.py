@@ -90,6 +90,9 @@ def cross_errors(arts):
             if l["beat_id"] not in beat_ids:
                 errs.append(f"story_script : {l['id']} référence un beat inconnu {l['beat_id']}")
             words[l["id"]] = len(l["text"].split())
+            for wi in l.get("emphasis_words", []):
+                if wi >= words[l["id"]]:
+                    errs.append(f"story_script : emphasis_words {wi} hors de {l['id']}")
             for s in l.get("sfx", []):
                 if "word" in s and s["word"] >= words[l["id"]]:
                     errs.append(f"story_script : sfx {s['name']} sur mot {s['word']} hors de {l['id']}")

@@ -28,5 +28,10 @@ Ne pas reproduire les personnages, décors, polices ou habillages d'une chaîne 
 Setup → anticipation (2–4 images) → gag sur le mot → tenue de réaction 0,4–0,8 s → coupe.
 Bruitage sur l'impact visuel, pas avant.
 
+## Montage nerveux
+Plans courts (1,5–3,5 s), réaction après chaque gag, zoom punch sur le mot fort, secousse sur l'impact,
+bruitage sur l'image d'impact. Le corps réagit avant le visage : écrasement-étirement, sursaut, rebond.
+
 ## Sous-titres
-Majuscules, 2–3 mots, mot courant surligné en jaune et légèrement grossi, contour noir épais.
+Majuscules, 2–3 mots qui « pop » à l'apparition, mot courant surligné en jaune, mots forts en rouge et agrandis,
+contour noir épais.

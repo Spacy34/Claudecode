@@ -5,12 +5,12 @@
   "status": "generated",
   "provenance": {
     "created_by": "studio qa",
-    "created_at": "2026-11-10T09:40:06+00:00",
+    "created_at": "2026-11-12T08:44:23+00:00",
     "tool": "ffprobe/ffmpeg"
   },
   "target": {
     "path": "/home/user/Claudecode/episodes/ep_demo_grillepain/renders/work.mp4",
-    "sha256": "973edd09f4d36ec72385421a91f55b0e584d00000d089aec7f255380c17a19b5",
+    "sha256": "594234fc835d57558485282b0ef3bce5a1c598dc0a8248d8b84e6a8de093f38f",
     "kind": "work"
   },
   "checks": [
@@ -94,7 +94,7 @@
       "category": "sync",
       "severity": "major",
       "status": "pass",
-      "message": "durées vidéo 3.87s / audio 3.87s",
+      "message": "durées vidéo 2.10s / audio 2.10s",
       "method": "ffprobe",
       "evidence": {}
     },
@@ -103,7 +103,7 @@
       "category": "technical",
       "severity": "major",
       "status": "pass",
-      "message": "durée 3.87s (attendu 3.87s)",
+      "message": "durée 2.10s (attendu 2.10s)",
       "method": "ffprobe",
       "evidence": {}
     },
@@ -112,7 +112,7 @@
       "category": "technical",
       "severity": "major",
       "status": "pass",
-      "message": "116 images (attendu 116)",
+      "message": "63 images (attendu 63)",
       "method": "ffprobe",
       "evidence": {}
     },
@@ -143,10 +143,10 @@
       "category": "audio",
       "severity": "major",
       "status": "pass",
-      "message": "loudness intégrée -14.4 LUFS (cible -14.0)",
+      "message": "loudness intégrée -14.2 LUFS (cible -14.0)",
       "method": "ffmpeg_filter",
       "evidence": {
-        "lufs": -14.4
+        "lufs": -14.2
       }
     },
     {
@@ -174,7 +174,7 @@
       "category": "subtitles",
       "severity": "major",
       "status": "pass",
-      "message": "11 évènements de sous-titres",
+      "message": "9 évènements de sous-titres",
       "method": "python",
       "evidence": {}
     },
@@ -183,16 +183,16 @@
       "category": "subtitles",
       "severity": "minor",
       "status": "pass",
-      "message": "dernier sous-titre à 3.87s / vidéo 3.87s",
+      "message": "dernier sous-titre à 2.10s / vidéo 2.10s",
       "method": "python",
       "evidence": {}
     },
     {
-      "id": "sh_001:scene_ok",
+      "id": "sh_008:scene_ok",
       "category": "scene",
       "severity": "info",
       "status": "pass",
-      "message": "sh_001 : aucun défaut géométrique détecté",
+      "message": "sh_008 : aucun défaut géométrique détecté",
       "method": "blender_scene_check",
       "evidence": {}
     }

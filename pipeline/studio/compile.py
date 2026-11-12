@@ -14,7 +14,7 @@ from .util import ROOT, now, read_json, sha256_json, write_json
 sys.path.insert(0, str(ROOT / "blender"))
 from engine import kitdata, registry  # noqa: E402
 
-MIN_SHOT_S, LONG_SHOT_S = 0.5, 6.0
+MIN_SHOT_S, LONG_SHOT_S = 0.5, 4.0   # montage nerveux : au-delà de 4 s, avertir
 
 
 class CompileError(Exception):
@@ -50,6 +50,11 @@ def compile_episode(ep_dir, cfg):
     for l in script["lines"]:
         if l["id"] not in segs or segs[l["id"]]["text_sha256"] != sha256_json(l["text"]):
             raise CompileError(f"audio_timeline obsolète pour {l['id']} : relancer `studio voice`")
+        from .audio import is_emphasis
+        want = {w["i"] for w in segs[l["id"]]["words"] if is_emphasis(w["text"], w["i"], set(l.get("emphasis_words", [])))}
+        have = {w["i"] for w in segs[l["id"]]["words"] if w.get("emph")}
+        if want != have:
+            raise CompileError(f"mots forts modifiés pour {l['id']} : relancer `studio voice`")
     duration = tl["duration_s"]
     total_frames = int(math.ceil(duration * fps))
     shots = sb["shots"]
@@ -153,6 +158,15 @@ def compile_episode(ep_dir, cfg):
                         ws.append([loc(w["start_s"]), loc(w["end_s"])])
             if ws:
                 talk.append({"char": cid, "words": ws})
+        # zooms « punch » sur les mots forts du plan : 2 max par plan, espacés d'au moins 1,5 s
+        punches = []
+        if s["camera"].get("move", "static") not in ("crash_zoom",):
+            for lid in s["line_ids"]:
+                for w in words[lid]:
+                    if w.get("emph") and t0 + 0.25 <= w["start_s"] < t1 - 0.3:
+                        fr = loc(w["start_s"])
+                        if all(abs(fr - q["frame"]) > fps * 1.5 for q in punches) and len(punches) < 2:
+                            punches.append({"frame": fr, "strength": 1.0, "word": w["text"]})
         cam = dict(s["camera"])
         cam["subject"] = resolve(cam["subject"]) if not isinstance(resolve(cam["subject"]), list) else {"kind": "point", "pos": resolve(cam["subject"]) + [1.0]}
         if cam.get("secondary_subject") is not None:
@@ -160,7 +174,7 @@ def compile_episode(ep_dir, cfg):
             cam["secondary_subject"] = sec if isinstance(sec, dict) else {"kind": "point", "pos": sec + [1.0]}
         spec = {"shot_id": s["id"], "episode_id": script["episode_id"], "fps": fps, "frames": N, "engine_version": registry.ENGINE_VERSION,
                 "set": set_spec, "mood": s["mood"], "characters": chars, "props": props, "camera": cam, "actions": actions,
-                "expressions": exprs, "prop_actions": pacts, "fx": fxs, "talk": talk, "auto_idle": block.get("auto_idle", True),
+                "expressions": exprs, "prop_actions": pacts, "fx": fxs, "talk": talk, "punches": punches, "auto_idle": block.get("auto_idle", True),
                 "transition_out": s.get("transition_out", "cut")}
         h = sha256_json(spec)
         sp = shots_dir / f"{s['id']}.json"

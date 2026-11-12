@@ -301,6 +301,13 @@
     }
   ],
   "talk": [],
+  "punches": [
+    {
+      "frame": 24,
+      "strength": 1.0,
+      "word": "éjecté"
+    }
+  ],
   "auto_idle": true,
   "transition_out": "flash_white"
 }

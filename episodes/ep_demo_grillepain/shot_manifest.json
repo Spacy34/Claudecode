@@ -5,11 +5,11 @@
   "status": "generated",
   "provenance": {
     "created_by": "studio compile",
-    "created_at": "2026-11-11T20:24:26+00:00",
+    "created_at": "2026-11-12T08:39:49+00:00",
     "depends_on": [
       {
         "path": "story_script.json",
-        "sha256": "0d4e0595c185eda40396cf34dcce9d6236097f606bd4d3ebea1a25ffc0effb2a"
+        "sha256": "56c5a2f0e777912091c55ee16c0cffe850e2695f46fccd16bd5bda0dd5b1fff5"
       },
       {
         "path": "cast_bible.json",
@@ -29,7 +29,7 @@
       },
       {
         "path": "audio_timeline.json",
-        "sha256": "166eef35ae69c01c7a23bf67103e1cd0fe649b6fb9cb808cab39131a53a769a6"
+        "sha256": "6015bbe7497ca6d85e60767fb9f13a73f376b895d1d44e56540968ec245fce83"
       }
     ]
   },
@@ -43,7 +43,7 @@
       "frames": 116,
       "start_s": 0.0,
       "end_s": 3.867,
-      "spec_sha256": "82404c9bca446d1e033b0e4cb2e45a10f88af4258d09cf2fd5f5d8525b542cd1",
+      "spec_sha256": "cf6b4a0c515669253606dba8c61a35f08a4b5e88b67e5184addaee2c539214b6",
       "spec_path": "shots/sh_001.json",
       "line_ids": [
         "l001"
@@ -57,7 +57,7 @@
       "frames": 132,
       "start_s": 3.867,
       "end_s": 8.267,
-      "spec_sha256": "5e53dabb37cdc3728d672fec41cb61cfffae524ac1625f278e8c6a7a418052e2",
+      "spec_sha256": "6c4aa13f7b4a587f00a5902b0363a3826ced6763dba8af7243fec2cb9ef03be3",
       "spec_path": "shots/sh_002.json",
       "line_ids": [
         "l002"
@@ -71,7 +71,7 @@
       "frames": 71,
       "start_s": 8.267,
       "end_s": 10.633,
-      "spec_sha256": "6b7ec428e59250bbe1b00a423b468c6d9c0d5a55ab122a5f34176ea5a6738774",
+      "spec_sha256": "c36fb62d357e71539fdafda95f5f87ad4c5a6680c8df0aeb04f3e3e18e214c84",
       "spec_path": "shots/sh_003.json",
       "line_ids": [
         "l003"
@@ -85,7 +85,7 @@
       "frames": 144,
       "start_s": 10.633,
       "end_s": 15.433,
-      "spec_sha256": "f5872a606fa87d60fc94148c5da0461d71b04c329835ce4977d204be42314c7e",
+      "spec_sha256": "99bac856b888ff9a55a2fa4cdf2de44d890051dd52843903909c6f6a7b4d62b7",
       "spec_path": "shots/sh_004.json",
       "line_ids": [
         "l004"
@@ -99,7 +99,7 @@
       "frames": 136,
       "start_s": 15.433,
       "end_s": 19.967,
-      "spec_sha256": "8af00533cc4a63edfbc8cc6518f090828b16a074937a698a7b79922ecc42e627",
+      "spec_sha256": "d27d963a64d5302130ded75bc6eb455eaab71b642b552968c24e855b74e64a2a",
       "spec_path": "shots/sh_005.json",
       "line_ids": [
         "l005"
@@ -113,7 +113,7 @@
       "frames": 128,
       "start_s": 19.967,
       "end_s": 24.233,
-      "spec_sha256": "5db705d292e7e0b50860b1d71665630706a27ea0328377de34aebf37608b8e0d",
+      "spec_sha256": "bc8b2774950fe99afad628d93b17fd36ddc01a893b9c285f380255357fe05543",
       "spec_path": "shots/sh_006.json",
       "line_ids": [
         "l006"
@@ -127,7 +127,7 @@
       "frames": 91,
       "start_s": 24.233,
       "end_s": 27.267,
-      "spec_sha256": "471d77acb37ba2267c503c9cd4264bb1410dadad7660354dffd3f5456cda7a54",
+      "spec_sha256": "a502e90081eca92178fadd1411cef448b1079f813d69d8bd99e38cca37c95c17",
       "spec_path": "shots/sh_007.json",
       "line_ids": [
         "l007"
@@ -141,7 +141,7 @@
       "frames": 63,
       "start_s": 27.267,
       "end_s": 29.367,
-      "spec_sha256": "34cf1276dadcc9d3f0d2990520279c053ca0125f8260a53a4bee28d2b37a6f06",
+      "spec_sha256": "a668422563508c2729dcbcc85584a097eb4526eb2df15ca822327bc0d7b43fd5",
       "spec_path": "shots/sh_008.json",
       "line_ids": [
         "l008"
@@ -155,7 +155,7 @@
       "frames": 47,
       "start_s": 29.367,
       "end_s": 30.933,
-      "spec_sha256": "4e85418fed820ce672a992e71b39443c5bbfcd04bcb1873126eb074176ec9863",
+      "spec_sha256": "1b56b2f3d43f547aadca98aad872e91f9872a80602b03849caa35cfdff908c7a",
       "spec_path": "shots/sh_009.json",
       "line_ids": [
         "l009"
@@ -169,7 +169,7 @@
       "frames": 108,
       "start_s": 30.933,
       "end_s": 34.533,
-      "spec_sha256": "92e74e8160f0c592cee1af21da7fca4abdf278e48cf8306ada63c2919b645f33",
+      "spec_sha256": "3319ff68e9e7aa400dbd79d01513232f7b319fed01ef477dd4c150e02d23c73c",
       "spec_path": "shots/sh_010.json",
       "line_ids": [
         "l009"
@@ -177,5 +177,10 @@
       "transition_out": "fade_black"
     }
   ],
-  "warnings": []
+  "warnings": [
+    "sh_002 long (4.4s) : risque de baisse de rétention, envisager un découpage",
+    "sh_004 long (4.8s) : risque de baisse de rétention, envisager un découpage",
+    "sh_005 long (4.5s) : risque de baisse de rétention, envisager un découpage",
+    "sh_006 long (4.3s) : risque de baisse de rétention, envisager un découpage"
+  ]
 }

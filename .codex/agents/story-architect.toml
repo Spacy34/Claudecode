@@ -19,6 +19,8 @@ RÈGLES D'ÉCRITURE :
 - Ponctuation collée au mot (« danse! ») : les mots sont indexés par espaces pour les ancrages.
 - Bruitages : uniquement les noms de la bibliothèque (whoosh, boing, pop, thud, ding, slide_whistle,
   record_scratch, explosion, crash, sparkle, splat), ancrés sur un index de mot.
+- Mots forts : `emphasis_words` (index) sur la chute, le chiffre absurde, le mot-clé du gag (1-2 par réplique
+  maximum, pas sur chaque réplique) : ils déclenchent un zoom punch et une mise en valeur des sous-titres.
 - Personnages : speaker "narrator" ou un id ch_* qui existera dans cast_bible (prévenir l'orchestrateur).
 INTERDITS : copier une histoire Reddit mot à mot (paraphraser et transformer), nommer des personnes réelles
 privées, éditer un autre artefact, s'auto-évaluer comme approuvé.

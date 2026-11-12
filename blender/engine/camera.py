@@ -167,3 +167,29 @@ class CameraRig:
             for ax in (0, 2):
                 base = self.a.value_at(self.cam, 'rotation_euler', ax, f)
                 self.a.key(self.cam, 'rotation_euler', ax, f, base + D(self.rng.uniform(-amp_deg, amp_deg)))
+
+    def add_punch(self, f, strength=1.0, hold_frames=26, face=None, framing="medium"):
+        """Zoom « punch » : avance brutale de la caméra vers la cible (3 images), tenue, puis retour doux.
+        Superposé au mouvement existant (on lit la position de base à chaque clé)."""
+        if f < 1 or f >= self.N - 2 or not self.keys:
+            return
+        aim = min(self.keys, key=lambda k: abs(k[0] - f))[2]
+        f_in, f_hold = f + 3, min(self.N, f + hold_frames)
+        f_out = f_hold + 8 if f_hold + 8 <= self.N else None
+        frames = [f, f_in, f_hold] + ([f_out] if f_out else [])
+        base = {fr: Vector([self.a.value_at(self.cam, 'location', i, fr) for i in range(3)]) for fr in frames}
+        amt = {f: 0.0, f_in: 1.0, f_hold: 1.0 if f_out else 1.0}
+        if f_out:
+            amt[f_out] = 0.0
+        k = {"wide": 0.10, "two_shot": 0.12, "full": 0.13}.get(framing, 0.17) * strength
+        for fr in frames:
+            # on zoome VERS LE VISAGE du sujet (sinon la tête sort du cadre si le personnage saute)
+            tgt = aim.lerp(face, 0.6 * amt[fr]) if face is not None else aim
+            p = base[fr] + (tgt - base[fr]) * (k * amt[fr])
+            rot = (tgt - p).to_track_quat('-Z', 'Y').to_euler()
+            cur = [self.a.value_at(self.cam, 'rotation_euler', i, fr) for i in range(3)]
+            from mathutils import Euler
+            rot.make_compatible(Euler(cur))
+            for i in range(3):
+                self.a.key(self.cam, 'location', i, fr, p[i], 'LINEAR' if fr == f else 'BEZIER')
+                self.a.key(self.cam, 'rotation_euler', i, fr, rot[i], 'LINEAR' if fr == f else 'BEZIER')

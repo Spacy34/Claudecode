@@ -274,6 +274,13 @@
   "prop_actions": [],
   "fx": [],
   "talk": [],
+  "punches": [
+    {
+      "frame": 28,
+      "strength": 1.0,
+      "word": "expulsés."
+    }
+  ],
   "auto_idle": true,
   "transition_out": "cut"
 }
