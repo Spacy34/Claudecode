@@ -146,9 +146,16 @@ def p_door(r, n, c, coll, ink, label):
 
 
 def p_window(r, n, c, coll, ink, label):
-    core.box(n + "_frame", (1.3, 0.1, 1.1), M(n + "_f", "#F5F5F5"), (0, 0, 1.55), parent=r, coll=coll, ink=ink)
-    core.box(n + "_glass", (1.15, 0.02, 0.95), core.emit_mat(n + "_sky", c, 1.0), (0, -0.04, 1.55), parent=r, coll=coll)
-    core.box(n + "_bar", (0.05, 0.03, 0.95), M(n + "_f", "#F5F5F5"), (0, -0.06, 1.55), parent=r, coll=coll)
+    """Fenêtre avec une vraie « vue » : ciel en dégradé, collines, petit immeuble lointain."""
+    core.box(n + "_frame", (1.3, 0.1, 1.1), M(n + "_f", "#F5F5F5", emission=0.2), (0, 0, 1.55), parent=r, coll=coll, ink=ink)
+    core.box(n + "_glass", (1.15, 0.02, 0.95), core.gradient_emit_mat(n + "_sky", "#E8F6FF", c, 0.95, 1.0), (0, -0.04, 1.55), parent=r, coll=coll)
+    core.uvball(n + "_hill1", (0.45, 0.01, 0.22), core.emit_mat(n + "_hillA", "#74C69D", 0.9), (-0.3, -0.052, 1.08), parent=r, coll=coll, seg=12, rings=6, zmin=0.0)
+    core.uvball(n + "_hill2", (0.55, 0.01, 0.16), core.emit_mat(n + "_hillB", "#95D5B2", 0.9), (0.3, -0.051, 1.08), parent=r, coll=coll, seg=12, rings=6, zmin=0.0)
+    core.box(n + "_bld", (0.14, 0.01, 0.38), core.emit_mat(n + "_bldc", "#B8C0FF", 0.8), (0.32, -0.05, 1.27), parent=r, coll=coll)
+    core.ball(n + "_cloud", (0.13, 0.01, 0.05), core.emit_mat(n + "_cl", "#FFFFFF", 1.2), (-0.25, -0.053, 1.85), parent=r, coll=coll, detail=1)
+    core.box(n + "_bar", (0.05, 0.03, 0.95), M(n + "_f", "#F5F5F5", emission=0.2), (0, -0.06, 1.55), parent=r, coll=coll)
+    core.box(n + "_hbar", (1.15, 0.03, 0.05), M(n + "_f", "#F5F5F5", emission=0.2), (0, -0.06, 1.55), parent=r, coll=coll)
+    core.box(n + "_sill", (1.4, 0.18, 0.05), M(n + "_f", "#F5F5F5", emission=0.2), (0, -0.08, 1.05), parent=r, coll=coll, ink=ink * 0.5)
 
 
 def p_car(r, n, c, coll, ink, label):

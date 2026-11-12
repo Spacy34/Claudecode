@@ -2,13 +2,13 @@
 
 PALETTES = {
     "living_room": {"wall": "#F3D9B1", "floor": "#B5835A", "accent": "#E76F51"},
-    "kitchen": {"wall": "#CDEAC0", "floor": "#E9E3D5", "accent": "#F4A261"},
+    "kitchen": {"wall": "#CDEAC0", "floor": "#D9C9A3", "accent": "#F4A261"},
     "bedroom": {"wall": "#C9D7F8", "floor": "#A9744F", "accent": "#8E7DBE"},
-    "bathroom": {"wall": "#BDE0FE", "floor": "#F1F1F1", "accent": "#48CAE4"},
-    "office": {"wall": "#E5E5E5", "floor": "#9AA5B1", "accent": "#457B9D"},
+    "bathroom": {"wall": "#9FD1F5", "floor": "#C9D6DF", "accent": "#48CAE4"},
+    "office": {"wall": "#D7E3EE", "floor": "#7D8C9C", "accent": "#457B9D"},
     "street": {"wall": "#E9C46A", "floor": "#BFBFBF", "accent": "#E63946", "sky": "#8ECAE6"},
     "park": {"wall": "#8ECAE6", "floor": "#7CB518", "accent": "#FFB703", "sky": "#8ECAE6"},
-    "supermarket": {"wall": "#F8F9FA", "floor": "#DEE2E6", "accent": "#D62828"},
+    "supermarket": {"wall": "#FFE5D9", "floor": "#C9CED4", "accent": "#D62828"},
     "studio_void": {"wall": "#FFD6A5", "floor": "#FFD6A5", "accent": "#FF006E"},
 }
 
@@ -27,12 +27,12 @@ KIT_DRESSING = {
     "office": [("desk", -1.7, 1.6, 0), ("computer", -1.7, 1.65, 0, 1.0, 0.76), ("chair", -1.7, 1.0, 180), ("desk", 1.7, 1.6, 0),
                ("computer", 1.7, 1.65, 0, 1.0, 0.76), ("chair", 1.7, 1.0, 180), ("shelf", 0, 2.75, 0), ("plant", 3.3, 2.5, 0),
                ("window", -2.7, 2.92, 0), ("window", 2.7, 2.92, 0)],
-    "street": [("building", -5.0, 10.0, 0), ("building", 1.5, 10.5, 0), ("building", 8.0, 10.0, 0), ("streetlight", -2.8, 1.2, 0),
+    "street": [("streetlight", -2.8, 1.2, 0),
                ("streetlight", 3.2, 1.2, 0), ("trash_can", 2.2, 1.1, 0), ("tree", -4.5, 1.5, 0), ("sign", 4.4, 1.2, 0), ("bench", -1.5, 1.4, 0)],
     "park": [("tree", -2.8, 2.8, 0), ("tree", 3.2, 3.4, 0), ("tree", 0.6, 6.5, 0), ("bush", -4.2, 1.2, 0), ("bush", 4.5, 1.8, 0),
              ("bench", 0.2, 2.3, 0), ("streetlight", -1.6, 2.4, 0), ("trash_can", 1.6, 2.4, 0)],
-    "supermarket": [("shelf", -2.6, 1.6, 90), ("shelf", -2.6, 3.0, 90), ("shelf", 2.6, 1.6, -90), ("shelf", 2.6, 3.0, -90),
-                    ("shelf", 0, 3.6, 0), ("shopping_cart", 1.5, 0.6, 30), ("sign", -1.5, 3.2, 0)],
+    "supermarket": [("shelf", -2.5, 2.7, 0), ("shelf", -1.25, 2.7, 0), ("shelf", 0.0, 2.7, 0), ("shelf", 1.25, 2.7, 0), ("shelf", 2.5, 2.7, 0),
+                    ("shelf", -3.6, 1.2, 90), ("shelf", 3.6, 1.2, -90), ("shopping_cart", 1.9, 0.9, 30), ("box", -1.9, 1.6, 15), ("box", -2.2, 1.9, -10)],
     "studio_void": [],
 }
 
@@ -49,3 +49,36 @@ KIT_MARKS = {
 }
 
 INTERIOR = {"living_room", "kitchen", "bedroom", "bathroom", "office", "supermarket"}
+
+
+# Style des surfaces : (motif du sol, motif des murs, couleur secondaire du sol | None, soubassement)
+SURFACES = {
+    "living_room": ("planks", "stripes", None, True),
+    "kitchen": ("tiles", "noise", "#C4B28A", True),
+    "bedroom": ("planks", "stripes", None, True),
+    "bathroom": ("tiles", "tiles", "#B3C4CF", False),
+    "office": ("noise", "noise", None, False),
+    "supermarket": ("tiles", "noise", "#B5BCC4", False),
+}
+
+# Objets muraux d'ambiance (mur du fond) : (type, x, z, largeur/paramètre)
+WALL_DECOR = {
+    "living_room": [("clock", 0.0, 2.45, 0), ("shelf", -3.0, 1.75, 0.9), ("poster", -0.95, 1.85, 0.45), ("poster", 0.95, 1.9, 0.38),
+                    ("curtains", 1.9, 1.55, 1.3), ("pendant", 0.0, 1.2, 0)],
+    "kitchen": [("cabinet", -2.3, 2.2, 1.2), ("cabinet", 1.25, 2.2, 1.0), ("clock", -0.4, 2.62, 0), ("shelf", -3.3, 1.55, 0.7),
+                ("curtains", -0.4, 1.55, 1.3), ("pendant", 0.4, 1.0, 0), ("poster", 3.45, 1.9, 0.4)],
+    "bedroom": [("poster", 0.1, 1.8, 0.5), ("poster", 2.7, 1.7, 0.4), ("shelf", -0.2, 2.35, 1.0), ("curtains", 1.4, 1.55, 1.3),
+                ("pendant", 0.0, 1.0, 0)],
+    "bathroom": [("shelf", -1.6, 1.5, 0.8), ("clock", 0.0, 2.3, 0), ("poster", -0.2, 1.6, 0.35)],
+    "office": [("clock", 0.0, 2.55, 0), ("poster", -1.3, 1.75, 0.55), ("poster", 1.3, 1.75, 0.55), ("pendant", -1.7, 1.2, 0),
+               ("pendant", 1.7, 1.2, 0)],
+    "supermarket": [("pendant", -1.2, 0.5, 0), ("pendant", 1.2, 0.5, 0), ("pendant", -1.2, 2.2, 0), ("pendant", 1.2, 2.2, 0)],
+}
+
+# Zones de petits objets posés : (x_min, x_max, y, hauteur de surface, nombre, types)
+CLUTTER = {
+    "kitchen": [(-1.45, 0.65, 2.45, 0.92, 6, ("jar", "bottle", "plates", "board", "bowl", "jar")), (1.6, 2.4, 0.4, 0.76, 2, ("bowl", "mug"))],
+    "living_room": [],
+    "office": [(-2.35, -1.25, 1.55, 0.76, 2, ("mug", "books")), (1.25, 2.35, 1.55, 0.76, 2, ("books", "mug"))],
+    "bathroom": [(1.0, 1.8, 2.55, 0.5, 3, ("bottle", "jar", "bottle"))],
+}

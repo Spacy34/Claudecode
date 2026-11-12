@@ -550,6 +550,36 @@ def cmd_cost(a):
     out(st.data["cost_log"][-1])
 
 
+def cmd_kits(a):
+    """Galerie des décors : un plan large par kit avec un personnage témoin (échelle). Aucun épisode requis."""
+    import sys as _s
+    _s.path.insert(0, str(ROOT / "blender"))
+    from engine import registry as _reg
+    c = cfg()
+    kits = a.kits.split(",") if a.kits else [k for k in _reg.KITS if k != "studio_void"]
+    out_dir = cache_dir(c) / "kits_gallery"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    demo = read_json(ROOT / "assets" / "library" / "characters.json")["characters"][0]
+    items = []
+    for k in kits:
+        spec = {"shot_id": "sh_950", "episode_id": "ep_kits_gallery", "fps": 30, "frames": 2, "engine_version": "kits",
+                "set": {"id": f"set_{k}", "kit": k, "source": "procedural", "license": {"spdx": "original", "commercial_use": True}, "seed": 3},
+                "mood": "interior_warm" if k in ("living_room", "kitchen", "bedroom", "bathroom") else ("office_flat" if k in ("office", "supermarket") else "day_warm"),
+                "characters": [{"id": "ch_scale", "design": demo["design"], "pos": [0.6, 0.9], "facing_deg": -20.0, "facing_target": None, "start_pose": "stand"}],
+                "props": [], "camera": {"framing": "wide", "subject": {"kind": "point", "pos": [0.0, 1.2, 1.1]}, "angle": "eye", "move": "static", "motivation": "galerie"},
+                "actions": [], "expressions": [{"char": "ch_scale", "expr": "happy", "frame": 1, "intensity": 1.0}], "prop_actions": [], "fx": [], "talk": [],
+                "auto_idle": False, "transition_out": "cut"}
+        sp = out_dir / f"{k}.json"
+        write_json(sp, spec)
+        rec = render.render_shot(c, out_dir, {"id": k, "spec_path": sp.name, "spec_sha256": sha256_json(spec), "frames": 2}, a.profile, mode="stills", frames="1")
+        if rec["status"] == "failed":
+            print(f"✘ {k} : {rec.get('error')}")
+            continue
+        items.append((Path(rec["frames_dir"]) / "f0001.png", k))
+    sheet = qframes.contact_sheet(items, out_dir / "kits_contact.png", cols=4, title="Décors disponibles (galerie des kits)")
+    out({"contact_sheet": str(sheet), "kits": [k for _, k in items]})
+
+
 def build_parser():
     ap = argparse.ArgumentParser(prog="studio", description="Studio TikTok 3D : pipeline déterministe")
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -627,6 +657,10 @@ def build_parser():
     x.add_argument("--video", default="renders/prototype.mp4")
     x.add_argument("--shot", default="sh_002")
     x.set_defaults(fn=cmd_inject)
+    x = sp.add_parser("kits", help="galerie de rendu de tous les décors (contrôle visuel)")
+    x.add_argument("--kits", default="")
+    x.add_argument("--profile", default="draft")
+    x.set_defaults(fn=cmd_kits)
     x = sp.add_parser("cache")
     x.add_argument("--prune", action="store_true")
     x.set_defaults(fn=cmd_cache)

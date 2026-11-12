@@ -87,6 +87,11 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
                 if gap > 0.06:
                     out.append({"id": f"floating_prop:{pid}", "severity": "minor", "status": "warn", "frame": f,
                                 "message": f"{pid} flotte à {gap:.2f} m au-dessus de son support."})
+    fg = foreground_occlusion(sc, cam, chars, spec, sample_frames[len(sample_frames) // 2])
+    if fg is not None and fg["fraction"] > 0.25:
+        out.append({"id": "foreground_occluder", "severity": "major" if fg["fraction"] > 0.4 else "minor",
+                    "status": "fail" if fg["fraction"] > 0.4 else "warn", "frame": fg["frame"],
+                    "message": f"Premier plan encombré : {fg['fraction']:.0%} de l'image (moitié basse/centre) masqué par {fg['objects'][:3]} devant le sujet."})
     for cid, vis in seen_visible.items():
         if not vis:
             out.append({"id": f"char_never_visible:{cid}", "severity": "major", "status": "fail", "frame": sample_frames[0],
@@ -116,3 +121,42 @@ def _bbox(o):
         return p.copy(), p.copy()
     return (Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts))),
             Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts))))
+
+
+def foreground_occlusion(sc, cam, chars, spec, f):
+    """Lance une grille de rayons depuis la caméra : part de l'image occupée par un objet (ni sol, ni personnage)
+    situé nettement plus près que le sujet. Repère les tables/meubles qui bouchent le premier plan."""
+    subj = spec["camera"].get("subject") or {}
+    sc.frame_set(f)
+    cpos = cam.matrix_world.translation
+    if subj.get("kind") == "char" and subj.get("id") in chars:
+        target = chars[subj["id"]].landmarks_world()["chest"]
+    elif subj.get("kind") == "point":
+        p = subj.get("pos", [0, 0, 1])
+        target = Vector((p[0], p[1], p[2] if len(p) > 2 else 1.0))
+    else:
+        return None   # insert sur objet : le premier plan EST le sujet
+    sdist = (target - cpos).length
+    frame = [Vector(v) for v in cam.data.view_frame(scene=sc)]   # coins en repère caméra
+    xs = sorted({v.x for v in frame})
+    ys = sorted({v.y for v in frame})
+    z = frame[0].z
+    rot = cam.matrix_world.to_3x3()
+    dg = bpy.context.evaluated_depsgraph_get()
+    char_prefix = tuple(c + "_" for c in chars)
+    hits, total, names = 0, 0, {}
+    for i in range(7):
+        for j in range(8):
+            u = 0.1 + 0.8 * i / 6.0
+            v = 0.05 + 0.6 * j / 7.0          # du bas de l'image jusqu'à 65 % de la hauteur
+            local = Vector((xs[0] + (xs[-1] - xs[0]) * u, ys[0] + (ys[-1] - ys[0]) * v, z))
+            d = (rot @ local).normalized()
+            total += 1
+            ok, loc, nrm, idx, ob, mw = sc.ray_cast(dg, cpos, d, distance=sdist * 0.75)
+            if not ok or ob is None or ob.name.startswith(char_prefix) or ob.name.startswith("fx_"):
+                continue
+            if nrm.z > 0.85 and loc.z < 0.08:   # sol
+                continue
+            hits += 1
+            names[ob.name] = names.get(ob.name, 0) + 1
+    return {"fraction": hits / max(1, total), "objects": sorted(names, key=lambda k: -names[k]), "frame": f}

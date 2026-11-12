@@ -81,7 +81,8 @@ class Shot:
     # ------------------------------------------------------------ construction
     def build(self):
         sp = self.spec
-        self.set = sets.build_set(sp["set"])
+        avoid = [(p["pos"][0], p["pos"][1], 0.35) for p in sp.get("props", []) if p.get("pos")]
+        self.set = sets.build_set(sp["set"], avoid=avoid)
         cam_d = bpy.data.cameras.new("CAM")
         cam_d.sensor_fit = 'VERTICAL'
         cam_d.sensor_height = camera.SENSOR_H
@@ -118,7 +119,7 @@ class Shot:
             o.rotation_euler = (0, 0, D(p.get("rot_deg", 0.0)))
             self.props[p["id"]] = o
             self.props_state[p["id"]] = {"obj": o, "held": p.get("held_by"), "hand": p.get("hand", "R"), "airborne_at": {}}
-        lighting.setup(self.sc, sp["mood"], center=(0, 0.5, 1.0), interior=self.set["interior"])
+        lighting.setup(self.sc, sp["mood"], center=(0, 0.5, 1.0), interior=self.set["interior"], sky=self.set.get("sky"))
 
     # ------------------------------------------------------------ animation personnages
     def animate_characters(self):

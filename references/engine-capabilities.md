@@ -20,7 +20,14 @@ far_right (2.4,0.6), offscreen_left (-6,0), offscreen_right (6,0).
 - park : bench (0.2,1.8), tree (-2.6,2.0), path (0,0.5)
 - supermarket : aisle (0,1.6), cart (1.5,0)
 - studio_void : fond uni (lookdev, plans « abstraits »)
-Personnalisation : `palette`, `dressing` (accessoires supplémentaires), `marks`, `use_kit_dressing:false`.
+Personnalisation : `palette`, `dressing` (accessoires supplémentaires), `marks`, `use_kit_dressing:false`
+(désactive aussi l'habillage d'ambiance), `seed` (variante d'habillage reproductible).
+Habillage automatique v2 : sols et murs texturés procéduralement (parquet, carrelage, papier peint rayé,
+briques, herbe, asphalte), soubassement + moulures, objets muraux (affiches, horloge, étagères garnies,
+placards, rideaux, suspensions), petits objets posés (bocaux, bouteilles, assiettes, livres, fruits) qui
+évitent les accessoires du plan, fenêtres avec vue (ciel, collines, immeuble). Extérieurs en couches :
+rue = trottoirs pavés, façades avec enseignes, skyline, nuages ; parc = herbe, collines, rangée de sapins,
+fleurs, barrière, nuages ; ciel en dégradé. Galerie de contrôle : `scripts/studio kits`.
 Hauteurs de surfaces : table/desk 0.76, counter/stove 0.92, bed 0.55, sofa 0.45, chair 0.47.
 
 ## Accessoires (`type`)
@@ -73,7 +80,8 @@ over_shoulder, insert (accessoire). Angles : eye, low, high, dutch, top_down. `s
 sujet. `lens_mm` optionnel. Mouvements : static, push_in, pull_out, pan_left, pan_right, orbit_left,
 orbit_right, track_subject, shake (sur l'impact), crash_zoom, handheld.
 Cadrage AUTOMATIQUE sur les positions réelles évaluées ; azimut figé au début du plan ; anti-occlusion par
-lancer de rayons ; un objet posé sur un meuble n'est jamais filmé en contre-plongée.
+lancer de rayons (la caméra MONTE d'abord pour regarder par-dessus un obstacle, puis se rapproche en dernier
+recours) ; un objet posé sur un meuble n'est jamais filmé en contre-plongée.
 
 ## Ambiances (`mood`)
 day_warm, day_cool, night, interior_warm, office_flat, dramatic, spooky, sunset.
@@ -82,5 +90,5 @@ day_warm, day_cool, night, interior_warm, office_flat, dramatic, spooky, sunset.
 cut, whip (flou + whoosh), smash_cut (thud), fade_black, flash_white (pop).
 
 ## Contrôles automatiques dans Blender (scene_report)
-char_never_visible, char_offscreen, subject_too_small, head_cropped, face_under_subtitles, out_of_set,
-inside_furniture, char_overlap, floating_prop. Ils ne jugent pas l'esthétique.
+char_never_visible, char_offscreen, subject_too_small, head_cropped, face_under_subtitles, face_away,
+foreground_occluder (meuble qui bouche le premier plan), out_of_set, inside_furniture, char_overlap, floating_prop. Ils ne jugent pas l'esthétique.

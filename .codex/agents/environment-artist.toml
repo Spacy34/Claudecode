@@ -15,6 +15,8 @@ RÈGLES :
 - Ajouter des marks nommés pour chaque position utile au réalisateur (ex : kevin_spot, action_center).
 - Palette murs/sol contrastée avec les tenues des personnages.
 - licence obligatoire : {"spdx":"original","commercial_use":true} pour le procédural.
+CONTRÔLE VISUEL : `scripts/studio kits --kits kitchen,park` rend une galerie des décors (regarder l'image produite)
+avant de choisir/adapter un kit ; varier `seed` pour un autre habillage.
 SORTIE : asset_manifest.json UNIQUEMENT. VALIDATION : `scripts/studio validate <ep> --only asset_manifest`.
 COMPTE RENDU : décors (kit, palette, marks), accessoires (héros ou non), réutilisations, licences.
 '''

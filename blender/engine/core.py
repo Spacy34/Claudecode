@@ -122,6 +122,170 @@ def toon_mat(name, color_hex, rough=0.75, emission=0.0, metallic=0.0):
     return m
 
 
+def _shade_rgb(rgb, k):
+    return tuple(min(1.0, c * k) for c in rgb[:3]) + (1.0,)
+
+
+def _new_nodes_mat(name):
+    m = bpy.data.materials.new(name)
+    try:
+        m.use_nodes = True
+    except Exception:
+        pass
+    return m, m.node_tree
+
+
+def _ramp(nt, colors):
+    r = nt.nodes.new('ShaderNodeValToRGB')
+    els = r.color_ramp.elements
+    while len(els) < len(colors):
+        els.new(0.5)
+    for e, (pos, col) in zip(els, colors):
+        e.position = pos
+        e.color = col
+    return r
+
+
+def pattern_mat(name, kind, base_hex, alt_hex=None, scale=1.0, plane='xy', emission=0.15, rough=0.85):
+    """Matériaux texturés 100 % procéduraux (aucune image) compatibles Cycles et EEVEE.
+
+    kind : planks (parquet), tiles (carrelage), bricks, wood (veinage), noise (variation douce : murs, moquette,
+    asphalte), grass, stripes (papier peint). Coordonnées objet en mètres ; plane='xz' pour les surfaces verticales.
+    """
+    key = ('pat', name, kind, base_hex, alt_hex, scale, plane, emission)
+    if key in _MATS:
+        return _MATS[key]
+    m, nt = _new_nodes_mat(name)
+    b = _bsdf(nt)
+    base = hex_rgb(base_hex, 1.0)
+    alt = hex_rgb(alt_hex, 1.0) if alt_hex else _shade_rgb(base, 0.8)
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    mp = nt.nodes.new('ShaderNodeMapping')
+    nt.links.new(tc.outputs['Object'], mp.inputs['Vector'])
+    if plane == 'xz':
+        mp.inputs['Rotation'].default_value = (math.radians(90), 0, 0)
+    vec = mp.outputs['Vector']
+    if kind in ('planks', 'tiles', 'bricks'):
+        br = nt.nodes.new('ShaderNodeTexBrick')
+        nt.links.new(vec, br.inputs['Vector'])
+        br.inputs['Color1'].default_value = base
+        br.inputs['Color2'].default_value = alt
+        mortar = {'planks': _shade_rgb(base, 0.55), 'tiles': _shade_rgb(base, 0.72), 'bricks': (0.82, 0.8, 0.76, 1)}[kind]
+        br.inputs['Mortar'].default_value = mortar
+        geo = {'planks': (1.0, 0.012, 1.4, 0.18, 0.5), 'tiles': (1.0, 0.018, 0.5, 0.5, 0.0), 'bricks': (1.0, 0.02, 0.32, 0.12, 0.5)}[kind]
+        br.inputs['Scale'].default_value = geo[0] * scale
+        br.inputs['Mortar Size'].default_value = geo[1]
+        br.inputs['Brick Width'].default_value = geo[2]
+        br.inputs['Row Height'].default_value = geo[3]
+        br.inputs['Bias'].default_value = 0.0
+        try:
+            br.offset = geo[4]
+        except Exception:
+            pass
+        col = br.outputs['Color']
+    elif kind == 'wood':
+        wv = nt.nodes.new('ShaderNodeTexWave')
+        wv.wave_type = 'BANDS'
+        nt.links.new(vec, wv.inputs['Vector'])
+        wv.inputs['Scale'].default_value = 2.5 * scale
+        wv.inputs['Distortion'].default_value = 6.0
+        rp = _ramp(nt, [(0.2, base), (0.8, alt)])
+        nt.links.new(wv.outputs['Fac'], rp.inputs['Fac'])
+        col = rp.outputs['Color']
+    elif kind == 'stripes':
+        wv = nt.nodes.new('ShaderNodeTexWave')
+        wv.wave_type = 'BANDS'
+        wv.bands_direction = 'X'
+        nt.links.new(vec, wv.inputs['Vector'])
+        wv.inputs['Scale'].default_value = 1.6 * scale
+        wv.inputs['Distortion'].default_value = 0.0
+        rp = _ramp(nt, [(0.48, base), (0.52, alt)])
+        rp.color_ramp.interpolation = 'CONSTANT'
+        nt.links.new(wv.outputs['Fac'], rp.inputs['Fac'])
+        col = rp.outputs['Color']
+    else:   # noise, grass
+        nz = nt.nodes.new('ShaderNodeTexNoise')
+        nt.links.new(vec, nz.inputs['Vector'])
+        nz.inputs['Scale'].default_value = (3.0 if kind == 'grass' else 1.4) * scale
+        nz.inputs['Detail'].default_value = 4.0 if kind == 'grass' else 2.0
+        lo, hi = ((0.35, 0.65) if kind == 'grass' else (0.4, 0.6))
+        rp = _ramp(nt, [(lo, alt if kind == 'grass' else _shade_rgb(base, 0.9)), (hi, base if kind == 'grass' else _shade_rgb(base, 1.06))])
+        nt.links.new(nz.outputs['Fac'], rp.inputs['Fac'])
+        col = rp.outputs['Color']
+    nt.links.new(col, b.inputs['Base Color'])
+    _set_input(b, ['Roughness'], rough)
+    _set_input(b, ['Specular IOR Level', 'Specular'], 0.1)
+    lum = 0.2126 * base[0] + 0.7152 * base[1] + 0.0722 * base[2]
+    emission *= max(0.1, 1.0 - 1.3 * lum)   # surfaces claires : pas d'auto-illumination, sinon elles « brûlent »
+    if emission > 0:
+        for nm in ('Emission Color', 'Emission'):
+            if nm in b.inputs:
+                nt.links.new(col, b.inputs[nm])
+                break
+        _set_input(b, ['Emission Strength'], emission)
+    m.diffuse_color = base
+    _MATS[key] = m
+    return m
+
+
+def gradient_emit_mat(name, bottom_hex, top_hex, height, strength=1.0):
+    """Émission en dégradé vertical (coordonnées objet) : vue à travers une fenêtre, panneaux lumineux."""
+    key = ('grad', name, bottom_hex, top_hex, height, strength)
+    if key in _MATS:
+        return _MATS[key]
+    m, nt = _new_nodes_mat(name)
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    out = nt.nodes.new('ShaderNodeOutputMaterial')
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ')
+    nt.links.new(tc.outputs['Object'], sep.inputs[0])
+    mth = nt.nodes.new('ShaderNodeMapRange')
+    mth.inputs['From Min'].default_value = -height / 2
+    mth.inputs['From Max'].default_value = height / 2
+    nt.links.new(sep.outputs['Z'], mth.inputs['Value'])
+    rp = _ramp(nt, [(0.0, hex_rgb(bottom_hex, 1.0)), (1.0, hex_rgb(top_hex, 1.0))])
+    nt.links.new(mth.outputs['Result'], rp.inputs['Fac'])
+    em = nt.nodes.new('ShaderNodeEmission')
+    em.inputs['Strength'].default_value = strength
+    nt.links.new(rp.outputs['Color'], em.inputs['Color'])
+    nt.links.new(em.outputs[0], out.inputs['Surface'])
+    _MATS[key] = m
+    return m
+
+
+def set_sky(sc, horizon_hex, zenith_hex, strength=1.0):
+    """Ciel cartoon : dégradé vertical en espace écran (identique en Cycles et EEVEE) ; éclairage ambiant doux."""
+    w = bpy.data.worlds.new('World')
+    sc.world = w
+    try:
+        w.use_nodes = True
+    except Exception:
+        pass
+    nt = w.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    out = nt.nodes.new('ShaderNodeOutputWorld')
+    lp = nt.nodes.new('ShaderNodeLightPath')
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ')
+    nt.links.new(tc.outputs['Window'], sep.inputs[0])
+    rp = _ramp(nt, [(0.25, hex_rgb(horizon_hex, 1.0)), (1.0, hex_rgb(zenith_hex, 1.0))])
+    nt.links.new(sep.outputs['Y'], rp.inputs['Fac'])
+    bg_cam = nt.nodes.new('ShaderNodeBackground')
+    bg_cam.inputs['Strength'].default_value = 1.0
+    nt.links.new(rp.outputs['Color'], bg_cam.inputs['Color'])
+    bg_amb = nt.nodes.new('ShaderNodeBackground')
+    bg_amb.inputs['Color'].default_value = hex_rgb(horizon_hex, 1.0)
+    bg_amb.inputs['Strength'].default_value = strength
+    mix = nt.nodes.new('ShaderNodeMixShader')
+    nt.links.new(lp.outputs['Is Camera Ray'], mix.inputs[0])
+    nt.links.new(bg_amb.outputs[0], mix.inputs[1])
+    nt.links.new(bg_cam.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], out.inputs['Surface'])
+    return w
+
+
 def emit_mat(name, color_hex, strength=2.0):
     key = ('emit', name, color_hex, strength)
     if key in _MATS:

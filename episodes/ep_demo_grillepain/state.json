@@ -113,17 +113,17 @@
     },
     "shots_check": {
       "status": "completed",
-      "attempts": 5,
+      "attempts": 6,
       "revision_rounds": 0,
       "pid": null,
-      "started_at": "2026-11-11T20:26:03+00:00",
+      "started_at": "2026-11-12T08:27:19+00:00",
       "error": null,
-      "finished_at": "2026-11-11T20:26:53+00:00",
+      "finished_at": "2026-11-12T08:29:07+00:00",
       "inputs": {
         "shot_manifest.json": "95ae15ed80cbdb018f82eac9d412016438d7b39b5908972e4116343a7b591b49"
       },
       "outputs": {
-        "checks/shots_contact.png": "7f6e6a0e0191d41b52a893ec6724e6510b60f5722ab21d45c7c209b38b191285"
+        "checks/shots_contact.png": "762d20b94bbfe4ad03b273edaee5c85649921375e4f9e276b9c98f1be57fe7bf"
       },
       "note": null
     },
@@ -383,6 +383,27 @@
     },
     {
       "at": "2026-11-11T20:26:53+00:00",
+      "event": "finish",
+      "stage": "shots_check",
+      "status": "completed"
+    },
+    {
+      "at": "2026-11-12T08:27:19+00:00",
+      "event": "refresh",
+      "changes": [
+        [
+          "shots_check",
+          "stale:upstream"
+        ]
+      ]
+    },
+    {
+      "at": "2026-11-12T08:27:19+00:00",
+      "event": "start",
+      "stage": "shots_check"
+    },
+    {
+      "at": "2026-11-12T08:29:07+00:00",
       "event": "finish",
       "stage": "shots_check",
       "status": "completed"

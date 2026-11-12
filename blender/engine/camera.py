@@ -118,10 +118,21 @@ class CameraRig:
             aim -= right * (0.35 * H * (1 - move_t))
         direction = Vector((math.sin(az) * math.cos(el), -math.cos(az) * math.cos(el), math.sin(el)))
         d = max(d, 0.45)
-        if occluder_fn:
+        if occluder_fn and spec.get("avoid_occluders", True):
             hit = occluder_fn(aim, direction, d)
             if hit is not None and hit < d:
-                d = max(hit - 0.15, 0.4)
+                # 1) comme un cadreur : monter pour regarder par-dessus l'obstacle (meuble au premier plan)
+                for extra in (8, 16, 24, 32, 40):
+                    el2 = min(D(70), el + D(extra))
+                    dir2 = Vector((math.sin(az) * math.cos(el2), -math.cos(az) * math.cos(el2), math.sin(el2)))
+                    h2 = occluder_fn(aim, dir2, d)
+                    if h2 is None or h2 >= d:
+                        direction = dir2
+                        hit = None
+                        break
+                # 2) sinon seulement : se rapprocher devant l'obstacle
+                if hit is not None:
+                    d = max(hit - 0.15, 0.4)
         pos = aim + direction * d
         if pos.z < 0.12:
             pos.z = 0.12

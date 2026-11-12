@@ -92,3 +92,31 @@ def test_F_I_preview_extract_with_audio_and_subtitles(compiled):
                                    subs_path=out.with_suffix(".ass"), cfg=cfg)
     bad = [c for c in checks if c["status"] == "fail" and c["id"] not in ("loudness",)]
     assert bad == [], json.dumps(bad, ensure_ascii=False)
+
+
+def test_G_foreground_occluder_detected(compiled):
+    """Défaut constaté sur une vidéo de référence : un meuble au premier plan masque les personnages."""
+    ep, cfg, man = compiled
+    shot = next(s for s in man["shots"] if s["id"] == "sh_008")
+    spec = read_json(ep / shot["spec_path"])
+    spec["set"] = dict(spec["set"], dressing=[{"type": "counter", "pos": [0.0, -0.2], "scale": 1.6}])
+    spec["camera"]["avoid_occluders"] = False   # on teste le CONTRÔLE, pas l'esquive automatique de la caméra
+    p = ep / "shots" / "injected_fg.json"
+    write_json(p, spec)
+    rec = render.render_shot(cfg, ep, {"id": "sh_008", "spec_path": "shots/injected_fg.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
+    ids = [c["id"] for c in rec["scene_report"]["checks"]]
+    assert "foreground_occluder" in ids, ids
+
+
+def test_camera_looks_over_foreground_obstacle(compiled):
+    """Avec l'esquive active, la caméra monte au-dessus d'une table au premier plan : personnages visibles,
+    premier plan non bouché (cas de la vidéo de référence : table qui masque 40 % de l'image)."""
+    ep, cfg, man = compiled
+    shot = next(s for s in man["shots"] if s["id"] == "sh_008")
+    spec = read_json(ep / shot["spec_path"])
+    spec["set"] = dict(spec["set"], dressing=[{"type": "table", "pos": [0.0, -0.6], "scale": 1.2}])
+    p = ep / "shots" / "injected_fg2.json"
+    write_json(p, spec)
+    rec = render.render_shot(cfg, ep, {"id": "sh_008", "spec_path": "shots/injected_fg2.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
+    ids = [c["id"] for c in rec["scene_report"]["checks"] if c["status"] == "fail"]
+    assert not any(i.startswith(("char_never_visible", "foreground_occluder")) for i in ids), ids
