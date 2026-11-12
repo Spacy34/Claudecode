@@ -58,6 +58,9 @@ def codex_prompt(ep, n):
     brief = ep_dir(ep) / "episode_brief.json"
     if brief.exists() and json.loads(brief.read_text(encoding="utf-8")).get("script_lock"):
         lines.append("ATTENTION : script IMPOSÉ par l'utilisateur (episode_brief.script_lock) : ne jamais modifier texte, ordre ni locuteurs.")
+    lines.append(f"PÉRIMÈTRE : pendant cette production, ne modifie AUCUN fichier hors de episodes/{ep}/ (ni pipeline/, blender/, "
+                 "tests/, schemas/, config/, .codex/, mémoire versionnée). Si le moteur ou un contrôle te semble fautif, "
+                 "décris-le dans ton rapport (et `scripts/studio memory add`) au lieu de modifier le code.")
     lines.append("Respecte AGENTS.md (jamais `studio approve`). Termine par un rapport court : fait / vérifié / bloquant.")
     return "\n".join(lines)
 

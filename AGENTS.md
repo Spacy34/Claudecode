@@ -71,7 +71,10 @@ Un agent ne modifie jamais l'artefact d'un autre rôle : il signale le problème
 8. **Pas de code externe non vérifié** : aucun téléchargement/exécution de script tiers sans le montrer à l'utilisateur.
 9. **Budget de corrections** : `quality.max_revision_rounds` (2 par défaut) par revue ; au-delà, escalade humaine.
    Un problème bloquant l'emporte toujours sur une bonne moyenne.
-10. **Correction ciblée** : corriger le plus petit artefact responsable ; le cache ne re-rend que les plans changés.
+10. **Périmètre en production** : pendant la production d'un épisode (pilote, `scripts/produire.sh`), seuls les
+    fichiers de `episodes/<ep>/` sont modifiables. Code, tests, schémas, config et `.codex/` ne se modifient que si
+    l'utilisateur le demande explicitement (rôle pipeline-engineer) ; sinon, signaler le problème dans le rapport.
+11. **Correction ciblée** : corriger le plus petit artefact responsable ; le cache ne re-rend que les plans changés.
 
 ## Contenu trash / humour noir
 Analyse contextuelle (voir `references/platform-policy.md`) : signaler les vrais risques (personnes réelles
