@@ -12,6 +12,7 @@ Rien n'est jamais publié automatiquement.
 - Limites et priorités : [`references/limitations.md`](references/limitations.md)
 
 ## 1. Installation
+**Serveur (VPS) : suivre [`VPS.md`](VPS.md)** (script `scripts/setup_vps.sh`).
 **Windows : suivre [`WINDOWS.md`](WINDOWS.md)** (installateur PowerShell + commande `scripts\studio.cmd`).
 
 Linux / macOS / WSL :
