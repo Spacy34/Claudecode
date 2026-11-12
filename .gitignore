@@ -22,3 +22,4 @@ episodes/ep_demo_grillepain/qa_*.json
 episodes/_inbox/*
 !episodes/_inbox/README.md
 /*.wav
+.studio_locks/

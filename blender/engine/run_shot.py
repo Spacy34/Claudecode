@@ -440,14 +440,26 @@ def main():
             rep["rendered_frames"] = frames
             rep["render_seconds"] = round(time.time() - t1, 2)
             rep["seconds_per_frame"] = round((time.time() - t1) / max(1, done), 3)
-        json.dump(rep, open(report_path, "w"), indent=1, default=str)
-        json.dump({"ok": True, "mode": args.mode, "seconds": round(time.time() - t0, 2)}, open(os.path.join(args.out, "done.json"), "w"))
-        print("STUDIO_SHOT_OK", spec["shot_id"])
+        with open(report_path, "w") as f:
+            json.dump(rep, f, indent=1, default=str)
+        with open(os.path.join(args.out, "done.json"), "w") as f:   # marqueur écrit EN DERNIER, fichier fermé
+            json.dump({"ok": True, "mode": args.mode, "seconds": round(time.time() - t0, 2)}, f)
+        print("STUDIO_SHOT_OK", spec["shot_id"], flush=True)
+        _quit(0)
     except Exception as e:
-        json.dump({"ok": False, "error": repr(e), "traceback": traceback.format_exc()}, open(report_path, "w"), indent=1)
-        print("STUDIO_SHOT_FAIL", repr(e))
+        with open(report_path, "w") as f:
+            json.dump({"ok": False, "error": repr(e), "traceback": traceback.format_exc()}, f, indent=1)
+        print("STUDIO_SHOT_FAIL", repr(e), flush=True)
         traceback.print_exc()
-        sys.exit(2)
+        _quit(2)
+
+
+def _quit(code):
+    """Sortie immédiate : le binaire Blender peut rester vivant après la fin du script (constaté sur VPS).
+    Tous les fichiers sont déjà fermés ; le pipeline surveille aussi done.json (render._run_until_done)."""
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code)
 
 
 if __name__ == "__main__":

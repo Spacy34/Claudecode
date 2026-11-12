@@ -73,6 +73,40 @@ def shot_cache_key(spec_sha, profile, eng_hash, render_engine, mode="render", fr
     return sha256_json({"spec": spec_sha, "profile": profile, "engine": eng_hash, "render_engine": render_engine, "mode": mode, "frames": frames})
 
 
+def _run_until_done(command, output, done_path, timeout_s, exit_grace_s=5):
+    """Laisse Blender se terminer, mais le ferme s'il reste vivant après son marqueur de succès (done.json).
+    Constaté sur VPS avec le binaire Blender : processus encore actif plusieurs minutes après STUDIO_SHOT_OK
+    (diagnostic et correctif proposés par Codex). Timeout normal conservé sans marqueur."""
+    proc = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT)
+    started = time.monotonic()
+    done_at = None
+    try:
+        while True:
+            code = proc.poll()
+            if code is not None:
+                return code
+            t = time.monotonic()
+            if done_path.exists():
+                done_at = done_at or t
+                if t - done_at >= exit_grace_s:
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                        proc.wait()
+                    return 0
+            elif t - started >= timeout_s:
+                proc.kill()
+                proc.wait()
+                return -999
+            time.sleep(0.2)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait()
+
+
 def render_shot(cfg, ep_dir, shot, profile_name, mode="render", frames="", log=print):
     ep_dir = Path(ep_dir)
     prof = profile_dict(cfg, profile_name)
@@ -98,11 +132,7 @@ def render_shot(cfg, ep_dir, shot, profile_name, mode="render", frames="", log=p
     t0 = time.time()
     log(f"  rendu {shot['id']} ({shot['frames']} frames, {profile_name}, {reng}, {inv_mode})…")
     with open(out / "blender.log", "w") as lf:
-        try:
-            r = subprocess.run(full, stdout=lf, stderr=subprocess.STDOUT, timeout=int(cfg["limits"]["shot_timeout_s"]))
-            code = r.returncode
-        except subprocess.TimeoutExpired:
-            code = -999
+        code = _run_until_done(full, lf, out / "done.json", int(cfg["limits"]["shot_timeout_s"]))
     rec["render_seconds"] = round(time.time() - t0, 1)
     if code != 0 or not (out / "done.json").exists():
         rec["status"] = "failed"

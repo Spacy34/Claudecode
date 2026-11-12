@@ -29,3 +29,21 @@ tags: animation, point, throw, camera, dos
 date: 2026-11-10
 
 Constaté au prototype (QA 20/20 mais personnage de dos pendant 1,5 s). point/throw faisaient pivoter tout le corps vers la cible. Correctif : face_to(max_turn) limite la rotation (50° pour point, 70° pour throw) ; le bras fait le reste.
+
+## Blender reste vivant après STUDIO_SHOT_OK
+tags: blender, render, subprocess, done, hang, binaire
+date: 2026-11-12
+episode: ep_chloe
+
+Découvert par Codex sur le VPS (binaire Blender 5.2.3) : PNG, scene_report.json, done.json et STUDIO_SHOT_OK écrits,
+mais le processus Blender restait vivant plusieurs minutes et le pipeline attendait. Correctifs : supervision
+render._run_until_done (fermeture 5 s après done.json) + run_shot sort par os._exit après fermeture des fichiers.
+
+## Fausse « interruption » d'une étape lancée depuis le bac à sable de Codex
+tags: etat, pid, sandbox, codex, interrupted, verrou
+date: 2026-11-12
+episode: ep_chloe
+
+Les commandes lancées par Codex tournent dans un autre espace de PID : un `studio status` lancé depuis le terminal
+ne voyait pas le PID et déclarait l'étape en cours « interrupted ». Correctif (proposé par Codex) : verrou de
+fichier par étape (episodes/<ep>/.studio_locks, flock/msvcrt) au lieu du PID.

@@ -2,10 +2,13 @@
 
 - Chaque étape enregistre le hash de ses entrées à la complétion : si une entrée change, l'étape et
   toutes ses descendantes deviennent `stale` (aucune désynchronisation silencieuse).
-- Une étape `running` dont le processus n'existe plus devient `interrupted` (reprise propre).
+- Une étape `running` sans verrou d'exécution actif devient `interrupted` (reprise propre). Verrou de fichier
+  (flock / msvcrt) et non PID : les commandes lancées depuis le bac à sable de Codex vivent dans un autre espace de
+  PID, un PID y serait invisible et l'étape serait déclarée interrompue à tort (constaté sur VPS, correctif proposé par Codex).
 - Les validations humaines sont liées aux hashes des artefacts validés : modifier un artefact
   après validation annule la validation.
 """
+import errno
 import os
 from pathlib import Path
 
@@ -46,30 +49,32 @@ def _hash_inputs(ep_dir, files):
     return out
 
 
-def _alive(pid):
-    if not pid:
-        return False
-    if os.name == "nt":   # os.kill(pid, 0) enverrait un CTRL_C_EVENT sous Windows
-        import ctypes
-        k = ctypes.windll.kernel32
-        h = k.OpenProcess(0x1000, False, int(pid))   # PROCESS_QUERY_LIMITED_INFORMATION
-        if not h:
-            return False
-        code = ctypes.c_ulong()
-        k.GetExitCodeProcess(h, ctypes.byref(code))
-        k.CloseHandle(h)
-        return code.value == 259   # STILL_ACTIVE
-    try:
-        os.kill(pid, 0)
-        return True
-    except OSError:
-        return False
+def _lock(handle, blocking=False):
+    """Verrouille une étape entre processus (y compris d'espaces de PID différents) via le système de fichiers."""
+    if os.name == "nt":
+        import msvcrt
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK if blocking else msvcrt.LK_NBLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | (0 if blocking else fcntl.LOCK_NB))
+
+
+def _unlock(handle):
+    if os.name == "nt":
+        import msvcrt
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 class State:
     def __init__(self, ep_dir, episode_id=None):
         self.dir = Path(ep_dir)
         self.path = self.dir / "state.json"
+        self._stage_locks = {}
         if self.path.exists():
             self.data = read_json(self.path)
         else:
@@ -89,25 +94,74 @@ class State:
         self.data["history"].append({"at": now(), "event": event, **kw})
 
     # ------------------------------------------------------------ transitions
+    # ------------------------------------------------------------ verrous d'exécution
+    def _lock_path(self, name):
+        return self.dir / ".studio_locks" / f"{name}.lock"
+
+    def _acquire_stage_lock(self, name):
+        path = self._lock_path(name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = path.open("a+b")
+        try:
+            _lock(handle)
+        except OSError:
+            handle.close()
+            raise RuntimeError(f"{name} est déjà exécutée par un autre processus")
+        self._stage_locks[name] = handle
+
+    def _release_stage_lock(self, name):
+        handle = self._stage_locks.pop(name, None)
+        if handle is not None:
+            try:
+                _unlock(handle)
+            finally:
+                handle.close()
+
+    def _stage_lock_active(self, name):
+        path = self._lock_path(name)
+        if not path.exists():
+            return False   # anciens enregistrements « running » d'avant les verrous
+        with path.open("a+b") as handle:
+            try:
+                _lock(handle)
+            except OSError as e:
+                if isinstance(e, BlockingIOError) or e.errno in (errno.EACCES, errno.EAGAIN):
+                    return True
+                raise
+            _unlock(handle)
+            return False
+
+    # ------------------------------------------------------------ transitions
     def start(self, name):
+        self._acquire_stage_lock(name)
         s = self.st(name)
-        s.update(status="running", pid=os.getpid(), started_at=now(), error=None)
-        s["attempts"] = s.get("attempts", 0) + 1
-        self.log("start", stage=name)
-        self.save()
+        try:
+            s.update(status="running", pid=os.getpid(), started_at=now(), error=None)
+            s["attempts"] = s.get("attempts", 0) + 1
+            self.log("start", stage=name)
+            self.save()
+        except BaseException:
+            self._release_stage_lock(name)
+            raise
 
     def finish(self, name, status="completed", note=None):
         ins, outs = STAGES[name][2], STAGES[name][3]
         s = self.st(name)
-        s.update(status=status, pid=None, finished_at=now(), inputs=_hash_inputs(self.dir, ins), outputs=_hash_inputs(self.dir, outs), note=note)
-        self.log("finish", stage=name, status=status)
-        self.save()
+        try:
+            s.update(status=status, pid=None, finished_at=now(), inputs=_hash_inputs(self.dir, ins), outputs=_hash_inputs(self.dir, outs), note=note)
+            self.log("finish", stage=name, status=status)
+            self.save()
+        finally:
+            self._release_stage_lock(name)
 
     def fail(self, name, error):
         s = self.st(name)
-        s.update(status="failed", pid=None, finished_at=now(), error=str(error)[-2000:])
-        self.log("fail", stage=name, error=str(error)[-300:])
-        self.save()
+        try:
+            s.update(status="failed", pid=None, finished_at=now(), error=str(error)[-2000:])
+            self.log("fail", stage=name, error=str(error)[-300:])
+            self.save()
+        finally:
+            self._release_stage_lock(name)
 
     def approve(self, gate, by, note=""):
         files = STAGES[gate][2]
@@ -134,8 +188,9 @@ class State:
         changed = []
         for name in ORDER:
             s = self.st(name)
-            if s["status"] == "running" and not _alive(s.get("pid")):
+            if s["status"] == "running" and not self._stage_lock_active(name):
                 s["status"] = "interrupted"
+                s["pid"] = None
                 changed.append((name, "interrupted"))
             if s["status"] in DONE + ("needs_review",):
                 cur = _hash_inputs(self.dir, STAGES[name][2])
