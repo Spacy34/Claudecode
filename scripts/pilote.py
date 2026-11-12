@@ -48,8 +48,8 @@ def codex_prompt(ep, n):
     for rv in n["review"]:
         lines.append(f"- revue `{rv['stage']}` : critique(s) {rv['owner']} en lecture seule (rapports dans reviews/, puis submit --review)")
     for st, err in n["failed"].items():
-        if st.startswith("gate_"):
-            lines.append(f"- validation `{st}` REFUSÉE par la QA : {err}")
+        if st.startswith("gate_") or st == "shots_check":
+            lines.append(f"- {'validation' if st.startswith('gate_') else 'contrôle'} `{st}` REFUSÉ par la QA : {err}")
             lines.append("  -> fais corriger chaque défaut par le rôle indiqué entre crochets, dans SES artefacts (storyboard, "
                          "animation_plan, asset_manifest… ; moteur seulement pour pipeline-engineer), valide avec `scripts/studio validate` ; "
                          "ne lance AUCUN rendu : le pilote re-rendra les plans modifiés et revérifiera.")

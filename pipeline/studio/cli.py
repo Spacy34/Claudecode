@@ -371,8 +371,16 @@ def stage_shots_check(p, st, profile="draft"):
     write_json(p / "checks" / "scene_checks.json", {"generated_at": now(), "profile": profile, "checks": all_checks})
     blockers = [x for x in all_checks if x["severity"] in ("blocker", "major") and x["status"] == "fail"]
     if blockers:
+        lines = [f"[{FIX_OWNER.get(b['id'].split(':')[0], 'director')}] {b['shot']}:{b['id']} : {b['message']}" for b in blockers]
+        if cfg()["quality"].get("autonomous"):
+            # mode autonome : tour de correction (le pilote confie les défauts à leur propriétaire), puis escalade
+            s_ = st.st("shots_check")
+            s_["revision_rounds"] = s_.get("revision_rounds", 0) + 1
+            if s_["revision_rounds"] <= int(cfg()["quality"]["max_revision_rounds"]):
+                st.fail("shots_check", f"tour {s_['revision_rounds']} : corriger (sans rendu) puis le pilote revérifie. " + " | ".join(lines[:10]))
+                return {"contact_sheet": str(sheet), "blocking": lines, "status": "failed", "revision_round": s_["revision_rounds"]}
         st.finish("shots_check", "needs_review", note=f"{len(blockers)} défaut(s) majeur(s) : voir checks/scene_checks.json")
-        return {"contact_sheet": str(sheet), "blocking": blockers, "status": "needs_review"}
+        return {"contact_sheet": str(sheet), "blocking": lines, "status": "needs_review"}
     return {"contact_sheet": str(sheet), "issues": len(all_checks)}
 
 
@@ -472,7 +480,8 @@ def cmd_run(a):
             if stop_after and g == f"gate_{stop_after}":
                 break
             continue
-        auto = [r for r in ready if STAGES[r][1] == "auto" and (r != "final" or autonomous)]
+        auto = [r for r in ready if STAGES[r][1] == "auto" and (r != "final" or autonomous)
+                and st.st(r)["status"] != "needs_review" and r not in [e for e, _ in executed]]
         if a.until and a.until in [e for e, _ in executed]:
             break
         if not auto:
@@ -486,12 +495,18 @@ def cmd_run(a):
             return 1
         executed.append((name, res))
         print(json.dumps(res, ensure_ascii=False)[:800])
+        if st.st(name)["status"] not in ("completed", "approved"):
+            # défauts à corriger (needs_review / tour de correction) : ne JAMAIS relancer en boucle la même étape
+            print(f"⚠ {name} : {st.st(name)['status']} — corrections nécessaires avant de continuer")
+            break
         if stop_after and name == stop_after:
             break
     pending = []
     for r in st.ready():
         owner, kind, _, outs, _, _ = STAGES[r]
-        if kind == "auto":
+        if st.st(r)["status"] in ("needs_review", "failed") and kind == "auto":
+            pending.append(f"{r} : {st.st(r)['status']} — corriger les défauts ({(st.st(r).get('note') or st.st(r).get('error') or '')[:300]})")
+        elif kind == "auto":
             pending.append(f"{r} : `studio final {a.episode}` (exige les validations)" if r == "final" else f"{r} : automatique")
         else:
             pending.append(f"{r} : " + NEXT_HINT[kind].format(owner=owner, outs=outs, ep=a.episode, stage=r))

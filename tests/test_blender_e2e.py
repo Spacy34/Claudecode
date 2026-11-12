@@ -73,8 +73,15 @@ def test_G_offscreen_character_detected(compiled):
     p = ep / "shots" / "injected.json"
     write_json(p, spec)
     rec = render.render_shot(cfg, ep, {"id": "sh_002", "spec_path": "shots/injected.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
-    ids = [c["id"] for c in rec["scene_report"]["checks"]]
-    assert "char_never_visible:ch_kevin" in ids
+    nv = [c for c in rec["scene_report"]["checks"] if c["id"] == "char_never_visible:ch_kevin"]
+    assert nv and nv[0]["severity"] == "minor", "plan serré sur autre chose (contrechamp) : simple avertissement"
+    # plan large : un personnage listé mais invisible est un vrai défaut bloquant
+    spec["camera"] = {**spec["camera"], "framing": "wide", "subject": {"kind": "point", "pos": [0.0, 0.5, 1.0]}}
+    spec["characters"][0]["pos"] = [40.0, 0.0]
+    write_json(p, spec)
+    rec = render.render_shot(cfg, ep, {"id": "sh_002", "spec_path": "shots/injected.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]}, "tiny", mode="stills", frames="1")
+    nv = [c for c in rec["scene_report"]["checks"] if c["id"] == "char_never_visible:ch_kevin"]
+    assert nv and nv[0]["severity"] == "major" and nv[0]["status"] == "fail"
 
 
 def test_F_I_preview_extract_with_audio_and_subtitles(compiled):

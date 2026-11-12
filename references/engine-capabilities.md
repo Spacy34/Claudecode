@@ -114,7 +114,8 @@ over_shoulder, insert (accessoire). Angles : eye, low, high, dutch, top_down. `s
 sujet. `lens_mm` optionnel. Mouvements : static, push_in, pull_out, pan_left, pan_right, orbit_left,
 orbit_right, track_subject, shake (sur l'impact), crash_zoom, handheld.
 Personnage volontairement hors champ (voix hors champ, entrée plus tard) : `"offscreen": true` dans
-`storyboard.shots[].characters[]` (sinon un personnage jamais visible est un défaut bloquant `char_never_visible`).
+`storyboard.shots[].characters[]`. Un personnage jamais visible (`char_never_visible`) est BLOQUANT s'il est sujet /
+secondary_subject ou en wide/full/two_shot ; en plan serré sur quelqu'un d'autre (contrechamp, réaction), simple avertissement.
 Cadrage AUTOMATIQUE sur les positions réelles évaluées ; azimut figé au début du plan ; anti-occlusion par
 lancer de rayons (la caméra MONTE d'abord pour regarder par-dessus un obstacle, puis se rapproche en dernier
 recours) ; un objet posé sur un meuble n'est jamais filmé en contre-plongée.

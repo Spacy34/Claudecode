@@ -12,6 +12,10 @@ MIN_HEAD_FRAC = {"wide": 0.025, "full": 0.05, "medium": 0.09, "medium_close": 0.
                  "two_shot": 0.07, "over_shoulder": 0.12, "insert": 0.0}
 
 
+# cadrages censés montrer tout le groupe : un personnage listé mais jamais visible y est un vrai défaut
+GROUP_FRAMINGS = ("wide", "full", "two_shot")
+
+
 def _proj(sc, cam, p):
     v = world_to_camera_view(sc, cam, p)
     return v.x, v.y, v.z
@@ -98,10 +102,19 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
         out.append({"id": "foreground_occluder", "severity": "major" if fg["fraction"] > 0.4 else "minor",
                     "status": "fail" if fg["fraction"] > 0.4 else "warn", "frame": fg["frame"],
                     "message": f"Premier plan encombré : {fg['fraction']:.0%} de l'image (moitié basse/centre) masqué par {fg['objects'][:3]} devant le sujet."})
+    secondary = spec["camera"].get("secondary_subject")
     for cid, vis in seen_visible.items():
-        if not vis:
+        if vis:
+            continue
+        framed = (isinstance(subject, dict) and subject.get("id") == cid) or (isinstance(secondary, dict) and secondary.get("id") == cid)
+        if framed or framing in GROUP_FRAMINGS:
             out.append({"id": f"char_never_visible:{cid}", "severity": "major", "status": "fail", "frame": sample_frames[0],
-                        "message": f"{cid} fait partie du plan mais n'est visible à aucune frame contrôlée."})
+                        "message": f"{cid} fait partie du plan ({framing}) mais n'est visible à aucune frame contrôlée."})
+        else:
+            # champ/contrechamp, plan de réaction : l'interlocuteur est hors cadre (souvent listé pour le regard)
+            out.append({"id": f"char_never_visible:{cid}", "severity": "minor", "status": "warn", "frame": sample_frames[0],
+                        "message": f"{cid} jamais visible dans ce plan serré ({framing}) : normal en contrechamp ; "
+                                   f"sinon le rapprocher. Déclarer \"offscreen\": true pour l'expliciter."})
     # dédoublonnage (même id) : garder la première occurrence + nombre de frames
     seen = {}
     for c in out:

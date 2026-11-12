@@ -140,3 +140,58 @@ def test_legacy_running_record_without_lock_is_interrupted(episode):
     st.st("script").update(status="running", pid=os.getpid())
     st.save()
     assert ("script", "interrupted") in State(episode).refresh()
+
+
+def _fake_shots_check(episode, monkeypatch, checks):
+    """shots_check sans Blender : rendus simulés renvoyant les contrôles donnés."""
+    import studio.cli as cli
+    lid = json.loads((episode / "story_script.json").read_text())["lines"][0]["id"]
+    fdir = episode / "_fake_frames"
+    fdir.mkdir(exist_ok=True)
+    (fdir / "f0001.png").write_bytes(b"png")
+    man = {"episode_id": episode.name, "shots": [{"id": "sh_008", "frames": 2, "line_ids": [lid], "start_s": 0.0, "end_s": 1.0}]}
+    calls = []
+    monkeypatch.setattr(cli, "_manifest", lambda p: man)
+    monkeypatch.setattr(cli.render, "render_shots", lambda *a, **k: calls.append(1) or
+                        [{"status": "rendered", "frames_dir": str(fdir), "scene_report": {"checks": checks, "rendered_frames": [1]}}])
+    monkeypatch.setattr(cli.qframes, "contact_sheet", lambda items, out, **k: out)
+    return calls
+
+
+def test_shots_check_defects_never_loop_and_give_correction_rounds(episode, monkeypatch):
+    """Bug VPS : shots_check en needs_review était relancé à l'infini par `studio run`. En autonome : tours de
+    correction transmis au pilote (rôle responsable), puis escalade ; jamais plus d'une exécution par `run`."""
+    import studio.cli as cli
+    from studio.state import ORDER
+    monkeypatch.setenv("STUDIO_QUALITY_AUTONOMOUS", "true")
+    cli.CFG = None
+    st = State(episode)
+    for s in ORDER[:ORDER.index("shots_check")]:
+        st.finish(s, "approved" if s.startswith("gate_") else "completed")
+    calls = _fake_shots_check(episode, monkeypatch, [{"id": "char_never_visible:ch_dylan", "severity": "major", "status": "fail",
+                                                       "frame": 1, "message": "ch_dylan jamais visible"}])
+    statuses = []
+    for _ in range(3):
+        with pytest.raises(SystemExit):
+            cli.main(["run", episode.name])
+        s = State(episode).st("shots_check")
+        statuses.append((s["status"], s.get("revision_rounds")))
+    assert len(calls) == 3, "une seule exécution de shots_check par `studio run`"
+    assert statuses == [("failed", 1), ("failed", 2), ("needs_review", 3)], statuses
+    with pytest.raises(SystemExit):
+        cli.main(["run", episode.name])
+    assert len(calls) == 3, "needs_review : attendre la correction, ne pas relancer"
+
+
+def test_shots_check_human_mode_stops_once(episode, monkeypatch):
+    import studio.cli as cli
+    from studio.state import ORDER
+    monkeypatch.setenv("STUDIO_QUALITY_AUTONOMOUS", "false")
+    cli.CFG = None
+    st = State(episode)
+    for s in ORDER[:ORDER.index("shots_check")]:
+        st.finish(s, "approved" if s.startswith("gate_") else "completed")
+    calls = _fake_shots_check(episode, monkeypatch, [{"id": "head_cropped:ch_a", "severity": "major", "status": "fail", "frame": 1, "message": "x"}])
+    with pytest.raises(SystemExit):
+        cli.main(["run", episode.name])
+    assert len(calls) == 1 and State(episode).st("shots_check")["status"] == "needs_review"
