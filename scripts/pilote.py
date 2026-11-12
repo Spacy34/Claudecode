@@ -7,6 +7,7 @@ Lancé par scripts/produire.sh dans tmux. S'arrête : épisode livré, validatio
 absence de progrès (même état deux tours de suite).
 """
 import argparse
+import collections
 import json
 import os
 import subprocess
@@ -70,21 +71,59 @@ def codex_prompt(ep, n):
     return "\n".join(lines)
 
 
+CODEX_HINTS = [
+    (("not logged in", "codex login", "unauthorized", "401 ", "authentication required"), "Codex n'est pas connecté : ouvrez PowerShell et lancez `codex login`."),
+    (("model is not supported", "not supported when using codex", "model_not_found", "unknown model", "model does not exist"), "modèle Codex refusé : videz le champ « Modèle Codex » du tableau de bord "
+                                                                    "(ou config/local.toml [codex] model), ou mettez un modèle listé par /model dans `codex`."),
+    (("trusted", "git repo", "skip-git-repo-check"), "dossier non approuvé par Codex : lancez `codex` une fois dans le dossier du studio et acceptez."),
+    (("unexpected argument", "unrecognized", "usage:"), "version de Codex trop ancienne : `npm install -g @openai/codex@latest`."),
+    (("n'est pas reconnu", "is not recognized", "node: not found", "cannot find module"), "Node.js/Codex mal installé : `winget install --id OpenJS.NodeJS.LTS -e`, puis "
+                                                          "`npm install -g @openai/codex`, puis rouvrir PowerShell."),
+    (("rate limit", "usage limit", "quota", "429"), "limite d'utilisation de Codex atteinte : réessayer plus tard."),
+]
+
+
+def codex_hint(text):
+    low = text.lower()
+    for keys, hint in CODEX_HINTS:
+        if any(k in low for k in keys):
+            return hint
+    return None
+
+
 def run_codex(ep, prompt, model, logf):
+    """-> (code retour, dernières lignes de sortie). La sortie est recopiée en direct dans le journal."""
     exe = which("codex")
     if not exe:
         log("Codex introuvable (commande `codex`) : installez-le et connectez-vous (`codex login`), puis relancez.")
-        return 127
-    cmd = [exe, "exec"]
+        return 127, ""
+    cmd = [exe, "exec", "--skip-git-repo-check"]   # dossier issu d'un ZIP (pas un dépôt Git) : autorisé explicitement
     if model:
         cmd += ["-c", f'model="{model}"']
     # consigne transmise sur l'entrée standard (« - ») : aucun problème d'échappement (cmd.exe, $, retours à la ligne)
     cmd += ["--output-last-message", str(ep_dir(ep) / "checks" / "codex_rapport_final.md"), "-"]
     log("session Codex : " + prompt.splitlines()[4] if len(prompt.splitlines()) > 4 else "session Codex")
     sys.stdout.flush()
+    tail = collections.deque(maxlen=40)
     with open(logf, "a", encoding="utf-8") as f:
-        p = subprocess.run(cmd, cwd=ROOT, input=prompt, stdout=f, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-    return p.returncode
+        try:
+            p = subprocess.Popen(cmd, cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                 text=True, encoding="utf-8", errors="replace")
+        except OSError as e:
+            log(f"impossible de lancer Codex ({exe}) : {e}")
+            return 126, str(e)
+        try:
+            p.stdin.write(prompt)
+            p.stdin.close()
+        except OSError:
+            pass
+        for line in p.stdout:
+            f.write(line)
+            f.flush()
+            if line.strip():
+                tail.append(line.rstrip())
+        rc = p.wait()
+    return rc, "\n".join(tail)
 
 
 def main():
@@ -104,7 +143,7 @@ def main():
         log(f"une production de {ep} tourne déjà : arrêt.")
         return 7
     (logf.parent / "pilote.pid").write_text(str(os.getpid()), encoding="utf-8")
-    last_fp, stale = None, 0
+    last_fp, stale, quick_fail = None, 0, 0
     for tour in range(1, a.max_tours + 1):
         log(f"tour {tour} : étapes automatiques (rendus inclus, peut être long)")
         r = studio("run", ep)
@@ -120,11 +159,27 @@ def main():
                 "puis relancer scripts/produire.sh " + ep)
             return 3
         if n["agent"] or n["review"] or n["failed"]:
-            rc = run_codex(ep, codex_prompt(ep, n), a.modele, logf)
+            t_start = time.time()
+            rc, out = run_codex(ep, codex_prompt(ep, n), a.modele, logf)
             if rc == 127:
                 return 6
             if rc != 0:
-                log(f"Codex a terminé avec le code {rc} (voir {logf}).")
+                last = [l for l in out.splitlines() if l.strip()][-6:]
+                log(f"Codex a terminé avec le code {rc}. Ses derniers messages :")
+                for l in last:
+                    print(f"    | {l[:300]}", flush=True)
+                hint = codex_hint(out)
+                if hint:
+                    log("→ " + hint)
+                if time.time() - t_start < 20:
+                    quick_fail += 1
+                    if quick_fail >= 2:
+                        log("ARRÊT : Codex refuse de démarrer (deux échecs immédiats). Corrigez la cause ci-dessus, puis relancez.")
+                        return 8
+                else:
+                    quick_fail = 0
+            else:
+                quick_fail = 0
         elif r.returncode != 0:
             log("une étape automatique a échoué : voir ci-dessus et `scripts/studio status %s`." % ep)
         n2 = nxt(ep)

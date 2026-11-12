@@ -73,3 +73,22 @@ def test_launcher_start_stop_and_lock(tmp_path, episode, monkeypatch):
     assert not launcher.pilot_running("ep_lance_t")
     assert "ARRÊT demandé" in launcher.journal("ep_lance_t").read_text(encoding="utf-8")
     assert pid > 0
+
+
+@POSIX
+def test_pilot_reports_codex_startup_error(tmp_path, episode):
+    """Codex qui refuse de démarrer (ex. modèle refusé) : raison recopiée, conseil, arrêt après deux échecs immédiats."""
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    args = tmp_path / "args.txt"
+    (stub / "codex").write_text(f"#!/bin/sh\necho \"$@\" > {args}\ncat > /dev/null\necho 'model: gpt-x'\n"
+                                "echo \"ERROR: The 'gpt-x' model is not supported when using Codex with a ChatGPT account.\" >&2\nexit 1\n")
+    (stub / "codex").chmod(0o755)
+    script = tmp_path / "s.txt"
+    script.write_text("Une poule devient maire.\nBernadette: Cot cot !\n", encoding="utf-8")
+    env = dict(os.environ, PATH=f"{stub}:{os.environ['PATH']}")
+    subprocess.run([str(ROOT / "scripts" / "studio"), "new", "ep_codex_ko", "--script-file", str(script)], check=True, env=env, capture_output=True)
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "pilote.py"), "ep_codex_ko", "--modele", "gpt-x"], env=env, capture_output=True, text=True, timeout=120)
+    assert r.returncode == 8, r.stdout[-1500:]
+    assert "is not supported" in r.stdout and "modèle Codex refusé" in r.stdout
+    assert "--skip-git-repo-check" in args.read_text()
