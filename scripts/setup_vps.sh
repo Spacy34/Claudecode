@@ -45,7 +45,7 @@ echo "== 2/6 Environnement Python isolé (.venv)"
 # --clear : repart d'un environnement neuf (un .venv à moitié créé par un essai précédent casse pip)
 python3 -m venv --clear .venv
 .venv/bin/python -m pip install -q -r requirements.txt
-.venv/bin/python -c "import jsonschema, PIL, pytest; print('dépendances Python OK')"
+.venv/bin/python -c "import jsonschema, PIL, pytest, yaml; print('dépendances Python OK')"
 
 echo "== 3/6 Blender ${BLENDER_VERSION} (binaire officiel, headless)"
 if [ ! -x "${BLENDER_DIR}/blender" ]; then
@@ -85,6 +85,7 @@ chmod +x scripts/studio
 scripts/studio doctor | tail -25 || true
 
 echo "== 6/6 Tests (rapides puis rendus Blender réels)"
-.venv/bin/python -m pytest -q -m "not blender" | tail -2
-.venv/bin/python -m pytest -q -m blender | tail -2 || echo "Tests Blender en échec : voir VPS.md §Dépannage"
+.venv/bin/python -m pytest -q -m "not blender" 2>&1 | tail -4 || true
+echo "-- tests avec rendus Blender réels (quelques minutes sur 2 cœurs) --"
+.venv/bin/python -m pytest -q -m blender 2>&1 | tail -6 || true
 echo "Terminé. Rechargez le shell :  source ~/.bashrc"
