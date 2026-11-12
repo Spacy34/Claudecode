@@ -599,6 +599,13 @@ def cmd_cache(a):
 
 
 def cmd_memory(a):
+    if a.action == "merge":
+        for f in a.terms:
+            target, added = memory.merge_file(cfg(), f)
+            print(f"{f} -> {target} : {len(added)} entrée(s) récupérée(s)")
+            for t in added:
+                print("  +", t)
+        return
     if a.action == "search":
         for e in memory.search(cfg(), a.terms, a.limit):
             print(f"## {e['title']}  [{e['file']}]\n{e['body']}\n")
@@ -859,7 +866,7 @@ def build_parser():
     x.add_argument("--prune", action="store_true")
     x.set_defaults(fn=cmd_cache)
     x = sp.add_parser("memory")
-    x.add_argument("action", choices=["search", "add"])
+    x.add_argument("action", choices=["search", "add", "merge"])
     x.add_argument("terms", nargs="*")
     x.add_argument("--limit", type=int, default=5)
     x.add_argument("--category", default="lessons")
