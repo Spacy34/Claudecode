@@ -324,6 +324,15 @@ def validate_episode(ep_dir, only=None):
             continue
         report[name] = schema_errors(name, data)
     report["_cross"] = cross_errors(arts)
+    vl = Path(ep_dir) / "audio" / "full_voice" / "texte_verrouille.json"
+    if vl.exists() and "story_script" in arts:
+        want = [(l["speaker"], l["text"]) for l in read_json(vl)["lines"]]
+        got = [(l["speaker"], l["text"]) for l in arts["story_script"]["lines"]]
+        if [t for _, t in want] != [t for _, t in got]:
+            k = next((i for i, (a, b) in enumerate(zip(got, want)) if a[1] != b[1]), min(len(got), len(want)))
+            report["_cross"].append(f"story_script : une VOIX COMPLÈTE est fournie et dit un texte précis ; le script a été modifié "
+                                    f"(réplique n°{k + 1}). Textes et ordre doivent rester identiques à l'audio "
+                                    "(audio/full_voice/texte_verrouille.json), sinon sous-titres et plans ne correspondent plus.")
     return report
 
 

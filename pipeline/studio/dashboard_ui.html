@@ -182,7 +182,10 @@ function renderNew(){
   </div>`;
   $("nFile").onchange = async (ev) => { const f = ev.target.files[0]; if (f){ $("nText").value = await f.text(); if(!$("nName").value) $("nName").value = f.name.replace(/\.txt$/,""); } };
   if ($("nInbox")) $("nInbox").onchange = async (ev) => { if (!ev.target.value) return; const j = await api("/api/inbox?name="+encodeURIComponent(ev.target.value)); $("nText").value=j.text; if(!$("nName").value) $("nName").value=ev.target.value.replace(/\.txt$/,""); };
-  $("nVoice").onchange = (ev) => { const f = ev.target.files[0]; $("nVoiceName").textContent = f ? f.name : "aucune : voix de synthèse"; };
+  $("nVoice").onchange = (ev) => { const f = ev.target.files[0]; $("nVoiceName").textContent = f ? f.name : "aucune : voix de synthèse";
+    const lib = $("nMode").querySelector('option[value="libre"]');
+    if (f) { $("nMode").value = "script"; lib.disabled = true; toast("Voix fournie : le texte collé doit être EXACTEMENT ce que dit l'audio ; il sera verrouillé.", 6000); }
+    else lib.disabled = false; };
   $("nGo").onclick = async () => {
     const b = $("nGo"); b.disabled = true; b.textContent = "Création…";
     try {
@@ -300,7 +303,10 @@ function tabAudio(d){
   setBody("audio", {l:lines, m:d.music, f:full}, `<div class="panel">
     <b>Voix complète</b> <span class="hint">(ElevenLabs ou enregistrement : découpée en répliques, toute la vidéo se cale dessus)</span>
     <div class="row" style="margin-top:8px">${full?`<audio controls src="${fileUrl(d,"audio/full_voice/"+full)}"></audio> <button class="small danger" id="fDel">Retirer</button>`:'<span class="hint">aucune : synthèse ou voix réplique par réplique</span>'}
-      ${upField("fUp", full ? "Remplacer…" : "Fournir la voix complète…")}</div>
+      ${upField("fUp", full ? "Remplacer…" : "Fournir la voix complète…")}
+      <button class="small" id="txtBtn">Copier le texte pour ElevenLabs</button></div>
+    <p class="hint">La voix doit dire exactement ce texte, dans l'ordre. Une fois la voix fournie, le texte est verrouillé :
+      plus aucun agent ne peut le modifier (sinon sous-titres et plans ne correspondraient plus).</p>
     ${full?`<div class="row" style="margin-top:8px"><button class="small primary" id="syncBtn">Vérifier la synchro (aperçu vidéo)</button>
       <span class="hint">voix + sous-titres réels + réplique en cours, en quelques secondes (plus long la 1re fois avec Whisper)</span></div>
       ${d.sync_preview?`<video controls preload="metadata" style="margin-top:8px;width:270px;border-radius:10px;background:#000" src="${fileUrl(d,"checks/sync_preview.mp4",d.sync_preview)}"></video>`:""}
@@ -332,6 +338,9 @@ function tabAudio(d){
     const done = (j) => { toast(j.note || "Fichier enregistré."); S.sig={}; loadDetail(); };
     const fail = (e) => toast("Erreur : " + e.message);
     const m = $("mUp"); if (m) m.onchange = (ev) => ev.target.files[0] && upload("music", ev.target.files[0]).then(done, fail);
+    if ($("txtBtn")) $("txtBtn").onclick = async () => { try { const j = await api("/api/script_text?ep=" + encodeURIComponent(S.ep));
+      await navigator.clipboard.writeText(j.text); toast(`Texte copié (${j.lines} répliques, une ligne vide entre chacune pour des pauses nettes). Colle-le dans ElevenLabs.`, 6000); }
+      catch(e){ toast("Copie impossible : " + e.message); } };
     if ($("syncBtn")) $("syncBtn").onclick = async () => { const b = $("syncBtn"); b.disabled = true; b.textContent = "Analyse de la voix…";
       try { const r = await post("/api/sync_preview", {ep:S.ep}); toast(`${r.note} Calage : ${r.method === "whisper" ? "Whisper (au mot près)" : "pauses (installer faster-whisper pour le mot près)"}`, 7000); S.sig={}; loadDetail(); }
       catch(e){ toast("Erreur : " + e.message); b.disabled = false; b.textContent = "Vérifier la synchro (aperçu vidéo)"; } };

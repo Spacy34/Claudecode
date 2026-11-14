@@ -66,12 +66,24 @@ def compile_episode(ep_dir, cfg):
         st = s.get("start") or {"line": s["line_ids"][0]}
         t = _anchor_time(st, words, segs, 0, 0)
         if "word" not in st and "shot_t" not in st:
-            t -= 0.12   # couper juste avant la première syllabe
+            # couper dans la pause qui précède la réplique : au plus 0,12 s avant la première syllabe, et jamais avant la
+            # fin de la réplique précédente (sinon la fin de son dernier mot déborde sur le nouveau plan)
+            order = [l["id"] for l in script["lines"]]
+            k = order.index(st["line"]) if st["line"] in order else 0
+            prev_end = segs[order[k - 1]]["end_s"] if k > 0 and order[k - 1] in segs else 0.0
+            gap = max(0.0, t - prev_end)
+            t -= min(0.12, gap * 0.5)
         starts.append(t)
     warnings = []
     for i in range(1, len(starts)):
         if starts[i] <= starts[i - 1]:
             raise CompileError(f"{shots[i]['id']} commence avant ou en même temps que {shots[i - 1]['id']} : vérifier l'ordre/ancrages")
+    # une coupe ne tombe jamais au milieu d'un mot prononcé
+    all_words = [w for seg in tl["segments"] for w in seg["words"]]
+    for i in range(1, len(starts)):
+        inside = next((w for w in all_words if w["start_s"] + 0.03 < starts[i] < w["end_s"] - 0.03), None)
+        if inside:
+            warnings.append(f"{shots[i]['id']} : la coupe ({starts[i]:.2f} s) tombe au milieu du mot « {inside['text']} » : ancrer le plan sur un mot (start.word) ou sur la réplique")
     f_starts = [int(round(t * fps)) for t in starts] + [total_frames]
     manifest_shots = []
     shots_dir = ep_dir / "shots"

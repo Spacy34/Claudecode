@@ -59,7 +59,24 @@ def attach_full_voice(ep, src_path=None, data=None, filename=None):
     else:
         import shutil
         shutil.copyfile(src_path, dst)
+    lock_voice_text(episode_dir(load_config(), ep))
     return dst
+
+
+def lock_voice_text(ep_dir):
+    """Une voix complète dit un texte précis : on fige ce texte (répliques, ordre). Toute modification ultérieure du
+    script par un agent est refusée par `validate` (sinon sous-titres, bouches et plans ne correspondraient plus)."""
+    from .util import read_json, write_json
+    ep_dir = Path(ep_dir)
+    lines = None
+    if (ep_dir / "story_script.json").exists():
+        lines = [{"speaker": l["speaker"], "text": l["text"]} for l in read_json(ep_dir / "story_script.json")["lines"]]
+    elif (ep_dir / "episode_brief.json").exists():
+        lock = read_json(ep_dir / "episode_brief.json").get("script_lock") or {}
+        lines = [{"speaker": l["speaker"], "text": l["text"]} for l in lock.get("lines", [])]
+    if lines:
+        write_json(ep_dir / "audio" / "full_voice" / "texte_verrouille.json", {"lines": lines})
+    return lines
 
 
 def create_episode(ep, text, mode="script", duration=None, inbox_name=None, voice_file=None):
@@ -67,6 +84,9 @@ def create_episode(ep, text, mode="script", duration=None, inbox_name=None, voic
     -> (ok, sortie texte)."""
     if not EP_RE.match(ep):
         raise ValueError(f"nom d'épisode invalide : {ep} (attendu ep_ + minuscules/chiffres/_)")
+    if voice_file and mode != "script":
+        raise ValueError("avec une voix complète, le texte doit être EXACTEMENT celui de l'audio : choisis « Mon script » "
+                         "(texte imposé) et colle le texte que dit la voix")
     cfg = load_config()
     if episode_dir(cfg, ep).exists():
         raise FileExistsError(f"l'épisode {ep} existe déjà")

@@ -107,6 +107,17 @@ une ligne vide, ou `<break time="0.7s" />`). Le découpage s'affiche dans **Voix
 Sur un épisode existant : **Voix & sons → Fournir la voix complète…**. En ligne de commande :
 `scripts\studio.cmd produire episodes\_inbox\mon_script.txt --voix C:\chemin\voix.mp3`.
 
+### Voix complète : les règles qui garantissent la synchro
+- Le texte collé doit être EXACTEMENT ce que dit la voix, dans l'ordre (mode « Mon script » imposé ; le mode
+  « Une histoire » est désactivé quand une voix est fournie). Si Codex a écrit le script, utilise **Voix & sons →
+  Copier le texte pour ElevenLabs** (une ligne vide entre les répliques = pauses nettes = découpage fiable).
+- Dès qu'une voix complète est fournie, le texte est **verrouillé** : aucun agent ne peut plus le modifier.
+- Chaque plan change dans la pause qui précède sa réplique (jamais sur la fin du mot précédent), ou pile au début
+  d'un mot si le réalisateur coupe au milieu d'une phrase ; une coupe au milieu d'un mot est signalée.
+- **Voix & sons → Vérifier la synchro** : vidéo légère avec ta voix, les sous-titres réels, la réplique en cours et
+  le PLAN à l'écran (couleur alternée à chaque changement) : tu juges le placement des scènes avant tout rendu.
+- Avec `faster-whisper` installé, tout est calé sur les mots réellement entendus (≈ 0,1 s).
+
 ## 6 ter. Finir une vidéo : « Refaire ce plan »
 Onglet **Plans** : chaque plan avec sa vignette, le texte dit à ce moment, son cadrage et un bouton « ▶ voir ».
 Écris ce qui ne va pas (« trop serré », « il doit être en colère », « le téléphone doit apparaître plus tôt »), clique

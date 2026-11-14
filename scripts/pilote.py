@@ -69,6 +69,9 @@ def codex_prompt(ep, n):
         lines.append(f"DÉCISION HUMAINE (s'impose à tous les rôles, critiques compris ; ne pas re-bloquer pour ce motif, "
                      f"seulement vérifier que ses conditions sont respectées) : {d['note']}")
     brief = ep_dir(ep) / "episode_brief.json"
+    if (ep_dir(ep) / "audio" / "full_voice" / "texte_verrouille.json").exists():
+        lines.append("VOIX COMPLÈTE fournie (audio/full_voice) : le texte et l'ordre des répliques sont VERROUILLÉS sur l'audio ; "
+                     "ne jamais les modifier (habillage, intentions visuelles, mots forts et bruitages restent libres).")
     if brief.exists() and json.loads(brief.read_text(encoding="utf-8")).get("script_lock"):
         lines.append("ATTENTION : script IMPOSÉ par l'utilisateur (episode_brief.script_lock) : ne jamais modifier texte, ordre ni locuteurs.")
     lines.append(f"PÉRIMÈTRE : pendant cette production, ne modifie AUCUN fichier hors de episodes/{ep}/ (ni pipeline/, blender/, "

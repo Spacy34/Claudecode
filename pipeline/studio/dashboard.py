@@ -374,6 +374,11 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/log":
                 p = self._ep(q.get("ep"))
                 return self._send(200, {"log": tail(p / "checks" / "codex_journal.log", int(q.get("n", 300)))})
+            if u.path == "/api/script_text":
+                p = self._ep(q.get("ep"))
+                lines = _script_lines(p)
+                # une ligne vide entre les répliques : ElevenLabs y marque une pause nette (découpage fiable)
+                return self._send(200, {"text": "\n\n".join(l["text"] for l in lines), "lines": len(lines)})
             if u.path == "/api/inbox":
                 f = episode_dir(load_config(), "_inbox") / Path(q.get("name", "")).name
                 if f.suffix != ".txt" or not f.exists():

@@ -58,6 +58,24 @@ def test_full_voice_drives_the_whole_timeline(episode, cfg, tmp_path):
     assert res["duration_s"] > 20
     man = comp.compile_episode(episode, cfg)   # les plans se calent sur la voix fournie
     assert man["shots"][-1]["end_frame"] == man["total_frames"]
+    # chaque coupe tombe dans la pause qui précède sa réplique : jamais sur la fin de la réplique précédente
+    segs = {s_["line_id"]: s_ for s_ in tl["segments"]}
+    order = [s_["line_id"] for s_ in tl["segments"]]
+    sb = {x["id"]: x for x in read_json(episode / "storyboard.json")["shots"]}
+    for sh in man["shots"][1:]:
+        first = sh["line_ids"][0]
+        k = order.index(first)
+        anchor = sb[sh["id"]].get("start")
+        if anchor and "word" in anchor:   # coupe voulue au milieu d'une phrase : pile au début du mot visé
+            w = segs[anchor["line"]]["words"][anchor["word"]]
+            assert abs(sh["start_s"] - w["start_s"]) < 0.04, sh["id"]
+        elif k > 0:
+            assert segs[order[k - 1]]["end_s"] - 0.02 <= sh["start_s"] <= segs[first]["start_s"] + 0.02, sh["id"]
+    assert not [w for w in man["warnings"] if "milieu du mot" in w]
+    # aperçu de synchro de l'épisode, plans compris
+    from studio import sync_preview
+    mp4, rep = sync_preview.for_episode(episode, cfg)
+    assert mp4.exists() and "PLAN sh_001" in mp4.with_suffix(".ass").read_text(encoding="utf-8")
 
 
 def test_align_falls_back_when_no_pauses():
@@ -79,3 +97,20 @@ def test_sync_preview_and_quotes(tmp_path, cfg):
     assert A.syllables("«") == 0 and A.word_timings(["«", "Je"], 0.0, 1.0)[0]["end_s"] == 0.0
     shown = [w["text"] for w in display_words(A.word_timings(texts[0].split(), 0, 2))]
     assert "«" not in shown and "« Je" in shown and "prêt »." in shown
+
+
+def test_full_voice_locks_the_script_text(episode, cfg, tmp_path, monkeypatch):
+    """Voix complète fournie : le texte est figé ; un agent qui modifie une réplique est refusé par validate."""
+    import json
+    from studio import contracts, launcher
+    monkeypatch.setattr(launcher, "episode_dir", lambda c, ep: episode)
+    src, _ = _voice(tmp_path, ["Une poule.", "Elle vote."], [0.6, 0.5])
+    launcher.attach_full_voice(episode.name, src_path=src)
+    assert (episode / "audio" / "full_voice" / "texte_verrouille.json").exists()
+    assert not contracts.validate_episode(episode)["_cross"]
+    sc = json.loads((episode / "story_script.json").read_text())
+    sc["lines"][2]["text"] = sc["lines"][2]["text"] + " Vraiment."
+    (episode / "story_script.json").write_text(json.dumps(sc, ensure_ascii=False))
+    assert any("VOIX COMPLÈTE" in e for e in contracts.validate_episode(episode)["_cross"])
+    with pytest.raises(ValueError):
+        launcher.create_episode("ep_voix_libre", "Une histoire de poule qui devient maire.", mode="libre", voice_file=str(src))

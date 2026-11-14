@@ -900,6 +900,8 @@ def cmd_produire(a):
     from . import launcher
     src = Path(a.source)
     if src.is_file():
+        if a.voix and a.libre:
+            sys.exit("avec --voix, le fichier doit être le texte EXACT dit par la voix (pas une histoire --libre)")
         ep = a.nom or launcher.slug(src.name)
         if episode_dir(cfg(), ep).exists():
             print(f"L'épisode {ep} existe déjà : reprise là où il s'est arrêté.")

@@ -20,7 +20,8 @@ def texts_from_file(script_file):
         return [l.strip() for l in raw.splitlines() if l.strip()]
 
 
-def build(audio_path, texts, cfg, out_mp4, work_dir, width=540, height=960):
+def build(audio_path, texts, cfg, out_mp4, work_dir, width=540, height=960, shots=None):
+    """shots : [(id, début, fin, libellé)] — plans de l'épisode, affichés pour vérifier leur placement sur la voix."""
     res = analyze_full_voice(audio_path, texts, cfg, work_dir)
     segs = []
     for li, (txt, (a, b)) in enumerate(zip(texts, res["bounds"])):
@@ -51,6 +52,10 @@ def build(audio_path, texts, cfg, out_mp4, work_dir, width=540, height=960):
         body = _esc(" ".join(w["text"] for w in s["words"]))
         lines.append(f"Dialogue: 1,{_ts(s['start_s'])},{_ts(s['end_s'])},TOP,,0,0,0,,{{\\q0}}{head}\\N{body}")
     lines.append(f"Dialogue: 1,{_ts(0)},{_ts(res['dur'])},TOP,,0,0,0,,{{\\an2\\fs{int(top * 0.8)}\\c&H00A0A0A0&}}calage : {_esc(method)}")
+    for k, (sid, a, b, label) in enumerate(shots or []):
+        col = "&H0066D9FF&" if k % 2 == 0 else "&H00FFB066&"   # couleur alternée : chaque changement de plan se voit
+        lines.append(f"Dialogue: 1,{_ts(a)},{_ts(b)},TOP,,0,0,0,,{{\\pos({width // 2},{int(height * 0.3)})\\an5\\c{col}\\fs{int(top * 1.25)}\\b1}}"
+                     f"PLAN {_esc(sid)}\\N{{\\fs{int(top * 0.85)}\\b0}}{_esc(label)}")
     ass.write_text("\n".join(lines) + "\n", encoding="utf-8")
     run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", f"color=c=0x15171C:s={width}x{height}:r=30:d={res['dur']:.3f}",
          "-i", str(Path(audio_path).resolve()), "-vf", f"ass='{ass.name}'", "-shortest", "-c:v", "libx264", "-preset", "veryfast",
@@ -74,4 +79,14 @@ def for_episode(ep_dir, cfg):
         texts = [l["text"] for l in lock.get("lines", [])]
     if not texts:
         raise ValueError("aucun texte de script pour cet épisode")
-    return build(full, texts, cfg, ep_dir / "checks" / "sync_preview.mp4", ep_dir / "audio")
+    shots = None
+    if (ep_dir / "shot_manifest.json").exists():
+        sb = {}
+        if (ep_dir / "storyboard.json").exists():
+            sb = {x["id"]: x for x in read_json(ep_dir / "storyboard.json")["shots"]}
+        shots = []
+        for x in read_json(ep_dir / "shot_manifest.json")["shots"]:
+            b = sb.get(x["id"], {})
+            label = f"{b.get('camera', {}).get('framing', '')} · {b.get('intent', '')}"[:70]
+            shots.append((x["id"], x["start_s"], x["end_s"], label))
+    return build(full, texts, cfg, ep_dir / "checks" / "sync_preview.mp4", ep_dir / "audio", shots=shots)

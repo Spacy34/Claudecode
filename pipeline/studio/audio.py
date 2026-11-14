@@ -264,13 +264,14 @@ def analyze_full_voice(src, texts, cfg, work_dir, sr=48000):
             if wt and wstats["matched"] >= 0.6 * wstats["total"]:
                 words_t, method = wt, "whisper"
             else:
-                wstats = {**(wstats or {}), "rejected": "trop peu de mots reconnus : découpage sur les pauses"}
+                wstats = {**(wstats or {}), "rejected": "le texte du script ne correspond pas à ce que dit l'audio "
+                          f"({(wstats or {}).get('matched', 0)}/{(wstats or {}).get('total', 0)} mots retrouvés) : vérifier le texte ; découpage sur les pauses"}
         except Exception as e:   # jamais bloquant
             wstats = {"error": str(e)[:300]}
     if words_t:
         bounds = [(ws[0][0], ws[-1][1]) for ws in words_t]
         rep = {"virtual_cuts": 0, "lines": [{"start": round(a, 3), "end": round(b, 3), "matched_words": m,
-                                             "flag": "" if m >= 0.5 * len(ws) else "peu de mots reconnus : vérifier"}
+                                             "flag": "" if m >= 0.5 * len(ws) else "texte différent de l'audio ? vérifier cette réplique"}
                                             for (a, b), ws, m in zip(bounds, words_t, wstats["per_line"])]}
     else:
         bounds, words_t, rep = align.best(texts, silences, dur)
