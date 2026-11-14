@@ -321,3 +321,34 @@ def test_review_rules_notes_human_and_reserves(episode, monkeypatch):
     assert statuses == ["failed", "failed", "completed"], statuses
     assert "RÉSERVES" in State(episode).st("script_review")["note"]
     assert State(episode).data["reserves"][0]["items"][0].startswith("F09")
+
+
+def test_retake_request_and_finishing_mode(episode, monkeypatch):
+    """« Refaire ce plan » : demande consignée, visible par le pilote ; en mode finition, ni nouvelle critique ni
+    nouveau passage des rédacteurs d'amont (seul le plan visé a changé)."""
+    import studio.cli as cli
+    from studio import retakes
+    from studio.state import ORDER
+    monkeypatch.setenv("STUDIO_QUALITY_AUTONOMOUS", "true")
+    cli.CFG = None
+    st = State(episode)
+    for s in ORDER[:ORDER.index("compile")]:
+        st.finish(s, "approved" if s.startswith("gate_") else "completed")
+    with pytest.raises(ValueError):
+        retakes.request(episode, "sh_002", "")
+    rid = retakes.request(episode, "sh_002", "trop serré, montrer la cuisine")
+    assert rid == "r001" and State(episode).data["finishing"] is True
+    assert cli.next_summary(episode)["retakes"][0]["shot"] == "sh_002"
+    # l'agent modifie le plan (storyboard) puis marque la retouche
+    sb = json.loads((episode / "storyboard.json").read_text())
+    sb["shots"][1]["camera"]["framing"] = "medium"
+    (episode / "storyboard.json").write_text(json.dumps(sb, ensure_ascii=False))
+    with pytest.raises(SystemExit) as e:
+        cli.main(["retake-done", episode.name, "r001", "--note", "medium au lieu de close_up"])
+    assert not e.value.code
+    assert retakes.load(episode)[0]["status"] == "applied" and not cli.next_summary(episode)["retakes"]
+    with pytest.raises(SystemExit):
+        cli.main(["run", episode.name])   # s'arrête plus loin (pas de voix dans ce test), après le mode finition
+    st = State(episode)
+    for s in ("animation", "storyboard_review"):
+        assert st.st(s)["status"] == "completed" and "finition" in (st.st(s).get("note") or ""), s

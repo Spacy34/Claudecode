@@ -9,7 +9,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from . import audio, compose, contracts, hardware, memory, render
+from . import audio, compose, contracts, hardware, memory, render, retakes
 from .compile import CompileError, compile_episode
 from .qa import frames as qframes
 from .qa import tech
@@ -475,6 +475,8 @@ def stage_delivery(p, st):
            "reserves": reserves,
            "publication": "NOT_PUBLISHED"}
     write_json(p / "episode_manifest.json", man)
+    if st.data.pop("finishing", None):
+        st.save()
     return {"manifest": str(p / "episode_manifest.json")}
 
 
@@ -511,6 +513,15 @@ def cmd_run(a):
     autonomous = bool(cfg()["quality"].get("autonomous"))
     while True:
         ready = st.ready()
+        if st.data.get("finishing"):
+            # mode finition (retouche utilisateur) : l'utilisateur juge ; pas de nouvelle critique, et les artefacts
+            # d'amont restent valides (la retouche a modifié seulement le plan visé)
+            keep = [r for r in ready if STAGES[r][1] == "review" or (STAGES[r][1] == "agent" and st.st(r)["status"] == "stale")]
+            if keep:
+                for r in keep:
+                    st.finish(r, note="mode finition (retouche utilisateur) : conservé sans nouveau passage d'agent")
+                    print(f"↷ {r} : conservé (retouche ciblée)")
+                continue
         # gates non humaines (mode autonome) : validées automatiquement si les conditions objectives sont réunies
         auto_gates = [r for r in ready if STAGES[r][1] == "gate" and r not in human_gates()]
         if auto_gates:
@@ -874,6 +885,7 @@ def next_summary(p):
            "gates_human": [r for r in ready if STAGES[r][1] == "gate" and r in human_gates()],
            "gates_auto": [r for r in ready if STAGES[r][1] == "gate" and r not in human_gates()],
            "failed": failed, "needs_review": blocked,
+           "retakes": [{"id": r["id"], "shot": r["shot"], "note": r["note"]} for r in retakes.pending(p)],
            "fingerprint": sha256_json({n: (st.st(n)["status"], st.st(n).get("attempts", 0)) for n in STAGES})}
     return res
 
@@ -917,6 +929,26 @@ def cmd_produire(a):
     print(f"  Suivre      : scripts/studio dashboard   (ou le journal {launcher.journal(ep)})")
     print(f"  Avancement  : scripts/studio status {ep}")
     print(f"  Arrêter     : scripts/studio arreter {ep}")
+    return 0
+
+
+def cmd_retake(a):
+    """Demande de retouche d'UN plan (action utilisateur) : traitée par le pilote au prochain lancement."""
+    p = ep_path(a.episode)
+    rid = retakes.request(p, a.shot, a.note)
+    print(f"Retouche {rid} enregistrée pour {a.shot}. Lancer / reprendre la production pour l'appliquer.")
+
+
+def cmd_retake_done(a):
+    """Marque une retouche comme faite (agent, après validate) ou impossible (--failed)."""
+    p = ep_path(a.episode)
+    rep = contracts.validate_episode(p)
+    errs = {k: v for k, v in rep.items() if v}
+    if errs and not a.failed:
+        out({"status": "invalide", "errors": errs})
+        return 1
+    ids = retakes.mark(p, a.retake, "failed" if a.failed else "applied", a.note)
+    out({"retakes": ids, "status": "failed" if a.failed else "applied"})
     return 0
 
 
@@ -1030,6 +1062,17 @@ def build_parser():
     x.add_argument("--modele", default="")
     x.add_argument("--voix", help="voix COMPLÈTE déjà enregistrée (ElevenLabs, .mp3/.wav…) : tout se cale dessus")
     x.set_defaults(fn=cmd_produire)
+    x = sp.add_parser("retake", help="refaire UN plan avec une remarque (traité au prochain lancement)")
+    x.add_argument("episode")
+    x.add_argument("shot")
+    x.add_argument("--note", required=True)
+    x.set_defaults(fn=cmd_retake)
+    x = sp.add_parser("retake-done", help="(agent) retouche appliquée, ou impossible avec --failed")
+    x.add_argument("episode")
+    x.add_argument("retake", help="identifiant rNNN ou plan sh_NNN")
+    x.add_argument("--note", default="")
+    x.add_argument("--failed", action="store_true")
+    x.set_defaults(fn=cmd_retake_done)
     x = sp.add_parser("arreter", help="arrêter la production en cours d'un épisode (pilote + rendus)")
     x.add_argument("episode")
     x.set_defaults(fn=cmd_arreter)

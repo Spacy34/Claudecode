@@ -105,6 +105,23 @@ def codex_hint(text):
     return None
 
 
+def retake_prompt(ep, n):
+    lines = [f"Utilise $tiktok-3d-studio sur l'épisode {ep}. RETOUCHES CIBLÉES demandées par l'utilisateur (il juge lui-même ;",
+             "aucune critique à relancer). Le pilote gère les rendus : tu ne lances AUCUN rendu ni `studio run`.",
+             "Pour CHAQUE retouche ci-dessous : choisis le rôle propriétaire (director = cadrage, caméra, placement, décor du plan ;",
+             "animator = jeu, gestes, expressions, objets animés, effets ; motion-designer = éléments 2D, téléphone, textes),",
+             "un seul sous-agent, qui modifie UNIQUEMENT ce plan dans SON artefact, puis `scripts/studio validate " + ep + "` et",
+             f"`scripts/studio retake-done {ep} <id> --note \"ce qui a changé\"`. Impossible avec le moteur : "
+             f"`scripts/studio retake-done {ep} <id> --failed --note \"pourquoi\"`."]
+    for r in n["retakes"]:
+        lines.append(f"- {r['id']} plan {r['shot']} : « {r['note']} »")
+    lines.append(f"PÉRIMÈTRE : ne modifie que les fichiers de episodes/{ep}/ et seulement le(s) plan(s) cité(s).")
+    if os.name == "nt":
+        lines.append("WINDOWS : lance toujours `scripts\\studio.cmd <commande>` (jamais `scripts/studio`).")
+    lines.append("Rapport final ≤ 6 lignes : retouche, rôle, changement.")
+    return "\n".join(lines)
+
+
 def run_codex(ep, prompt, model, logf):
     """-> (code retour, dernières lignes de sortie). La sortie est recopiée en direct dans le journal."""
     exe = which("codex")
@@ -199,6 +216,19 @@ def main():
         log(f"tour {tour} : étapes automatiques (rendus inclus, peut être long)")
         r = studio("run", ep)
         n = nxt(ep)
+        if n.get("retakes"):
+            log(f"retouches demandées : {', '.join(r['id'] + ' ' + r['shot'] for r in n['retakes'])}")
+            rc, out = run_codex(ep, retake_prompt(ep, n), a.modele, logf)
+            if rc == 127:
+                return 6
+            tok = parse_tokens(out)
+            if tok:
+                log(f"session retouches : {tok:,} tokens (total de l'épisode : {record_tokens(ep, ['retakes'], tok):,})".replace(",", " "))
+            left = json.loads(studio("next", ep, capture=True).stdout or "{}").get("retakes", [])
+            for r in left:   # jamais de boucle : une retouche non traitée est marquée et signalée
+                studio("retake-done", ep, r["id"], "--failed", "--note", "non traitée par la session Codex : reformuler la demande", capture=True)
+                log(f"retouche {r['id']} ({r['shot']}) non appliquée : voir le journal")
+            continue
         if n["done"]:
             log(f"ÉPISODE LIVRÉ : {ep_dir(ep) / 'renders' / 'final.mp4'}")
             return 0

@@ -106,3 +106,22 @@ def test_token_parsing_and_accounting(episode):
     (episode / "checks").mkdir(exist_ok=True)
     assert pil.record_tokens(episode.name, ["script"], 1000) == 1000
     assert pil.record_tokens(episode.name, ["design"], 2500) == 3500
+
+
+@POSIX
+def test_pilot_runs_a_targeted_retake_session(tmp_path, episode):
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    (stub / "codex").write_text(f"#!/bin/sh\ncat\n{ROOT}/scripts/studio retake-done ep_retake_t r001 --note 'fait' >/dev/null 2>&1 || true\n")
+    (stub / "codex").chmod(0o755)
+    script = tmp_path / "s.txt"
+    script.write_text("Une poule devient maire.\nBernadette: Cot cot !\n", encoding="utf-8")
+    env = dict(os.environ, PATH=f"{stub}:{os.environ['PATH']}")
+    subprocess.run([str(ROOT / "scripts" / "studio"), "new", "ep_retake_t", "--script-file", str(script)], check=True, env=env, capture_output=True)
+    subprocess.run([str(ROOT / "scripts" / "studio"), "retake", "ep_retake_t", "sh_001", "--note", "plus large"], check=True, env=env, capture_output=True)
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "pilote.py"), "ep_retake_t", "--max-tours", "4"], env=env, capture_output=True, text=True, timeout=180)
+    journal = (Path(os.environ["STUDIO_PATHS_EPISODES_DIR"]) / "ep_retake_t" / "checks" / "codex_journal.log").read_text()
+    assert "RETOUCHES CIBLÉES" in journal and "r001 plan sh_001" in journal, r.stdout[-800:]
+    import json as _j
+    rt = _j.loads((Path(os.environ["STUDIO_PATHS_EPISODES_DIR"]) / "ep_retake_t" / "retakes.json").read_text())["retakes"]
+    assert rt[0]["status"] in ("applied", "failed")   # jamais laissée en attente (pas de boucle)

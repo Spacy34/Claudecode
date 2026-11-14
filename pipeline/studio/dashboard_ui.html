@@ -210,7 +210,7 @@ function renderEpisode(){
       <div class="panel"><div class="head"><div><h2 id="epTitle"></h2><div class="id">${esc(d.id)}</div></div>
         <div class="actions"><button class="primary" id="bLaunch">Lancer / reprendre</button><button class="danger" id="bStop">Arrêter</button></div></div>
         <div class="bar" style="margin-top:12px"><i id="epBar"></i></div><div class="banner" id="epBanner"></div></div>
-      <div class="tabs" id="tabs">${[["progress","Avancement"],["checks","Vérifications"],["media","Vidéos & images"],["audio","Voix & sons"],["log","Journal"]]
+      <div class="tabs" id="tabs">${[["progress","Avancement"],["shots","Plans"],["checks","Vérifications"],["media","Vidéos & images"],["audio","Voix & sons"],["log","Journal"]]
         .map(([k,l])=>`<button data-t="${k}">${l}</button>`).join("")}</div>
       <div id="tabBody"></div></div>`;
     $("bLaunch").onclick = async () => { try { await post("/api/launch",{ep:S.ep}); toast("Production lancée en arrière-plan."); setTimeout(loadDetail,800); refresh(); } catch(e){ toast("Erreur : "+e.message); } };
@@ -223,7 +223,7 @@ function renderEpisode(){
   $("epBanner").innerHTML = `${d.running?'<span class="dot"></span>':""}<b>${esc(d.phase)}</b> — ${esc(d.message)} <span class="hint">(${d.done}/${d.total} étapes${d.brief.imposed?" · script imposé":""}${d.brief.duration?` · ~${d.brief.duration} s`:""}${d.tokens?` · Codex : ${fmtTok(d.tokens)} tokens`:""})</span>`;
   $("bLaunch").disabled = d.running; $("bStop").disabled = !d.running;
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === S.tab));
-  const views = {progress: tabProgress, checks: tabChecks, media: tabMedia, audio: tabAudio, log: tabLog};
+  const views = {progress: tabProgress, shots: tabShots, checks: tabChecks, media: tabMedia, audio: tabAudio, log: tabLog};
   views[S.tab](d);
 }
 function setBody(key, sigObj, html, after){
@@ -245,6 +245,32 @@ function tabProgress(d){
       <td>${["failed","needs_review","interrupted"].includes(s.status)&&!d.running?`<button class="small" data-retry="${esc(s.name)}">Réessayer</button>`:""}</td></tr>`).join("")}
     </table></div>`, () => document.querySelectorAll("[data-retry]").forEach(b => b.onclick = async () => {
       try { await post("/api/retry",{ep:S.ep, stage:b.dataset.retry}); toast("Étape remise en attente : cliquez sur « Lancer / reprendre »."); loadDetail(); } catch(e){ toast("Erreur : "+e.message); } }));
+}
+async function tabShots(d){
+  let j;
+  try { j = await api("/api/shots?ep=" + encodeURIComponent(d.id)); } catch(e){ return; }
+  if (S.tab !== "shots") return;
+  const RT = {pending:"⏳ en attente (Lancer / reprendre)", applied:"✔ appliquée", failed:"✘ non appliquée"};
+  setBody("shots", {sh:j.shots, v:j.video, m:j.video_mtime}, j.shots.length ? `
+    ${j.video?`<div class="panel"><div class="row" style="align-items:flex-start;gap:20px">
+      <video id="shotVid" controls preload="metadata" style="width:300px;max-height:540px;background:#000;border-radius:10px" src="${fileUrl(d,j.video,j.video_mtime)}"></video>
+      <p class="hint" style="max-width:420px">Clique sur « ▶ voir » pour lire un plan. Une remarque sur un plan (« trop serré », « il doit être en colère »,
+      « le téléphone doit apparaître plus tôt ») est confiée au bon agent, qui ne modifie QUE ce plan ; seul ce plan est re-rendu, sans nouvelle critique.</p></div></div>`:
+      '<div class="panel hint">Les plans pourront être visionnés dès qu\'une vidéo (prototype, montage) existe.</div>'}
+    <div class="grid">${j.shots.map(sh=>`<div class="media" style="background:var(--panel)">
+      <img alt="${esc(sh.id)}" loading="lazy" src="/api/thumb?ep=${encodeURIComponent(d.id)}&shot=${esc(sh.id)}&v=${j.video_mtime}" onerror="this.style.display='none'">
+      <div><b>${esc(sh.id)}</b> <span class="note">${sh.start_s.toFixed(1)}–${sh.end_s.toFixed(1)} s · ${esc(sh.framing||"")}${sh.move&&sh.move!=="static"?" · "+esc(sh.move):""}</span>
+        ${j.video?`<button class="small" data-play="${sh.start_s}">▶ voir</button>`:""}
+        <div class="note" style="margin:4px 0">« ${esc(sh.text)} »</div>
+        ${sh.retakes.map(r=>`<div class="note">${esc(r.id)} : ${esc(r.note)} — <b>${RT[r.status]||esc(r.status)}</b>${r.result?` (${esc(r.result)})`:""}</div>`).join("")}
+        <textarea data-note="${esc(sh.id)}" placeholder="Ce qu'il faut changer dans ce plan…" style="min-height:52px;margin-top:6px;font-family:inherit"></textarea>
+        <button class="small primary" data-retake="${esc(sh.id)}">Refaire ce plan</button></div></div>`).join("")}</div>`
+    : `<div class="empty">Les plans apparaissent après la mise en scène et le minutage.</div>`, () => {
+      document.querySelectorAll("[data-play]").forEach(b => b.onclick = () => { const v = $("shotVid"); v.currentTime = +b.dataset.play + 0.01; v.play(); });
+      document.querySelectorAll("[data-retake]").forEach(b => b.onclick = async () => {
+        const sid = b.dataset.retake; const note = document.querySelector(`[data-note="${sid}"]`).value;
+        try { const r = await post("/api/retake", {ep:S.ep, shot:sid, note}); toast(r.note); S.sig={}; renderEpisode(); } catch(e){ toast("Erreur : " + e.message); } });
+    });
 }
 function tabChecks(d){
   const qa = d.qa.map(q=>`<div class="panel"><b>${esc(q.file)}</b> — ${q.summary.blocking?'<span class="st failed">bloquant</span>':'<span class="st completed">non bloquant</span>'}

@@ -220,6 +220,68 @@ def episode_detail(p):
             "next": nxt, "report": rep.read_text(encoding="utf-8", errors="replace")[-6000:] if rep.exists() else ""}
 
 
+VIDEO_PREF = ("renders/final.mp4", "renders/first_cut.mp4", "renders/prototype.mp4")
+
+
+def shots_overview(p):
+    """Plans de l'épisode pour l'onglet « Plans » : temps, texte dit, cadrage, retouches."""
+    from . import retakes as _rt
+    try:
+        man = read_json(p / "shot_manifest.json")
+    except (OSError, ValueError):
+        return {"shots": [], "video": None}
+    script = {}
+    try:
+        script = {l["id"]: l["text"] for l in read_json(p / "story_script.json")["lines"]}
+    except (OSError, ValueError, KeyError):
+        pass
+    sb = {}
+    try:
+        sb = {x["id"]: x for x in read_json(p / "storyboard.json")["shots"]}
+    except (OSError, ValueError, KeyError):
+        pass
+    video = next((v for v in VIDEO_PREF if (p / v).exists()), None)
+    rts = _rt.load(p)
+    out = []
+    for s_ in man["shots"]:
+        b = sb.get(s_["id"], {})
+        cam = b.get("camera", {})
+        out.append({"id": s_["id"], "start_s": s_["start_s"], "end_s": s_["end_s"], "text": " ".join(script.get(l, "") for l in s_["line_ids"])[:220],
+                    "framing": cam.get("framing"), "move": cam.get("move", "static"), "intent": b.get("intent", "")[:200],
+                    "retakes": [r for r in rts if r["shot"] == s_["id"]]})
+    return {"shots": out, "video": video, "video_mtime": int((p / video).stat().st_mtime) if video else 0}
+
+
+def shot_thumb(p, shot):
+    """Vignette d'un plan : image au milieu du plan dans la vidéo la plus avancée (mise en cache)."""
+    man = read_json(p / "shot_manifest.json")
+    s_ = next((x for x in man["shots"] if x["id"] == shot), None)
+    if s_ is None:
+        raise FileNotFoundError(shot)
+    from .util import media_duration, run
+    d = p / "checks" / "thumbs"
+    d.mkdir(parents=True, exist_ok=True)
+    for v in VIDEO_PREF:
+        vp = p / v
+        if not vp.exists():
+            continue
+        try:
+            if media_duration(vp) < s_["end_s"] - 0.05:
+                continue   # vidéo partielle (prototype) qui ne contient pas ce plan
+        except Exception:
+            continue
+        out = d / f"{shot}_{Path(v).stem}_{int(vp.stat().st_mtime)}.jpg"
+        if not out.exists():
+            for old in d.glob(f"{shot}_*.jpg"):
+                old.unlink()
+            run(["ffmpeg", "-y", "-v", "error", "-ss", f"{(s_['start_s'] + s_['end_s']) / 2:.2f}", "-i", str(vp), "-frames:v", "1", "-vf", "scale=270:-2", str(out)])
+        return out
+    hits = sorted((p / "checks").glob(f"{shot}_f*.png"))   # image de contrôle (shots_check)
+    if hits:
+        return hits[0]
+    raise FileNotFoundError("pas encore d'image pour ce plan")
+
+
 def tail(path, n=200):
     if not path.exists():
         return ""
@@ -298,6 +360,15 @@ class Handler(BaseHTTPRequestHandler):
                                         "inbox": sorted(x.name for x in inbox.glob("*.txt")) if inbox.is_dir() else []})
             if u.path == "/api/episode":
                 return self._send(200, episode_detail(self._ep(q.get("ep"))))
+            if u.path == "/api/shots":
+                return self._send(200, shots_overview(self._ep(q.get("ep"))))
+            if u.path == "/api/thumb":
+                p = self._ep(q.get("ep"))
+                try:
+                    f = shot_thumb(p, q.get("shot", ""))
+                except FileNotFoundError:
+                    return self._err(404, "pas encore d'image pour ce plan")
+                return self._file(p, str(f.relative_to(p)))
             if u.path == "/api/log":
                 p = self._ep(q.get("ep"))
                 return self._send(200, {"log": tail(p / "checks" / "codex_journal.log", int(q.get("n", 300)))})
@@ -320,7 +391,7 @@ class Handler(BaseHTTPRequestHandler):
             f.relative_to(p.resolve())
         except ValueError:
             return self._err(403, "chemin refusé")
-        if not f.is_file() or f.suffix.lower() not in (".png", ".jpg", ".mp4", ".wav", ".mp3", ".m4a", ".ogg", ".flac", ".opus", ".webm", ".aac", ".json", ".md", ".txt", ".ass"):
+        if not f.is_file() or f.suffix.lower() not in (".png", ".jpg", ".jpeg", ".mp4", ".wav", ".mp3", ".m4a", ".ogg", ".flac", ".opus", ".webm", ".aac", ".json", ".md", ".txt", ".ass"):
             return self._err(404, "introuvable")
         size = f.stat().st_size
         ctype = mimetypes.guess_type(f.name)[0] or "application/octet-stream"
@@ -392,6 +463,11 @@ class Handler(BaseHTTPRequestHandler):
                 st.log("retry", stage=stage, by="human:dashboard")
                 st.save()
                 return self._send(200, {"ok": True})
+            if u.path == "/api/retake":
+                from . import retakes as _rt
+                p = self._ep(body.get("ep"))
+                rid = _rt.request(p, body.get("shot", ""), body.get("note", ""))
+                return self._send(200, {"ok": True, "id": rid, "note": "Retouche enregistrée : « Lancer / reprendre » pour l'appliquer."})
             if u.path == "/api/ambiance":
                 from . import audio as _audio
                 p = self._ep(body.get("ep"))

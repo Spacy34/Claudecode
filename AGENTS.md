@@ -32,6 +32,7 @@ scripts/studio validate <ep>                   # schémas + cohérence croisée 
 scripts/studio submit <ep> <étape> [--review reviews/x.json]
 scripts/studio run <ep>                        # exécute les étapes automatiques prêtes
 scripts/studio frames <ep> <video> --per-shot  # frames horodatées pour les critiques
+scripts/studio retake-done <ep> <rNNN> --note …  # retouche utilisateur appliquée (--failed si impossible)
 scripts/studio memory search <mots>
 python3 -m pytest -q tests                      # tests automatiques
 ```

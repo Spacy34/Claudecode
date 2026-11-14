@@ -107,6 +107,22 @@ une ligne vide, ou `<break time="0.7s" />`). Le découpage s'affiche dans **Voix
 Sur un épisode existant : **Voix & sons → Fournir la voix complète…**. En ligne de commande :
 `scripts\studio.cmd produire episodes\_inbox\mon_script.txt --voix C:\chemin\voix.mp3`.
 
+## 6 ter. Finir une vidéo : « Refaire ce plan »
+Onglet **Plans** : chaque plan avec sa vignette, le texte dit à ce moment, son cadrage et un bouton « ▶ voir ».
+Écris ce qui ne va pas (« trop serré », « il doit être en colère », « le téléphone doit apparaître plus tôt »), clique
+**Refaire ce plan**, puis **Lancer / reprendre**. Une session Codex courte confie la retouche au bon agent, qui ne modifie
+QUE ce plan ; seul ce plan est re-rendu et la vidéo est remontée, sans nouvelle critique (c'est toi qui juges).
+En ligne de commande : `scripts\studio.cmd retake <ep> sh_004 --note "plus large"`.
+
+## 6 quater. Son et synchro
+- **Musique** : dépose des morceaux libres de droits dans `assets\music\library\<ambiance>\` (comique, calme, tension,
+  triste, romantique, epique, bizarre) avec leur licence, ou ajoute-les depuis **Voix & sons** (la licence est demandée).
+  Le studio choisit selon le ton de l'épisode ; ambiance forçable par épisode.
+- **Bruitages automatiques** : pas, sauts, chutes, coups, téléphone (bulles, notifications, sonnerie), textes et
+  stickers… sans rien écrire (désactivables : `[audio] auto_sfx = false`).
+- **Synchro exacte des lèvres et sous-titres** : `py -3.12 -m pip install faster-whisper` (proposé par l'installateur) ;
+  le pastille « Synchro Whisper » passe au vert. Le modèle (~150 Mo) se télécharge au premier calcul de voix.
+
 ## 7. Reprendre un épisode commencé ailleurs (ex. ep_chloe sur le VPS)
 Depuis PowerShell, dans `C:\studio` (remplace l'adresse ; `scp` est inclus dans Windows) :
 ```powershell
