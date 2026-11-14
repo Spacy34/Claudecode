@@ -479,7 +479,9 @@ class Handler(BaseHTTPRequestHandler):
                 from . import sync_preview
                 p = self._ep(body.get("ep"))
                 mp4, rep = sync_preview.for_episode(p, load_config())
-                return self._send(200, {"ok": True, "method": rep["method"], "lines": rep["lines"],
+                w = rep.get("whisper") or {}
+                why = "" if rep["method"] == "whisper" else str(w.get("error") or w.get("rejected") or w.get("skipped") or "")
+                return self._send(200, {"ok": True, "method": rep["method"], "lines": rep["lines"], "why": why,
                                         "note": "Aperçu prêt : écoute-le dans « Vidéos & images » ou ci-dessous."})
             if u.path == "/api/ambiance":
                 from . import audio as _audio

@@ -6,6 +6,7 @@ Usage : scripts/studio <commande> [options]   (ou PYTHONPATH=pipeline python3 -m
 import argparse
 import json
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -967,8 +968,30 @@ def cmd_sync_preview(a):
         mp4, rep = sync_preview.for_episode(ep_path(a.source), cfg())
     for l in rep["lines"]:
         print(f"{l['line_id']} {l['start']:7.2f} → {l['end']:7.2f}  {('⚠ ' + l['flag']) if l.get('flag') else '  '} {l['text'][:70]}")
-    print(f"\nCalage : {rep['method']}" + ("" if rep["method"] == "whisper" else "  (installer faster-whisper pour un calage au mot près)"))
+    print(f"\nCalage : {rep['method']}")
+    if rep["method"] != "whisper":
+        w = rep.get("whisper") or {}
+        print("Whisper non utilisé : " + str(w.get("error") or w.get("rejected") or w.get("skipped") or "raison inconnue (voir `studio whisper-check`)"))
     print(f"Aperçu : {mp4}")
+
+
+def cmd_whisper_check(a):
+    """Diagnostic de la synchro Whisper : Python utilisé, module, chargement du modèle (le télécharge si besoin)."""
+    from . import whisper_align
+    st_ = whisper_align.status(load_model=True, model_size=cfg()["tts"].get("whisper_model", "small"))
+    for k, v in st_.items():
+        print(f"{k:10} {v}")
+    print("\nOK : la synchro au mot près sera utilisée." if "error" not in st_ else "\nÀ CORRIGER : voir « error » ci-dessus.")
+    return 0 if "error" not in st_ else 1
+
+
+def cmd_install_whisper(a):
+    """Installe faster-whisper dans le Python QUI FAIT TOURNER le studio (évite le piège des Python multiples)."""
+    print(f"pip install faster-whisper   (Python : {sys.executable})")
+    r = subprocess.run([sys.executable, "-m", "pip", "install", "faster-whisper"])
+    if r.returncode == 0:
+        print("Installé. Vérification : scripts/studio whisper-check  (relancer le tableau de bord s'il est ouvert)")
+    return r.returncode
 
 
 def cmd_arreter(a):
@@ -1092,6 +1115,8 @@ def build_parser():
     x.add_argument("--note", default="")
     x.add_argument("--failed", action="store_true")
     x.set_defaults(fn=cmd_retake_done)
+    sp.add_parser("whisper-check", help="diagnostic de la synchro Whisper (Python, module, modèle)").set_defaults(fn=cmd_whisper_check)
+    sp.add_parser("install-whisper", help="installer faster-whisper dans le Python du studio").set_defaults(fn=cmd_install_whisper)
     x = sp.add_parser("sync-preview", help="aperçu vidéo du calage d'une voix complète (voix + script, ou épisode)")
     x.add_argument("source", help="fichier audio, ou nom d'épisode")
     x.add_argument("script", nargs="?", help="script .txt (une réplique par ligne) si source est un fichier")

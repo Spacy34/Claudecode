@@ -2,6 +2,7 @@
 import importlib.metadata
 import importlib.util
 import os
+import sys
 import shutil
 import subprocess
 
@@ -50,6 +51,7 @@ def diagnose(cfg):
     res["espeak_ng"] = _ver([which("espeak-ng"), "--version"]) if which("espeak-ng") else None
     res["piper"] = bool(which("piper") or importlib.util.find_spec("piper"))
     res["whisper_sync"] = importlib.util.find_spec("faster_whisper") is not None
+    res["python"] = sys.executable
     pm = cfg["tts"].get("piper_model")
     res["piper_model"] = pm if pm and (ROOT / pm).exists() else None
     res["jsonschema"] = importlib.util.find_spec("jsonschema") is not None

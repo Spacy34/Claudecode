@@ -342,7 +342,7 @@ function tabAudio(d){
       await navigator.clipboard.writeText(j.text); toast(`Texte copié (${j.lines} répliques, une ligne vide entre chacune pour des pauses nettes). Colle-le dans ElevenLabs.`, 6000); }
       catch(e){ toast("Copie impossible : " + e.message); } };
     if ($("syncBtn")) $("syncBtn").onclick = async () => { const b = $("syncBtn"); b.disabled = true; b.textContent = "Analyse de la voix…";
-      try { const r = await post("/api/sync_preview", {ep:S.ep}); toast(`${r.note} Calage : ${r.method === "whisper" ? "Whisper (au mot près)" : "pauses (installer faster-whisper pour le mot près)"}`, 7000); S.sig={}; loadDetail(); }
+      try { const r = await post("/api/sync_preview", {ep:S.ep}); toast(`${r.note} Calage : ${r.method === "whisper" ? "Whisper (au mot près)" : "pauses — Whisper non utilisé : " + (r.why || "voir scripts\\studio.cmd whisper-check")}`, 15000); S.sig={}; loadDetail(); }
       catch(e){ toast("Erreur : " + e.message); b.disabled = false; b.textContent = "Vérifier la synchro (aperçu vidéo)"; } };
     if ($("amb")) $("amb").onchange = (ev) => post("/api/ambiance", {ep:S.ep, mood:ev.target.value}).then(done, fail);
     const lu = $("libUp"); if (lu) lu.onchange = (ev) => { const f = ev.target.files[0]; if (!f) return;

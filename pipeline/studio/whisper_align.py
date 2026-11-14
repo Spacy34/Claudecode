@@ -22,7 +22,32 @@ from .util import sha256_file
 
 
 def available():
+    importlib.invalidate_caches()   # installé pendant que le tableau de bord tournait : le voir quand même
     return importlib.util.find_spec("faster_whisper") is not None
+
+
+def status(load_model=False, model_size="small"):
+    """Diagnostic : quel Python, module trouvé ?, importable ?, modèle chargeable ? -> dict lisible."""
+    import sys
+    out = {"python": sys.executable, "version": sys.version.split()[0], "installed": available()}
+    if not out["installed"]:
+        out["error"] = (f"faster-whisper n'est pas installé pour CE Python ({sys.executable}). "
+                        "Installer avec : scripts\\studio.cmd install-whisper")
+        return out
+    try:
+        import faster_whisper
+        out["module"] = getattr(faster_whisper, "__version__", "?")
+    except Exception as e:   # ex. DLL manquante sous Windows (ctranslate2)
+        out["error"] = f"faster-whisper est installé mais ne se charge pas : {type(e).__name__}: {e}"[:500]
+        return out
+    if load_model:
+        try:
+            from faster_whisper import WhisperModel
+            WhisperModel(model_size, device="cpu", compute_type="int8")
+            out["model"] = f"{model_size} : chargé"
+        except Exception as e:
+            out["error"] = f"modèle « {model_size} » non chargé (téléchargement ? espace disque ?) : {type(e).__name__}: {e}"[:500]
+    return out
 
 
 def norm(tok):

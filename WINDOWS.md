@@ -131,7 +131,7 @@ En ligne de commande : `scripts\studio.cmd retake <ep> sh_004 --note "plus large
   Le studio choisit selon le ton de l'épisode ; ambiance forçable par épisode.
 - **Bruitages automatiques** : pas, sauts, chutes, coups, téléphone (bulles, notifications, sonnerie), textes et
   stickers… sans rien écrire (désactivables : `[audio] auto_sfx = false`).
-- **Synchro exacte des lèvres et sous-titres** : `py -3.12 -m pip install faster-whisper` (proposé par l'installateur) ;
+- **Synchro exacte des lèvres et sous-titres** : `scripts\studio.cmd install-whisper` (installe dans le Python du studio ; vérifier avec `scripts\studio.cmd whisper-check`) ;
   le pastille « Synchro Whisper » passe au vert. Le modèle (~150 Mo) se télécharge au premier calcul de voix.
 
 ## 7. Reprendre un épisode commencé ailleurs (ex. ep_chloe sur le VPS)

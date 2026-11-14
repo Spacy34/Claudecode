@@ -254,6 +254,10 @@ def analyze_full_voice(src, texts, cfg, work_dir, sr=48000):
     if not dur:
         dur = _wav_dur(norm)
     words_t, method, wstats = None, "pauses_syllables", None
+    if cfg["tts"].get("align", "auto") == "off":
+        wstats = {"skipped": "synchro Whisper désactivée (config tts.align = off)"}
+    elif not whisper_align.available():
+        wstats = whisper_align.status()
     if cfg["tts"].get("align", "auto") in ("auto", "whisper") and whisper_align.available():
         try:
             asr = whisper_align.transcribe_words(norm, cfg["tts"].get("whisper_model", "small"), work_dir, prompt=" ".join(texts))
