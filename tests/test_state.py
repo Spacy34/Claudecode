@@ -191,10 +191,29 @@ def test_shots_check_human_mode_stops_once(episode, monkeypatch):
     st = State(episode)
     for s in ORDER[:ORDER.index("shots_check")]:
         st.finish(s, "approved" if s.startswith("gate_") else "completed")
-    calls = _fake_shots_check(episode, monkeypatch, [{"id": "head_cropped:ch_a", "severity": "major", "status": "fail", "frame": 1, "message": "x"}])
+    calls = _fake_shots_check(episode, monkeypatch, [{"id": "char_never_visible:ch_a", "severity": "major", "status": "fail", "frame": 1, "message": "x"}])
     with pytest.raises(SystemExit):
         cli.main(["run", episode.name])
     assert len(calls) == 1 and State(episode).st("shots_check")["status"] == "needs_review"
+
+
+def test_soft_scene_defects_are_reserves_not_blocks(episode, monkeypatch):
+    """Tête coupée, profil… : réserves (listées), aucun tour de correction ni session Codex."""
+    import studio.cli as cli
+    from studio.state import ORDER
+    monkeypatch.setenv("STUDIO_QUALITY_AUTONOMOUS", "true")
+    cli.CFG = None
+    st = State(episode)
+    for s in ORDER[:ORDER.index("shots_check")]:
+        st.finish(s, "approved" if s.startswith("gate_") else "completed")
+    _fake_shots_check(episode, monkeypatch, [{"id": "head_cropped:ch_a", "severity": "major", "status": "fail", "frame": 1, "message": "x"},
+                                             {"id": "face_away:ch_a", "severity": "major", "status": "fail", "frame": 1, "message": "y"}])
+    with pytest.raises(SystemExit):
+        cli.main(["run", episode.name])
+    assert State(episode).st("shots_check")["status"] == "completed"
+    assert cli._qa_blockers(None, [{"id": "sh_001:head_cropped:ch_a", "severity": "major", "status": "fail", "category": "scene", "message": "m"}]) == []
+    assert cli._qa_blockers(None, [{"id": "loudness", "severity": "major", "status": "fail", "category": "audio", "message": "m"}]) == []
+    assert cli._qa_blockers(None, [{"id": "black_frames", "severity": "blocker", "status": "fail", "category": "technical", "message": "m"}])
 
 
 def test_new_optional_input_does_not_invalidate_existing_episode(episode):
@@ -242,3 +261,63 @@ def test_human_override_waives_blocked_review_and_is_recorded(episode, monkeypat
     spec.loader.exec_module(pil)
     prompt = pil.codex_prompt(episode.name, {"agent": [{"stage": "design", "owner": "character-artist", "outputs": ["cast_bible.json"]}], "review": [], "failed": {}})
     assert "DÉCISION HUMAINE" in prompt and "aucun visuel copié" in prompt
+
+
+def _review(episode, rnd, findings, verdict="revise"):
+    from studio.util import sha256_file
+    r = {"contract": "review_report", "contract_version": "1.0", "episode_id": episode.name, "status": "draft",
+         "provenance": {"created_by": "script-critic", "created_at": "2026-11-14T00:00:00Z"},
+         "reviewer": "script-critic", "gate": "script", "round": rnd,
+         "target": {"path": "story_script.json", "sha256": sha256_file(episode / "story_script.json")},
+         "inspected": [{"path": "story_script.json", "method": "read_text"}],
+         "scores": {"hook": {"score": 7, "rationale": "ok"}}, "findings": findings, "verdict": verdict, "limitations": "aucune"}
+    (episode / "reviews").mkdir(exist_ok=True)
+    f = episode / "reviews" / f"script-critic_script_r{rnd}.json"
+    f.write_text(json.dumps(r, ensure_ascii=False))
+    return f"reviews/{f.name}"
+
+
+def _finding(fid, sev, owner="story-architect"):
+    return {"id": fid, "severity": sev, "category": "clarte", "description": "d", "recommendation": "r", "fix_owner": owner}
+
+
+def test_review_rules_notes_human_and_reserves(episode, monkeypatch):
+    """Revues : major/minor = notes (pas de tour) ; blocker humain = arrêt immédiat ; budget épuisé = réserves."""
+    import studio.cli as cli
+    cli.CFG = None
+    st = State(episode)
+    for s in ("brief", "script"):
+        st.finish(s)
+    # 1) verdict « revise » mais aucune finding blocker : étape terminée, aucun tour
+    rp = _review(episode, 1, [_finding("F01", "major"), _finding("F02", "minor")])
+    try:
+        cli.main(["submit", episode.name, "script_review", "--review", rp])
+    except SystemExit:
+        pass
+    assert State(episode).st("script_review")["status"] == "completed"
+    # 2) blocker « human » (droits) : décision humaine tout de suite, sans tour d'agents
+    st = State(episode)
+    st.st("script_review")["status"] = "pending"
+    st.save()
+    rp = _review(episode, 2, [_finding("F01", "blocker", "human")], "block")
+    try:
+        cli.main(["submit", episode.name, "script_review", "--review", rp])
+    except SystemExit:
+        pass
+    s = State(episode).st("script_review")
+    assert s["status"] == "needs_review" and "DÉCISION HUMAINE" in s["note"] and not s.get("revision_rounds")
+    # 3) blocker d'agent persistant : 2 tours puis acceptation AVEC RÉSERVES (pas d'arrêt)
+    st = State(episode)
+    st.st("script_review").update(status="pending", revision_rounds=0)
+    st.save()
+    statuses = []
+    for rnd in (3, 4, 5):
+        rp = _review(episode, rnd, [_finding("F09", "blocker")])
+        try:
+            cli.main(["submit", episode.name, "script_review", "--review", rp])
+        except SystemExit:
+            pass
+        statuses.append(State(episode).st("script_review")["status"])
+    assert statuses == ["failed", "failed", "completed"], statuses
+    assert "RÉSERVES" in State(episode).st("script_review")["note"]
+    assert State(episode).data["reserves"][0]["items"][0].startswith("F09")

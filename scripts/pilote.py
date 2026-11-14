@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "pipeline"))
 from studio.launcher import studio_cmd, studio_env  # noqa: E402  (Windows / macOS / Linux : pas de bash)
-from studio.state import _lock  # noqa: E402
+from studio.state import STAGES, _lock  # noqa: E402
 from studio.util import episode_dir, load_config, which  # noqa: E402  (respecte paths.episodes_dir et ses surcharges)
 
 
@@ -58,6 +58,9 @@ def codex_prompt(ep, n):
             lines.append("  -> fais corriger chaque défaut par le rôle indiqué entre crochets, dans SES artefacts (storyboard, "
                          "animation_plan, asset_manifest… ; moteur seulement pour pipeline-engineer), valide avec `scripts/studio validate` ; "
                          "ne lance AUCUN rendu : le pilote re-rendra les plans modifiés et revérifiera.")
+        elif STAGES.get(st, ("", ""))[1] == "review":
+            lines.append(f"- revue `{st}` : des BLOCKERS restent ({err}). Fais corriger UNIQUEMENT ces blockers par leur `fix_owner`, "
+                         "puis relance le critique pour une revue CIBLÉE (il vérifie seulement ces blockers).")
         else:
             lines.append(f"- `{st}` a échoué au tour précédent : {err}. Fais corriger par le `fix_owner` des findings, puis refais l'étape.")
     stp = ep_dir(ep) / "state.json"
@@ -71,6 +74,9 @@ def codex_prompt(ep, n):
     lines.append(f"PÉRIMÈTRE : pendant cette production, ne modifie AUCUN fichier hors de episodes/{ep}/ (ni pipeline/, blender/, "
                  "tests/, schemas/, config/, .codex/, mémoire versionnée). Si le moteur ou un contrôle te semble fautif, "
                  "décris-le dans ton rapport (et `scripts/studio memory add`) au lieu de modifier le code.")
+    lines.append("ÉCONOMIE (tokens) : un seul sous-agent par étape, une seule passe ; ne refais pas les contrôles que `submit` "
+                 "fait déjà (pas de validate/status supplémentaires, pas de relecture par un second agent) ; ne lis que les fichiers "
+                 "que la consigne du rôle cite ; les notes major/minor des critiques ne justifient AUCUN nouveau tour ; rapport final ≤ 8 lignes.")
     if os.name == "nt":
         lines.append("WINDOWS : lance toujours `scripts\\studio.cmd <commande>` (jamais `scripts/studio`, script bash inexécutable sous PowerShell).")
     lines.append("Respecte AGENTS.md (jamais `studio approve`). Termine par un rapport court : fait / vérifié / bloquant.")

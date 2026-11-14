@@ -6,6 +6,11 @@
 - **major** : dégrade nettement la compréhension ou la qualité perçue ; à corriger avant le rendu final.
 - **minor** : amélioration souhaitable. **info** : remarque.
 Règle : un seul blocker ⇒ verdict ≠ approve. Une bonne moyenne ne compense jamais un blocker.
+Mécanique (studio submit) : SEULS les findings `blocker` déclenchent un tour de correction ; les `major`/`minor` sont des
+notes. Un blocker `fix_owner: human` arrête tout de suite pour décision de l'utilisateur (pas de tour d'agents). Après
+`max_revision_rounds` tours, les blockers restants sont acceptés AVEC RÉSERVES (`quality.on_budget_exhausted = "continue"`,
+défaut) et listés dans `episode_manifest.json`. Contrôles de rendu : seuls les défauts qui rendent la vidéo inutilisable
+(sévérité blocker, rendu en échec, personnage principal jamais visible) bloquent ; les autres deviennent des réserves.
 
 ## §script (script-critic) — dimensions `scores`
 hook, clarte, escalade, comique, payoff, rythme_oral, faisabilite_visuelle, conformite, originalite.

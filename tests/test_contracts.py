@@ -70,3 +70,20 @@ def test_asset_add_refuses_non_commercial_license(tmp_path):
     f.write_text("o x\nv 0 0 0\n")
     with pytest.raises(SystemExit):
         cli.main(["asset-add", str(f), "--name", "x", "--license", "CC-BY-NC-4.0"])
+
+
+def test_unknown_mark_and_absent_target_caught_by_validate():
+    """Repère inconnu / cible absente : erreur dès `validate` (avant la compilation)."""
+    import copy
+    from studio import contracts
+    from studio.util import read_json
+    from pathlib import Path
+    demo = Path(__file__).resolve().parents[1] / "episodes" / "ep_demo_grillepain"
+    arts = {k: read_json(demo / f) for k, f in contracts.ARTIFACTS.items() if (demo / f).exists()}
+    assert not [e for e in contracts.cross_errors(arts) if "repère" in e or "n'est pas" in e]
+    bad = copy.deepcopy(arts)
+    bad["storyboard"]["shots"][0]["characters"][0]["mark"] = "balcon_imaginaire"
+    bad["storyboard"]["shots"][0]["camera"]["subject"] = "ch_inexistant"
+    errs = contracts.cross_errors(bad)
+    assert any("repère inconnu 'balcon_imaginaire'" in e for e in errs)
+    assert any("ch_inexistant" in e for e in errs)

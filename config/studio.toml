@@ -68,6 +68,9 @@ base_color = "&H00FFFFFF"
 # et le rendu final s'enchaîne. La publication reste manuelle dans tous les cas.
 autonomous = false
 human_gates = ["gate_script", "gate_lookdev", "gate_prototype", "gate_first_cut"]   # ignoré si autonomous = true
-max_revision_rounds = 2          # au-delà : arrêt (escalade humaine), même en mode autonome
+max_revision_rounds = 2          # tours de correction par revue / validation
+# Budget épuisé : "continue" = on avance AVEC RÉSERVES (listées dans episode_manifest.json) ; "stop" = arrêt pour
+# l'humain. Un problème de droits/décision (fix_owner human) arrête toujours, immédiatement.
+on_budget_exhausted = "continue"
 min_dimension_score = 6          # un score < seuil sur une dimension critique bloque
 blocker_severities = ["blocker"]

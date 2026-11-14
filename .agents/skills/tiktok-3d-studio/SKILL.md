@@ -39,7 +39,7 @@ Répéter : `scripts/studio status <ep>` → pour chaque étape prête :
 | animation | animator | `lookdev`, `motion` |
 | motion (couche 2D TikTok) | motion-designer | `animation`, `lookdev` |
 | storyboard_review | continuity-auditor | — |
-| reviews (first cut) | visual-critic + continuity-auditor + retention-editor | entre eux |
+| reviews (first cut) | visual-critic (seul critique : visuel + continuité + rythme) | — |
 | échecs rendu/QA | pipeline-engineer | — |
 
 Lancer en parallèle uniquement des agents aux fichiers de sortie distincts. Pas de sous-agent pour une tâche

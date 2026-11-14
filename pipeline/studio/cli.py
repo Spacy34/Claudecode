@@ -39,15 +39,37 @@ FIX_OWNER = {"char_never_visible": "director", "char_offscreen": "director", "su
              "char_overlap": "director/animator", "floating_prop": "environment-artist/animator", "render_failed": "pipeline-engineer"}
 
 
-def _qa_blockers(q):
-    """Défauts bloquants d'un rapport QA, avec le rôle chargé de la correction."""
-    out = []
-    for c in read_json(q)["checks"]:
-        if c["status"] == "fail" and c["severity"] in ("blocker", "major"):
-            key = c["id"].split(":")[1] if c["id"].count(":") >= 1 and c["id"].split(":")[0].startswith("sh_") else c["id"].split(":")[0]
-            owner = FIX_OWNER.get(key, "pipeline-engineer" if c["category"] in ("technical", "audio", "sync", "subtitles") else "director")
-            out.append(f"[{owner}] {c['id']} : {c['message']}")
-    return out
+# Seuls ces défauts BLOQUENT une validation automatique : vidéo inutilisable (sévérité blocker : conteneur, codec,
+# résolution, piste audio, désynchro, écran noir, rendu en échec) ou personnage principal jamais visible.
+# Les autres défauts « major » deviennent des RÉSERVES (listées, non bloquantes) : ils ne relancent pas Codex.
+HARD_SCENE = ("char_never_visible", "render_failed")
+
+
+def _check_key(cid):
+    parts = cid.split(":")
+    return parts[1] if len(parts) > 1 and parts[0].startswith("sh_") else parts[0]
+
+
+def _is_hard(c):
+    if c.get("status") != "fail":
+        return False
+    return c.get("severity") == "blocker" or (c.get("severity") == "major" and _check_key(c["id"]) in HARD_SCENE)
+
+
+def _owner(c):
+    key = _check_key(c["id"])
+    return FIX_OWNER.get(key, "pipeline-engineer" if c.get("category") in ("technical", "audio", "sync", "subtitles") else "director")
+
+
+def _qa_blockers(q, checks=None):
+    """Défauts bloquants (durs) d'un rapport QA, avec le rôle chargé de la correction."""
+    checks = checks if checks is not None else read_json(q)["checks"]
+    return [f"[{_owner(c)}] {c['id']} : {c['message']}" for c in checks if _is_hard(c)]
+
+
+def _qa_reserves(checks):
+    return [f"{c['id']} : {c['message']}" for c in checks
+            if c.get("status") == "fail" and c.get("severity") in ("blocker", "major") and not _is_hard(c)]
 
 
 def auto_gate_ok(p, gate):
@@ -200,12 +222,25 @@ def cmd_submit(a):
             if low and r["verdict"] == "approve":
                 print(f"attention : {rp} approuve malgré des scores bas {low}")
         s = st.st(stage)
-        if all(v == "approve" for v in verdicts) and not blockers:
-            st.finish(stage, note=f"revues: {a.review}")
+        if not blockers:
+            # seuls les findings « blocker » bloquent ; major/minor = notes (pas de nouveau tour de revue)
+            st.finish(stage, note=f"revues: {a.review} (verdicts {verdicts}, notes non bloquantes)")
             out({"stage": stage, "status": "completed", "verdicts": verdicts})
             return 0
+        human = [f for f in blockers if f.get("fix_owner") == "human"]
+        if human:
+            # seul l'utilisateur peut trancher (droits, choix créatif) : inutile de faire tourner les agents
+            st.finish(stage, "needs_review", note="DÉCISION HUMAINE requise : " + " | ".join(f"{f['id']} {f['description'][:160]}" for f in human))
+            out({"stage": stage, "status": "needs_review", "human_decision": [f["id"] for f in human]})
+            return 2
         s["revision_rounds"] = s.get("revision_rounds", 0) + 1
         if s["revision_rounds"] > int(cfg()["quality"]["max_revision_rounds"]):
+            if cfg()["quality"].get("on_budget_exhausted", "continue") == "continue":
+                note = "accepté AVEC RÉSERVES après corrections : " + " | ".join(f"{f['id']} {f['description'][:120]}" for f in blockers)
+                st.data.setdefault("reserves", []).append({"stage": stage, "at": now(), "items": [f"{f['id']} {f['description'][:200]}" for f in blockers]})
+                st.finish(stage, note=note[:400])
+                out({"stage": stage, "status": "completed", "with_reserves": [f["id"] for f in blockers]})
+                return 0
             st.finish(stage, "needs_review", note=f"budget de corrections épuisé ({s['revision_rounds'] - 1}) : ESCALADE HUMAINE")
             out({"stage": stage, "status": "needs_review", "escalation": True, "blockers": blockers})
             return 2
@@ -380,9 +415,12 @@ def stage_shots_check(p, st, profile="draft"):
         items.append((dst, f"{s['id']}  {s['start_s']:.1f}-{s['end_s']:.1f}s  ⚠{n_issue}\n{script[s['line_ids'][0]]['text'][:70]}"))
     sheet = qframes.contact_sheet(items, p / "checks" / "shots_contact.png", cols=4, title=f"{man['episode_id']} — 1 image de contrôle par plan")
     write_json(p / "checks" / "scene_checks.json", {"generated_at": now(), "profile": profile, "checks": all_checks})
-    blockers = [x for x in all_checks if x["severity"] in ("blocker", "major") and x["status"] == "fail"]
+    blockers = [x for x in all_checks if _is_hard(x)]
     if blockers:
         lines = [f"[{FIX_OWNER.get(b['id'].split(':')[0], 'director')}] {b['shot']}:{b['id']} : {b['message']}" for b in blockers]
+        if all(b["id"].startswith("render_failed") for b in blockers):
+            st.finish("shots_check", "needs_review", note="rendu en échec (problème technique, pas de tour Codex) : " + " | ".join(lines[:5]))
+            return {"contact_sheet": str(sheet), "blocking": lines, "status": "needs_review"}
         if cfg()["quality"].get("autonomous"):
             # mode autonome : tour de correction (le pilote confie les défauts à leur propriétaire), puis escalade
             s_ = st.st("shots_check")
@@ -413,8 +451,10 @@ def stage_final(p, st):
 
 def stage_delivery(p, st):
     qa = read_json(p / "qa_report.json")
-    if qa["summary"]["blocking"]:
-        raise RuntimeError("QA finale bloquante : livraison refusée (voir qa_report.json)")
+    hard = _qa_blockers(None, qa["checks"])
+    if hard:
+        raise RuntimeError("QA finale : vidéo inutilisable, livraison refusée : " + " | ".join(hard[:5]))
+    reserves = _qa_reserves(qa["checks"]) + [f"{r['stage']} : {x}" for r in st.data.get("reserves", []) for x in r["items"]]
     fin = p / "renders" / "final.mp4"
     tl = read_json(p / "audio_timeline.json")
     assets = read_json(p / "asset_manifest.json")
@@ -431,6 +471,7 @@ def stage_delivery(p, st):
            "limitations": ["Les scores des critiques sont des appréciations, pas des mesures.",
                            "La QA technique ne garantit pas la qualité visuelle ni l'intérêt narratif.",
                            "Conformité plateforme évaluée par analyse contextuelle, pas par l'outil de modération de la plateforme."],
+           "reserves": reserves,
            "publication": "NOT_PUBLISHED"}
     write_json(p / "episode_manifest.json", man)
     return {"manifest": str(p / "episode_manifest.json")}
@@ -477,7 +518,11 @@ def cmd_run(a):
             if not ok:
                 gs = st.st(g)
                 gs["revision_rounds"] = gs.get("revision_rounds", 0) + 1
-                if gs["revision_rounds"] > int(cfg()["quality"]["max_revision_rounds"]):
+                if "[pipeline-engineer]" in why and "[director" not in why and "[animator" not in why:
+                    # problème technique du pipeline : un agent de production ne peut pas le corriger (règle 10)
+                    st.finish(g, "needs_review", note=f"problème technique du pipeline (à signaler, pas de tour Codex) : {why}")
+                    print(f"⚠ {g} : problème technique du pipeline — arrêt sans relancer Codex ({why})")
+                elif gs["revision_rounds"] > int(cfg()["quality"]["max_revision_rounds"]):
                     st.finish(g, "needs_review", note=f"budget de corrections épuisé : {why}")
                     print(f"⚠ {g} : toujours refusée après {gs['revision_rounds'] - 1} correction(s) — arrêt ({why})")
                 else:

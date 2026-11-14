@@ -206,6 +206,8 @@ def cross_errors(arts):
             for p in block.get("props", []):
                 if p["prop"] not in placed:
                     errs.append(f"animation_plan {sid} : accessoire {p['prop']} non placé dans le storyboard du plan")
+    if sb and assets:
+        errs += _target_errors(sb, ap, assets)
     md = arts.get("motion_design")
     if md:
         ids = [e["id"] for e in md.get("elements", [])]
@@ -225,6 +227,52 @@ def cross_errors(arts):
                 errs.append(f"motion_design {e['id']} : écran {e['screen']} sans 'messages'")
             if e["type"] == "phone" and e.get("screen") == "search" and not (e.get("query") or e.get("text")):
                 errs.append(f"motion_design {e['id']} : écran search sans 'query'")
+    return errs
+
+
+def _target_errors(sb, ap, assets):
+    """Repères et cibles résolubles (mêmes règles que `studio compile`) : erreur détectée dès `validate`,
+    sans attendre la compilation (une session Codex de correction en moins)."""
+    from engine import kitdata
+    errs = []
+    sets_by = {s_["id"]: s_ for s_ in assets["sets"]}
+    shots = {s_["id"]: s_ for s_ in sb["shots"]}
+
+    def marks(sh):
+        st_ = sets_by.get(sh["set_id"])
+        if not st_:
+            return None
+        return set(kitdata.BASE_MARKS) | set(kitdata.KIT_MARKS.get(st_["kit"], {})) | set(st_.get("marks", {}))
+
+    def check(where, t, mk, chars, props, pos_only=False):
+        if t is None or isinstance(t, (list, int, float)) or mk is None:
+            return
+        if t.startswith(("ch_", "pr_")):
+            if pos_only:
+                errs.append(f"{where} : une position doit être un repère du décor ou [x, y], pas {t}")
+            elif t.startswith("ch_") and t not in chars:
+                errs.append(f"{where} : {t} n'est pas dans le plan")
+            elif t.startswith("pr_") and t not in props:
+                errs.append(f"{where} : {t} n'est pas placé dans le plan (storyboard.props)")
+        elif t not in mk:
+            errs.append(f"{where} : repère inconnu '{t}' (disponibles : {', '.join(sorted(mk))})")
+
+    for sid, sh in shots.items():
+        mk = marks(sh)
+        chars = {c["id"] for c in sh["characters"]}
+        props = {p_["id"] for p_ in sh.get("props", []) if p_.get("mark") or p_.get("held_by")}
+        for c in sh["characters"]:
+            check(f"storyboard {sid} {c['id']}.mark", c["mark"], mk, chars, props, pos_only=True)
+            if isinstance(c.get("facing"), str) and c["facing"] != "camera":
+                check(f"storyboard {sid} {c['id']}.facing", c["facing"], mk, chars, props)
+        for p_ in sh.get("props", []):
+            check(f"storyboard {sid} {p_['id']}.mark", p_.get("mark"), mk, chars, props, pos_only=True)
+        check(f"storyboard {sid} camera.subject", sh["camera"]["subject"], mk, chars, props)
+        check(f"storyboard {sid} camera.secondary_subject", sh["camera"].get("secondary_subject"), mk, chars, props)
+        block = (ap or {}).get("shots", {}).get(sid, {})
+        for kind in ("actions", "props", "fx"):
+            for it in block.get(kind, []):
+                check(f"animation_plan {sid} {kind}.target", it.get("target"), mk, chars, props)
     return errs
 
 

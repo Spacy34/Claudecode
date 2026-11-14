@@ -33,7 +33,7 @@ STAGES = {
     "gate_prototype":   ("human", "gate", ["shot_manifest.json"], [], ["prototype"], True),
     "shots_check":      ("pipeline", "auto", ["shot_manifest.json"], ["checks/shots_contact.png"], ["gate_prototype"], False),
     "first_cut":        ("pipeline", "auto", ["shot_manifest.json", "motion_design.json"], ["renders/first_cut.mp4"], ["shots_check", "motion"], False),
-    "reviews":          ("visual-critic+continuity-auditor+retention-editor", "review", ["renders/first_cut.mp4"], [], ["first_cut"], False),
+    "reviews":          ("visual-critic", "review", ["renders/first_cut.mp4"], [], ["first_cut"], False),
     "gate_first_cut":   ("human", "gate", ["renders/first_cut.mp4"], [], ["reviews"], True),
     "final":            ("pipeline", "auto", ["shot_manifest.json", "motion_design.json"], ["renders/final.mp4"], ["gate_first_cut"], False),
     "delivery":         ("pipeline", "auto", ["renders/final.mp4"], ["episode_manifest.json"], ["final"], False),

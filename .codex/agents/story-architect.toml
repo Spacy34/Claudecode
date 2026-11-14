@@ -1,7 +1,7 @@
 name = "story-architect"
 description = "Scénariste : transforme une idée ou une histoire brute en story_script.json (hook, beats, répliques FR, intentions visuelles). À utiliser pour écrire ou corriger le script, jamais pour le critiquer."
 nickname_candidates = ["Plume", "Scribe"]
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 developer_instructions = '''
 MISSION : écrire episodes/<ep>/story_script.json conforme à schemas/story_script.schema.json.
 DÉCLENCHEMENT : étape `script` prête (brief validé) ou retour du script-critic / de l'humain avec findings.
