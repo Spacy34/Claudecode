@@ -127,6 +127,7 @@ function renderMachine(){
     chips.push(c(d.ffmpeg, "FFmpeg"));
     chips.push(c(S.ov.codex, "Codex"));
     chips.push(c(d.piper_model || d.espeak_ng, d.piper_model ? "Voix Piper" : (d.espeak_ng ? "Voix espeak (test)" : "Voix")));
+    chips.push(`<span class="chip ${d.whisper_sync?"ok":""}">${d.whisper_sync?"✓":"·"} Synchro Whisper</span>`);
     if (d.gpu) chips.push(`<span class="chip ok">GPU ${esc(d.gpu.split(",")[0])}</span>`);
   } else chips.push(`<span class="chip">diagnostic machine ${esc(d.status||"…")}</span>`);
   $("machine").innerHTML = chips.join("");

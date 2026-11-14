@@ -49,6 +49,7 @@ def diagnose(cfg):
         res["bpy_module"] = None
     res["espeak_ng"] = _ver([which("espeak-ng"), "--version"]) if which("espeak-ng") else None
     res["piper"] = bool(which("piper") or importlib.util.find_spec("piper"))
+    res["whisper_sync"] = importlib.util.find_spec("faster_whisper") is not None
     pm = cfg["tts"].get("piper_model")
     res["piper_model"] = pm if pm and (ROOT / pm).exists() else None
     res["jsonschema"] = importlib.util.find_spec("jsonschema") is not None

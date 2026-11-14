@@ -38,6 +38,9 @@ max_external_faces = 150000     # au-delà, un modèle externe est refusé (rend
 # "auto" : piper si un modèle .onnx est configuré et installé, sinon espeak-ng (qualité robotique, dev/test uniquement)
 backend = "auto"
 piper_model = ""                 # chemin vers ex: assets/voices/fr_FR-xxx-medium.onnx (vérifier la licence de la voix)
+# synchro des mots : "auto" = Whisper (faster-whisper) s'il est installé, sinon proportionnel aux syllabes ; "off"
+align = "auto"
+whisper_model = "base"           # base (~150 Mo, rapide) ; small (~460 Mo, plus précis)
 espeak_voice = "fr+m3"
 espeak_speed = 165
 # backend "command" : adaptateur générique pour un TTS externe facultatif.

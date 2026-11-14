@@ -8,3 +8,5 @@ PyYAML>=6
 # bpy==5.2.3
 # Voix production (facultatif, vérifier la licence de chaque voix) :
 # piper-tts
+# Synchro exacte des mots (facultatif, recommandé avec une vraie voix) :
+# faster-whisper

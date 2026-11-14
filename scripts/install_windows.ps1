@@ -64,6 +64,13 @@ if (Test-Path "assets\voices\$voice.onnx") { Write-Host "Voix Piper déjà prés
     }
 }
 
+Write-Host ""
+$ans = Read-Host "Synchro précise des lèvres et sous-titres (faster-whisper, ~200 Mo + modèle 150 Mo au 1er usage) ? [O/n]"
+if ($ans -notmatch '^[nN]') {
+    Write-Host "pip install faster-whisper"
+    & $py @pyArgs -m pip install faster-whisper
+}
+
 Step "7/8 Git (mises à jour avec git pull) et Codex (agents : écriture, mise en scène, critiques)"
 if (Has "git") { git --version } else { WingetInstall "Git.Git" "Git" }
 if (Has "codex") { Write-Host "Codex trouvé : $((Get-Command codex).Source)" } else {

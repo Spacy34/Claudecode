@@ -148,6 +148,21 @@ def build_voice(ep_dir, cfg, force=False):
     # piste narration complète (silences inclus) : la voix est l'horloge
     narr = ep_dir / "audio" / "narration.wav"
     _assemble(ep_dir, segments, duration, sr, narr)
+    # synchro exacte des mots (facultative) : Whisper horodate, le texte du script fait foi
+    whisper_stats = None
+    from . import whisper_align
+    if cfg["tts"].get("align", "auto") in ("auto", "whisper") and whisper_align.available():
+        import copy
+        try:
+            asr = whisper_align.transcribe_words(narr, cfg["tts"].get("whisper_model", "base"), ep_dir / "audio")
+            trial = copy.deepcopy(segments)
+            st_ = whisper_align.refine(trial, asr)
+            if st_["total"] and st_["matched"] >= 0.5 * st_["total"]:
+                segments, alignment, whisper_stats = trial, "whisper", st_
+            else:
+                whisper_stats = {**st_, "rejected": "trop peu de mots reconnus : minutage proportionnel conservé"}
+        except Exception as e:   # la synchro fine ne doit jamais bloquer la production
+            whisper_stats = {"error": str(e)[:300]}
     tl = {"contract": "audio_timeline", "contract_version": CONTRACT_VERSION, "episode_id": script["episode_id"], "status": "generated",
           "provenance": {"created_by": "studio voice", "created_at": now(), "tool": f"tts:{backend}", "depends_on": provenance_deps(ep_dir, ["story_script", "cast_bible"])},
           "sample_rate": sr, "duration_s": round(duration, 3), "narration_wav": str(narr.relative_to(ep_dir)),
@@ -157,6 +172,8 @@ def build_voice(ep_dir, cfg, force=False):
           "music": {"file": _rel_root(music), "gain_db": cfg["audio"]["music_gain_db"] + (4 if (custom or lib) else 0), "license": music_lic}}
     if recorded:
         tl["tts"]["recorded_lines"] = recorded
+    if whisper_stats:
+        tl["tts"]["whisper"] = whisper_stats
     write_json(ep_dir / "audio_timeline.json", tl)
     return {"backend": backend, "synthesized_lines": synthesized, "recorded_lines": recorded, "duration_s": round(duration, 2)}
 
