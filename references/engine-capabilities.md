@@ -61,8 +61,16 @@ Animaux (rebond automatique, jamais figés) : pigeon, cat, dog, chicken, duck, r
 
 ## Personnages (cast_bible.design)
 Corps : height, girth, head_scale, leg_length, arm_length, belly. Coiffures : none, short, spiky, bowl, mohawk,
-bun, long, curly. Hauts : tshirt, shirt, hoodie, suit, dress, tank. Bas : pants, shorts, skirt.
-Accessoires : cap, glasses, sunglasses, tie, bowtie, mustache, beard, chef_hat, headband, earrings, crown.
+bun, long, curly. Hauts : tshirt, shirt, hoodie, suit, dress, tank, polo, sweater, jersey. Bas : pants, jeans, shorts, skirt.
+Garde-robe : `top.pattern` / `bottom.pattern` / `layer.pattern` (plain, stripes, pinstripes, dots, plaid, checker,
+denim) + `pattern_color` ; `top.print` (inscription ≤ 12 caractères) + `print_color` ; `top.sleeves` (none/short/long),
+`top.collar`, `top.pocket` ; `outfit.layer` {type : jacket, blazer, leather_jacket, lab_coat, apron, vest, puffer,
+cardigan ; color, accent} ; `bottom.belt` (couleur) ; `outfit.shoes` = couleur ou {type : sneakers, boots, heels,
+sandals, slippers, dress_shoes ; color, sole}.
+Accessoires : cap, glasses, sunglasses, tie, bowtie, mustache, beard, chef_hat, headband, earrings, crown, scarf,
+necklace, gold_chain, watch, backpack, shoulder_bag, beanie, top_hat, headphones, bandana, badge, flower_pin
+(`accessory_colors` : couleur par accessoire). Un chapeau couvrant (beanie, top_hat, chef_hat) aplatit les
+coiffures en volume (spiky, curly, mohawk, bun).
 Nez : round, long, pointy, potato. Rig : hiérarchie d'articulations rigides (low-poly segmenté), pas de skinning.
 
 ## Expressions

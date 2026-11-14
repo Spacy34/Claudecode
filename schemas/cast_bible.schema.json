@@ -2,75 +2,472 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://studio.local/schemas/cast_bible.schema.json",
   "title": "cast_bible.json — fiches d'identité visuelle reproductibles des personnages",
-  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/envelope"
+    }
+  ],
   "type": "object",
-  "required": ["contract", "characters"],
+  "required": [
+    "contract",
+    "characters"
+  ],
   "properties": {
-    "contract": {"const": "cast_bible"},
+    "contract": {
+      "const": "cast_bible"
+    },
     "characters": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "name", "role", "design", "signature"],
+        "required": [
+          "id",
+          "name",
+          "role",
+          "design",
+          "signature"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": {"$ref": "common.schema.json#/$defs/character_id"},
-          "name": {"type": "string"},
-          "role": {"type": "string"},
-          "signature": {"type": "string", "description": "Ce qui rend le personnage reconnaissable en 0,5 s."},
-          "library_ref": {"type": "string", "description": "ID d'un personnage réutilisable dans assets/library/characters.json"},
-          "voice": {"type": "object", "properties": {"espeak_voice": {"type": "string"}, "pitch": {"type": "number"}, "piper_speaker": {"type": "integer"}}},
+          "id": {
+            "$ref": "common.schema.json#/$defs/character_id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Ce qui rend le personnage reconnaissable en 0,5 s."
+          },
+          "library_ref": {
+            "type": "string",
+            "description": "ID d'un personnage réutilisable dans assets/library/characters.json"
+          },
+          "voice": {
+            "type": "object",
+            "properties": {
+              "espeak_voice": {
+                "type": "string"
+              },
+              "pitch": {
+                "type": "number"
+              },
+              "piper_speaker": {
+                "type": "integer"
+              }
+            }
+          },
           "design": {
             "type": "object",
-            "required": ["body", "skin", "hair", "outfit"],
+            "required": [
+              "body",
+              "skin",
+              "hair",
+              "outfit"
+            ],
             "additionalProperties": false,
             "properties": {
-              "seed": {"type": "integer"},
+              "seed": {
+                "type": "integer"
+              },
               "body": {
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "height": {"type": "number", "minimum": 0.7, "maximum": 1.5},
-                  "girth": {"type": "number", "minimum": 0.6, "maximum": 1.8},
-                  "head_scale": {"type": "number", "minimum": 0.8, "maximum": 1.7},
-                  "leg_length": {"type": "number", "minimum": 0.6, "maximum": 1.4},
-                  "arm_length": {"type": "number", "minimum": 0.7, "maximum": 1.4},
-                  "belly": {"type": "number", "minimum": 0, "maximum": 1}
+                  "height": {
+                    "type": "number",
+                    "minimum": 0.7,
+                    "maximum": 1.5
+                  },
+                  "girth": {
+                    "type": "number",
+                    "minimum": 0.6,
+                    "maximum": 1.8
+                  },
+                  "head_scale": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 1.7
+                  },
+                  "leg_length": {
+                    "type": "number",
+                    "minimum": 0.6,
+                    "maximum": 1.4
+                  },
+                  "arm_length": {
+                    "type": "number",
+                    "minimum": 0.7,
+                    "maximum": 1.4
+                  },
+                  "belly": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
                 }
               },
-              "skin": {"$ref": "common.schema.json#/$defs/color"},
+              "skin": {
+                "$ref": "common.schema.json#/$defs/color"
+              },
               "hair": {
                 "type": "object",
-                "required": ["style"],
+                "required": [
+                  "style"
+                ],
                 "properties": {
-                  "style": {"enum": ["none", "short", "spiky", "bowl", "mohawk", "bun", "long", "curly"]},
-                  "color": {"$ref": "common.schema.json#/$defs/color"}
+                  "style": {
+                    "enum": [
+                      "none",
+                      "short",
+                      "spiky",
+                      "bowl",
+                      "mohawk",
+                      "bun",
+                      "long",
+                      "curly"
+                    ]
+                  },
+                  "color": {
+                    "$ref": "common.schema.json#/$defs/color"
+                  }
                 }
               },
-              "eyes": {"type": "object", "properties": {"size": {"type": "number", "minimum": 0.6, "maximum": 1.8}, "spacing": {"type": "number", "minimum": 0.7, "maximum": 1.4}, "iris": {"$ref": "common.schema.json#/$defs/color"}}},
-              "brows": {"type": "object", "properties": {"thickness": {"type": "number", "minimum": 0.5, "maximum": 2.5}, "color": {"$ref": "common.schema.json#/$defs/color"}}},
-              "nose": {"type": "object", "properties": {"shape": {"enum": ["round", "long", "pointy", "potato"]}, "size": {"type": "number", "minimum": 0.5, "maximum": 2}}},
-              "mouth": {"type": "object", "properties": {"width": {"type": "number", "minimum": 0.6, "maximum": 1.6}}},
+              "eyes": {
+                "type": "object",
+                "properties": {
+                  "size": {
+                    "type": "number",
+                    "minimum": 0.6,
+                    "maximum": 1.8
+                  },
+                  "spacing": {
+                    "type": "number",
+                    "minimum": 0.7,
+                    "maximum": 1.4
+                  },
+                  "iris": {
+                    "$ref": "common.schema.json#/$defs/color"
+                  }
+                }
+              },
+              "brows": {
+                "type": "object",
+                "properties": {
+                  "thickness": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 2.5
+                  },
+                  "color": {
+                    "$ref": "common.schema.json#/$defs/color"
+                  }
+                }
+              },
+              "nose": {
+                "type": "object",
+                "properties": {
+                  "shape": {
+                    "enum": [
+                      "round",
+                      "long",
+                      "pointy",
+                      "potato"
+                    ]
+                  },
+                  "size": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 2
+                  }
+                }
+              },
+              "mouth": {
+                "type": "object",
+                "properties": {
+                  "width": {
+                    "type": "number",
+                    "minimum": 0.6,
+                    "maximum": 1.6
+                  }
+                }
+              },
               "outfit": {
                 "type": "object",
-                "required": ["top", "bottom"],
+                "required": [
+                  "top",
+                  "bottom"
+                ],
                 "properties": {
-                  "top": {"type": "object", "required": ["type", "color"], "properties": {"type": {"enum": ["tshirt", "shirt", "hoodie", "suit", "dress", "tank"]}, "color": {"$ref": "common.schema.json#/$defs/color"}, "accent": {"$ref": "common.schema.json#/$defs/color"}}},
-                  "bottom": {"type": "object", "required": ["type", "color"], "properties": {"type": {"enum": ["pants", "shorts", "skirt"]}, "color": {"$ref": "common.schema.json#/$defs/color"}}},
-                  "shoes": {"$ref": "common.schema.json#/$defs/color"}
+                  "top": {
+                    "type": "object",
+                    "required": [
+                      "type",
+                      "color"
+                    ],
+                    "properties": {
+                      "type": {
+                        "enum": [
+                          "tshirt",
+                          "shirt",
+                          "hoodie",
+                          "suit",
+                          "dress",
+                          "tank",
+                          "polo",
+                          "sweater",
+                          "jersey"
+                        ]
+                      },
+                      "color": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      },
+                      "accent": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      },
+                      "pattern": {
+                        "enum": [
+                          "plain",
+                          "stripes",
+                          "pinstripes",
+                          "dots",
+                          "plaid",
+                          "checker",
+                          "denim"
+                        ],
+                        "description": "motif du tissu (pattern_color = 2e couleur)"
+                      },
+                      "pattern_color": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      },
+                      "print": {
+                        "type": "string",
+                        "maxLength": 12,
+                        "description": "inscription sur la poitrine (ex. « BOSS », « 10 ») : courte, sans émoji, sans marque réelle"
+                      },
+                      "print_color": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      },
+                      "sleeves": {
+                        "enum": [
+                          "none",
+                          "short",
+                          "long"
+                        ]
+                      },
+                      "collar": {
+                        "type": "boolean"
+                      },
+                      "pocket": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "bottom": {
+                    "type": "object",
+                    "required": [
+                      "type",
+                      "color"
+                    ],
+                    "properties": {
+                      "type": {
+                        "enum": [
+                          "pants",
+                          "jeans",
+                          "shorts",
+                          "skirt"
+                        ]
+                      },
+                      "color": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      },
+                      "pattern": {
+                        "enum": [
+                          "plain",
+                          "stripes",
+                          "pinstripes",
+                          "dots",
+                          "plaid",
+                          "checker",
+                          "denim"
+                        ]
+                      },
+                      "pattern_color": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      },
+                      "belt": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      }
+                    }
+                  },
+                  "shoes": {
+                    "anyOf": [
+                      {
+                        "$ref": "common.schema.json#/$defs/color"
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "type": {
+                            "enum": [
+                              "sneakers",
+                              "boots",
+                              "heels",
+                              "sandals",
+                              "slippers",
+                              "dress_shoes"
+                            ]
+                          },
+                          "color": {
+                            "$ref": "common.schema.json#/$defs/color"
+                          },
+                          "sole": {
+                            "$ref": "common.schema.json#/$defs/color"
+                          }
+                        }
+                      }
+                    ],
+                    "description": "couleur, ou {type, color, sole}"
+                  },
+                  "layer": {
+                    "type": "object",
+                    "required": [
+                      "type"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Vêtement par-dessus le haut (veste, blouse, tablier…), manches comprises",
+                    "properties": {
+                      "type": {
+                        "enum": [
+                          "none",
+                          "jacket",
+                          "blazer",
+                          "leather_jacket",
+                          "lab_coat",
+                          "apron",
+                          "vest",
+                          "puffer",
+                          "cardigan"
+                        ]
+                      },
+                      "color": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      },
+                      "accent": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      },
+                      "pattern": {
+                        "enum": [
+                          "plain",
+                          "stripes",
+                          "pinstripes",
+                          "dots",
+                          "plaid",
+                          "checker",
+                          "denim"
+                        ]
+                      },
+                      "pattern_color": {
+                        "$ref": "common.schema.json#/$defs/color"
+                      }
+                    }
+                  }
                 }
               },
               "accessories": {
                 "type": "array",
-                "items": {"enum": ["cap", "glasses", "sunglasses", "tie", "bowtie", "mustache", "beard", "chef_hat", "headband", "earrings", "crown"]},
+                "items": {
+                  "enum": [
+                    "cap",
+                    "glasses",
+                    "sunglasses",
+                    "tie",
+                    "bowtie",
+                    "mustache",
+                    "beard",
+                    "chef_hat",
+                    "headband",
+                    "earrings",
+                    "crown",
+                    "scarf",
+                    "necklace",
+                    "gold_chain",
+                    "watch",
+                    "backpack",
+                    "shoulder_bag",
+                    "beanie",
+                    "top_hat",
+                    "headphones",
+                    "bandana",
+                    "badge",
+                    "flower_pin"
+                  ]
+                },
                 "uniqueItems": true
+              },
+              "accessory_colors": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "cap",
+                    "glasses",
+                    "sunglasses",
+                    "tie",
+                    "bowtie",
+                    "mustache",
+                    "beard",
+                    "chef_hat",
+                    "headband",
+                    "earrings",
+                    "crown",
+                    "scarf",
+                    "necklace",
+                    "gold_chain",
+                    "watch",
+                    "backpack",
+                    "shoulder_bag",
+                    "beanie",
+                    "top_hat",
+                    "headphones",
+                    "bandana",
+                    "badge",
+                    "flower_pin"
+                  ]
+                },
+                "additionalProperties": {
+                  "$ref": "common.schema.json#/$defs/color"
+                },
+                "description": "couleur par accessoire (sinon la couleur d'accent du haut)"
               }
             }
           },
           "expressions": {
             "type": "array",
-            "items": {"enum": ["neutral", "happy", "laugh", "sad", "angry", "shocked", "scared", "smug", "disgusted", "confused", "deadpan", "crying", "evil_grin", "love"]}
+            "items": {
+              "enum": [
+                "neutral",
+                "happy",
+                "laugh",
+                "sad",
+                "angry",
+                "shocked",
+                "scared",
+                "smug",
+                "disgusted",
+                "confused",
+                "deadpan",
+                "crying",
+                "evil_grin",
+                "love"
+              ]
+            }
           }
         }
       }

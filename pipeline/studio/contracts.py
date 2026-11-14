@@ -299,6 +299,10 @@ def capability_errors():
         ("hair", cb["properties"]["characters"]["items"]["properties"]["design"]["properties"]["hair"]["properties"]["style"]["enum"], R.HAIR_STYLES),
         ("accessories", cb["properties"]["characters"]["items"]["properties"]["design"]["properties"]["accessories"]["items"]["enum"], R.ACCESSORIES),
     ]
+    outfit = cb["properties"]["characters"]["items"]["properties"]["design"]["properties"]["outfit"]["properties"]
+    pairs += [("tops", outfit["top"]["properties"]["type"]["enum"], R.TOPS), ("bottoms", outfit["bottom"]["properties"]["type"]["enum"], R.BOTTOMS),
+              ("layers", outfit["layer"]["properties"]["type"]["enum"], R.LAYERS), ("cloth_patterns", outfit["top"]["properties"]["pattern"]["enum"], R.CLOTH_PATTERNS),
+              ("shoe_types", outfit["shoes"]["anyOf"][1]["properties"]["type"]["enum"], R.SHOE_TYPES)]
     from . import motion
     md = read_json(SCHEMAS / "motion_design.schema.json")
     el = md["properties"]["elements"]["items"]["properties"]

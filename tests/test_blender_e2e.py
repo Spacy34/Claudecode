@@ -219,3 +219,28 @@ def test_motion_design_overlay_and_progress_bar(compiled):
     assert diff > 25, diff
     r, g, _ = b.getpixel((60, int(1920 * 0.012) + 3))
     assert r > 170 and g < 120, (r, g)
+
+
+def test_wardrobe_v2_builds_and_validates(compiled):
+    """Garde-robe v2 (motifs, inscription, veste, tablier, chaussures typées, nouveaux accessoires) : schéma + rendu."""
+    from studio import contracts
+    from engine import registry as R
+    ep, cfg, man = compiled
+    design = {"body": {"belly": 0.6}, "hair": {"style": "curly"},
+              "outfit": {"top": {"type": "sweater", "color": "#1F3A68", "pattern": "stripes", "pattern_color": "#FFFFFF", "print": "BOSS", "pocket": True},
+                         "layer": {"type": "lab_coat", "color": "#F7F7F7"},
+                         "bottom": {"type": "jeans", "color": "#3E5F8A", "belt": "#5A3A22"},
+                         "shoes": {"type": "boots", "color": "#222222"}},
+              "accessories": [a for a in R.ACCESSORIES if a not in ("cap", "chef_hat", "crown", "top_hat", "headband", "beard")],
+              "accessory_colors": {"scarf": "#E63946"}}
+    cast = read_json(ep / "cast_bible.json")
+    cast["characters"][0]["design"].update(design)
+    assert not contracts.schema_errors("cast_bible", cast)
+    spec = read_json(ep / next(s for s in man["shots"] if s["id"] == "sh_001")["spec_path"])
+    spec["characters"][0]["design"] = {**spec["characters"][0]["design"], **design}
+    for lay in ("apron", "puffer", "blazer"):
+        spec["characters"][0]["design"]["outfit"]["layer"] = {"type": lay, "color": "#AA3333"}
+        write_json(ep / "shots" / f"ward_{lay}.json", spec)
+        rec = render.render_shot(cfg, ep, {"id": "sh_001", "spec_path": f"shots/ward_{lay}.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]},
+                                 "tiny", mode="stills", frames="1")
+        assert rec["status"] in ("rendered", "cached"), rec.get("error")

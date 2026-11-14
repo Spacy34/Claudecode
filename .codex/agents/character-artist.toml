@@ -12,6 +12,18 @@ RÈGLES :
   morphologie). Deux personnages d'un même épisode ne partagent pas la même couleur de haut ni la même coiffure.
 - Proportions goofy : head_scale 1.0–1.3, couleurs saturées, contraste avec les murs du décor.
 - `seed` fixé : la fiche suffit à reproduire exactement le personnage dans tous les plans.
+- GARDE-ROBE = PERSONNALITÉ + HISTOIRE. Le personnage principal porte une tenue construite, pas « t-shirt uni » :
+  au moins 4 choix motivés parmi motif (`pattern` : stripes, pinstripes, dots, plaid, checker, denim), inscription
+  (`print`, ≤ 12 caractères, un mot qui le résume : « BOSS », « CHILL », « 10 »… jamais une marque réelle),
+  `layer` par-dessus (jacket, blazer, leather_jacket, lab_coat, apron, vest, puffer, cardigan), manches, col, poche,
+  ceinture (`bottom.belt`), chaussures typées (`shoes: {type, color, sole}` : sneakers, boots, heels, sandals,
+  slippers, dress_shoes) et 2 à 4 accessoires parlants (`accessory_colors` pour leurs couleurs).
+  Exemples : influenceuse = tee rose « LIKE » + veste en jean + jupe écossaise + talons + lunettes de soleil + sacoche ;
+  geek = pull marinière + jean ceinturé + baskets + bonnet + casque audio + sac à dos ; médecin = chemise + blouse
+  (lab_coat) + cravate + badge + montre. Le métier, l'âge, le milieu social et le ton comique se LISENT sur la tenue.
+- Personnages secondaires : plus simples (1 à 2 détails), mais jamais la même couleur de haut que le principal.
+- Si l'histoire fait évoluer le personnage (rendez-vous, promotion, déchéance), le dire dans `signature` : le
+  réalisateur pourra le montrer par les accessoires/objets ; la fiche reste unique par épisode.
 - `signature` décrit ce que le spectateur doit reconnaître. `voice` (espeak_voice/pitch ou piper_speaker) cohérente.
 - Aucun personnage existant (dessin animé, jeu, chaîne YouTube/TikTok) ni célébrité.
 LOOKDEV : après `scripts/studio lookdev <ep>` (lancé par l'orchestrateur), regarder lookdev/contact_sheet.png

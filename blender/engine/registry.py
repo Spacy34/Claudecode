@@ -4,12 +4,17 @@ Les tests vérifient que ces listes sont identiques aux enums des schémas JSON 
 toute capacité déclarée dans un contrat est réellement implémentée par le moteur.
 """
 
-ENGINE_VERSION = "0.5.0"
+ENGINE_VERSION = "0.6.0"
 
 HAIR_STYLES = ["none", "short", "spiky", "bowl", "mohawk", "bun", "long", "curly"]
-TOPS = ["tshirt", "shirt", "hoodie", "suit", "dress", "tank"]
-BOTTOMS = ["pants", "shorts", "skirt"]
-ACCESSORIES = ["cap", "glasses", "sunglasses", "tie", "bowtie", "mustache", "beard", "chef_hat", "headband", "earrings", "crown"]
+TOPS = ["tshirt", "shirt", "hoodie", "suit", "dress", "tank", "polo", "sweater", "jersey"]
+BOTTOMS = ["pants", "jeans", "shorts", "skirt"]
+LAYERS = ["none", "jacket", "blazer", "leather_jacket", "lab_coat", "apron", "vest", "puffer", "cardigan"]
+CLOTH_PATTERNS = ["plain", "stripes", "pinstripes", "dots", "plaid", "checker", "denim"]
+SHOE_TYPES = ["sneakers", "boots", "heels", "sandals", "slippers", "dress_shoes"]
+ACCESSORIES = ["cap", "glasses", "sunglasses", "tie", "bowtie", "mustache", "beard", "chef_hat", "headband", "earrings", "crown",
+               "scarf", "necklace", "gold_chain", "watch", "backpack", "shoulder_bag", "beanie", "top_hat", "headphones",
+               "bandana", "badge", "flower_pin"]
 NOSES = ["round", "long", "pointy", "potato"]
 EXPRESSIONS = ["neutral", "happy", "laugh", "sad", "angry", "shocked", "scared", "smug", "disgusted", "confused", "deadpan", "crying", "evil_grin", "love"]
 ACTIONS = ["idle", "walk_to", "run_to", "turn_to", "look_at", "wave", "point", "shrug", "facepalm", "jump", "shocked_jump",

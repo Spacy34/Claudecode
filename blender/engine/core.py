@@ -212,6 +212,68 @@ def pattern_mat(name, kind, base_hex, alt_hex=None, scale=1.0, plane='xy', emiss
         rp.color_ramp.interpolation = 'CONSTANT'
         nt.links.new(wv.outputs['Fac'], rp.inputs['Fac'])
         col = rp.outputs['Color']
+    elif kind == 'hstripes':   # rayures horizontales (marinière, maillot)
+        wv = nt.nodes.new('ShaderNodeTexWave')
+        wv.wave_type = 'BANDS'
+        wv.bands_direction = 'Z'
+        nt.links.new(vec, wv.inputs['Vector'])
+        wv.inputs['Scale'].default_value = 14.0 * scale
+        wv.inputs['Distortion'].default_value = 0.0
+        rp = _ramp(nt, [(0.5, base), (0.62, alt)])
+        rp.color_ramp.interpolation = 'CONSTANT'
+        nt.links.new(wv.outputs['Fac'], rp.inputs['Fac'])
+        col = rp.outputs['Color']
+    elif kind == 'dots':   # pois
+        vo = nt.nodes.new('ShaderNodeTexVoronoi')
+        nt.links.new(vec, vo.inputs['Vector'])
+        vo.inputs['Scale'].default_value = 22.0 * scale
+        try:
+            vo.inputs['Randomness'].default_value = 0.0
+        except Exception:
+            pass
+        rp = _ramp(nt, [(0.0, alt), (0.28, base)])
+        rp.color_ramp.interpolation = 'CONSTANT'
+        nt.links.new(vo.outputs['Distance'], rp.inputs['Fac'])
+        col = rp.outputs['Color']
+    elif kind == 'checker':   # damier
+        ck = nt.nodes.new('ShaderNodeTexChecker')
+        nt.links.new(vec, ck.inputs['Vector'])
+        ck.inputs['Color1'].default_value = base
+        ck.inputs['Color2'].default_value = alt
+        ck.inputs['Scale'].default_value = 9.0 * scale
+        col = ck.outputs['Color']
+    elif kind == 'plaid':   # carreaux (chemise de bûcheron, kilt)
+        mx = nt.nodes.new('ShaderNodeMath')
+        mx.operation = 'ADD'
+        for direc, slot in (('X', 0), ('Z', 1)):
+            wv = nt.nodes.new('ShaderNodeTexWave')
+            wv.wave_type = 'BANDS'
+            wv.bands_direction = direc
+            nt.links.new(vec, wv.inputs['Vector'])
+            wv.inputs['Scale'].default_value = 9.0 * scale
+            wv.inputs['Distortion'].default_value = 0.0
+            th = nt.nodes.new('ShaderNodeMath')
+            th.operation = 'GREATER_THAN'
+            th.inputs[1].default_value = 0.62
+            nt.links.new(wv.outputs['Fac'], th.inputs[0])
+            nt.links.new(th.outputs[0], mx.inputs[slot])
+        mid = tuple(a * 0.5 + b * 0.5 for a, b in zip(base, alt))
+        rp = _ramp(nt, [(0.0, base), (0.5, mid), (0.99, alt)])
+        rp.color_ramp.interpolation = 'CONSTANT'
+        half = nt.nodes.new('ShaderNodeMath')
+        half.operation = 'MULTIPLY'
+        half.inputs[1].default_value = 0.5
+        nt.links.new(mx.outputs[0], half.inputs[0])
+        nt.links.new(half.outputs[0], rp.inputs['Fac'])
+        col = rp.outputs['Color']
+    elif kind == 'denim':   # jean : grain + légère trame diagonale
+        nz = nt.nodes.new('ShaderNodeTexNoise')
+        nt.links.new(vec, nz.inputs['Vector'])
+        nz.inputs['Scale'].default_value = 60.0 * scale
+        nz.inputs['Detail'].default_value = 3.0
+        rp = _ramp(nt, [(0.35, _shade_rgb(base, 0.82)), (0.65, _shade_rgb(base, 1.12))])
+        nt.links.new(nz.outputs['Fac'], rp.inputs['Fac'])
+        col = rp.outputs['Color']
     else:   # noise, grass
         nz = nt.nodes.new('ShaderNodeTexNoise')
         nt.links.new(vec, nz.inputs['Vector'])
