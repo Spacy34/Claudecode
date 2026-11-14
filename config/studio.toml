@@ -50,6 +50,7 @@ target_lufs = -14.0
 true_peak_db = -1.5
 music_gain_db = -24.0
 sfx_gain_db = -8.0
+auto_sfx = true                  # bruitages automatiques sur les événements visibles (pas, sauts, téléphone, textes…)
 lead_in_s = 0.25
 tail_s = 0.8
 

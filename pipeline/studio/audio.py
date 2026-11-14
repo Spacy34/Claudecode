@@ -138,8 +138,11 @@ def build_voice(ep_dir, cfg, force=False):
             st = seg["words"][min(u.get("word", 0), len(seg["words"]) - 1)]["start_s"]
             cues.append({"name": f"user:{u['file']}", "file": _rel_root(f), "start_s": round(st, 3), "gain_db": u.get("gain_db", cfg["audio"]["sfx_gain_db"] + 2), "source": "user"})
     custom = sorted(q for q in (ep_dir / "audio" / "music").glob("*") if q.suffix.lower() in tts.AUDIO_EXT) if (ep_dir / "audio" / "music").is_dir() else []
+    lib = None if custom else pick_library_music(ep_dir, script, cfg)
     if custom:
         music, music_lic = custom[0], "fournie par l'utilisateur (droits d'usage commercial à vérifier par l'utilisateur)"
+    elif lib:
+        music, music_lic = lib
     else:
         music, music_lic = sfxlib.music_loop(ROOT / cfg["paths"]["assets_dir"] / "music" / "goofy_bounce.wav"), "original (synthèse procédurale)"
     # piste narration complète (silences inclus) : la voix est l'horloge
@@ -151,11 +154,54 @@ def build_voice(ep_dir, cfg, force=False):
           "tts": {"backend": backend, "voice": (voice_desc or {}).get("voice", "cache"), "license": (voice_desc or {}).get("license", "voir backend"),
                   "alignment": alignment},
           "segments": segments, "sfx": cues,
-          "music": {"file": _rel_root(music), "gain_db": cfg["audio"]["music_gain_db"] + (4 if custom else 0), "license": music_lic}}
+          "music": {"file": _rel_root(music), "gain_db": cfg["audio"]["music_gain_db"] + (4 if (custom or lib) else 0), "license": music_lic}}
     if recorded:
         tl["tts"]["recorded_lines"] = recorded
     write_json(ep_dir / "audio_timeline.json", tl)
     return {"backend": backend, "synthesized_lines": synthesized, "recorded_lines": recorded, "duration_s": round(duration, 2)}
+
+
+MUSIC_MOODS = ["comique", "calme", "tension", "triste", "romantique", "epique", "bizarre"]
+MOOD_WORDS = {"tension": ("suspense", "tension", "thriller", "horreur", "flippant", "angoiss", "enquête", "mystère"),
+              "triste": ("triste", "mélanc", "émouv", "nostalg", "drame"),
+              "romantique": ("romanti", "amour", "love", "rendez-vous", "crush", "date"),
+              "epique": ("épique", "héroï", "victoire", "aventure", "exploit"),
+              "calme": ("calme", "doux", "chill", "zen", "cosy", "tendre"),
+              "bizarre": ("bizarre", "étrange", "wtf", "absurde", "surréal", "chelou"),
+              "comique": ("humour", "comique", "drôle", "goofy", "gag", "comédie", "humour noir")}
+
+
+def music_library_dir(cfg):
+    return ROOT / cfg["paths"]["assets_dir"] / "music" / "library"
+
+
+def episode_music_mood(ep_dir, script):
+    """Ambiance musicale : choix de l'utilisateur (audio/music/ambiance.txt), sinon déduite du ton du brief."""
+    f = Path(ep_dir) / "audio" / "music" / "ambiance.txt"
+    if f.exists():
+        m = f.read_text(encoding="utf-8").strip()
+        if m in MUSIC_MOODS:
+            return m
+    brief = Path(ep_dir) / "episode_brief.json"
+    words = " ".join(read_json(brief).get("style", {}).get("tone", []) if brief.exists() else []).lower()
+    words += " " + str(script.get("logline", "")).lower()
+    scores = {m: sum(words.count(k) for k in ks) for m, ks in MOOD_WORDS.items()}
+    best = max(scores, key=lambda m: (scores[m], m == "comique"))
+    return best if scores[best] > 0 else "comique"
+
+
+def pick_library_music(ep_dir, script, cfg):
+    """Morceau de assets/music/library/<ambiance>/ (choix stable par épisode) -> (chemin, licence) ou None."""
+    d = music_library_dir(cfg)
+    mood = episode_music_mood(ep_dir, script)
+    for m in [mood] + [x for x in ("comique", "bizarre", "calme") if x != mood]:
+        tracks = sorted(q for q in (d / m).glob("*") if q.suffix.lower() in tts.AUDIO_EXT) if (d / m).is_dir() else []
+        if tracks:
+            pick = tracks[int(sha256_json(script.get("episode_id", "")), 16) % len(tracks)]
+            lic_f = pick.with_name(pick.name + ".licence.txt")
+            lic = lic_f.read_text(encoding="utf-8").strip() if lic_f.exists() else "bibliothèque de l'utilisateur : licence non consignée (à vérifier)"
+            return pick, f"{m} — {lic}"
+    return None
 
 
 def full_voice_file(ep_dir):

@@ -137,8 +137,90 @@ def splat(rng):
     return [v * math.exp(-i / SR * 12) for i, v in enumerate(nz)]
 
 
+def blip(rng):   # bulle de message
+    n = int(SR * 0.16)
+    out, ph = [], 0.0
+    for i in range(n):
+        t = i / SR
+        ph += 2 * math.pi * (880 if t < 0.06 else 1320) / SR
+        out.append(math.sin(ph) * math.exp(-t * 18))
+    return out
+
+
+def swish(rng):   # glissé court et léger (éléments qui entrent, zoom)
+    n = int(SR * 0.22)
+    s = _noise_filtered(n, rng, lambda u: 1200 + 6000 * u)
+    return [v * math.sin(math.pi * i / n) ** 1.5 for i, v in enumerate(s)]
+
+
+def step(rng):   # pas feutré
+    n = int(SR * 0.09)
+    nz = _noise_filtered(n, rng, lambda u: 700)
+    out, ph = [], 0.0
+    for i in range(n):
+        t = i / SR
+        ph += 2 * math.pi * 95 / SR
+        out.append((0.7 * math.sin(ph) + nz[i]) * math.exp(-t * 45))
+    return out
+
+
+def tick(rng):
+    n = int(SR * 0.04)
+    return [math.sin(2 * math.pi * 2400 * i / SR) * math.exp(-i / SR * 120) for i in range(n)]
+
+
+def ring(rng):   # sonnerie de téléphone (2 trilles)
+    n = int(SR * 1.6)
+    out = []
+    for i in range(n):
+        t = i / SR
+        on = (t % 0.8) < 0.55
+        trill = 1 if int(t * 22) % 2 else 0
+        f = 1400 if trill else 1750
+        out.append(math.sin(2 * math.pi * f * t) * (0.8 if on else 0.0) * (1 - 0.3 * math.exp(-(t % 0.8) * 30)))
+    return out
+
+
+def bonk(rng):   # coup cartoon
+    n = int(SR * 0.3)
+    out, ph = [], 0.0
+    for i in range(n):
+        t = i / SR
+        ph += 2 * math.pi * (520 * math.exp(-t * 9) + 140) / SR
+        out.append((math.sin(ph) + 0.3 * math.sin(3 * ph)) * math.exp(-t * 16))
+    return out
+
+
+def typing(rng):   # frappe au clavier (≈ 1 s)
+    n = int(SR * 1.0)
+    out = [0.0] * n
+    t = 0.0
+    while t < 0.95:
+        st = int(t * SR)
+        for i in range(st, min(n, st + int(SR * 0.025))):
+            u = (i - st) / SR
+            out[i] += rng.uniform(-1, 1) * math.exp(-u * 260)
+        t += rng.uniform(0.07, 0.13)
+    return out
+
+
+def count_roll(rng):   # défilement de compteur (≈ 1 s, de plus en plus lent)
+    n = int(SR * 1.0)
+    out = [0.0] * n
+    t, gap = 0.0, 0.045
+    while t < 0.95:
+        st = int(t * SR)
+        for i in range(st, min(n, st + int(SR * 0.03))):
+            u = (i - st) / SR
+            out[i] += math.sin(2 * math.pi * 2400 * u) * math.exp(-u * 140)
+        t += gap
+        gap *= 1.08
+    return out
+
+
 LIBRARY = {"whoosh": whoosh, "boing": boing, "pop": pop, "thud": thud, "ding": ding, "slide_whistle": slide_whistle,
-           "record_scratch": record_scratch, "explosion": explosion, "crash": crash, "sparkle": sparkle, "splat": splat}
+           "record_scratch": record_scratch, "explosion": explosion, "crash": crash, "sparkle": sparkle, "splat": splat,
+           "blip": blip, "swish": swish, "step": step, "tick": tick, "ring": ring, "bonk": bonk, "typing": typing, "count_roll": count_roll}
 
 TRANSITION_SFX = {"whip": "whoosh", "smash_cut": "thud", "flash_white": "pop"}
 

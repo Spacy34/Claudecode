@@ -276,9 +276,18 @@ function tabAudio(d){
       ${upField("fUp", full ? "Remplacer…" : "Fournir la voix complète…")}</div>
     ${full?'<p class="hint">Le découpage s\'affiche dans la colonne « Voix » ci-dessous après le calcul de la voix (⚠ = à vérifier : laisse des pauses nettes entre les répliques).</p>':""}</div>
     <div class="panel">
-    <b>Musique de fond</b> <span class="hint">(remplace la musique générée ; vous devez avoir les droits d'usage)</span>
-    <div class="row" style="margin-top:8px">${d.music.length?`<audio controls src="${fileUrl(d,"audio/music/"+d.music[0])}"></audio> <button class="small danger" id="mDel">Retirer</button>`:'<span class="hint">musique générée par défaut</span>'}
-      ${upField("mUp", d.music.length ? "Changer la musique…" : "Choisir une musique…")}</div></div>
+    <b>Musique de fond</b>
+    <div class="hint" style="margin:4px 0 8px">Utilisée au dernier calcul de la voix : ${d.music_used?`<b>${esc(d.music_used.file)}</b> — ${esc(d.music_used.license)}`:"pas encore calculée"}</div>
+    <div class="row">
+      <label>Ambiance <select id="amb"><option value="">automatique (ton de l'épisode)</option>${d.moods.map(m=>`<option ${m===d.ambiance?"selected":""}>${m}</option>`).join("")}</select></label>
+      <span class="hint">Bibliothèque : ${Object.entries((S.ov&&S.ov.music_library)||{}).map(([m,n])=>`${m} ${n}`).join(" · ")}</span>
+    </div>
+    <div class="row" style="margin-top:8px">${d.music.length?`<audio controls src="${fileUrl(d,"audio/music/"+d.music[0])}"></audio> <button class="small danger" id="mDel">Retirer</button>`:'<span class="hint">morceau propre à cet épisode : aucun</span>'}
+      ${upField("mUp", d.music.length ? "Changer le morceau de cet épisode…" : "Morceau pour cet épisode seulement…")}</div>
+    <div class="row" style="margin-top:10px"><b class="hint">Ajouter à la bibliothèque :</b>
+      <select id="libMood">${d.moods.map(m=>`<option>${m}</option>`).join("")}</select>
+      <input type="text" id="libLic" placeholder="licence : source, auteur, usage commercial OK" style="min-width:260px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)">
+      ${upField("libUp", "Ajouter un morceau…")}</div></div>
     <div class="panel"><b>Voix et bruitages par réplique</b>
     <p class="hint">Voix : votre fichier remplace la voix de synthèse pour cette réplique (le minutage des plans suit). Bruitage : joué sur le mot choisi.
     Les changements sont pris en compte au prochain « Lancer / reprendre ».</p>
@@ -293,6 +302,10 @@ function tabAudio(d){
     const done = (j) => { toast(j.note || "Fichier enregistré."); S.sig={}; loadDetail(); };
     const fail = (e) => toast("Erreur : " + e.message);
     const m = $("mUp"); if (m) m.onchange = (ev) => ev.target.files[0] && upload("music", ev.target.files[0]).then(done, fail);
+    if ($("amb")) $("amb").onchange = (ev) => post("/api/ambiance", {ep:S.ep, mood:ev.target.value}).then(done, fail);
+    const lu = $("libUp"); if (lu) lu.onchange = (ev) => { const f = ev.target.files[0]; if (!f) return;
+      if (($("libLic").value||"").trim().length < 5) { toast("Indique d'abord la licence du morceau (source, licence, usage commercial)."); ev.target.value=""; return; }
+      upload("library", f, {mood:$("libMood").value, licence:$("libLic").value}).then(done, fail); };
     const fu = $("fUp"); if (fu) fu.onchange = (ev) => ev.target.files[0] && upload("full", ev.target.files[0]).then(done, fail);
     if ($("fDel")) $("fDel").onclick = () => post("/api/delete",{ep:S.ep, kind:"full"}).then(done, fail);
     if ($("mDel")) $("mDel").onclick = () => post("/api/delete",{ep:S.ep, kind:"music"}).then(done, fail);

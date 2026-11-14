@@ -66,9 +66,13 @@ def concat(clips, out):
     return out
 
 
-def sfx_cues(timeline, shots, cfg):
+def sfx_cues(timeline, shots, cfg, ep_dir=None):
     cues = list(timeline["sfx"])
     sfx_dir = ROOT / cfg["paths"]["assets_dir"] / "sfx"
+    sfxlib.ensure_library(sfx_dir)
+    if ep_dir is not None and cfg["audio"].get("auto_sfx", True):
+        from .sound_design import auto_cues
+        cues += auto_cues(ep_dir, shots, timeline, cfg, existing=list(cues))
     for s in shots[:-1]:
         name = sfxlib.TRANSITION_SFX.get(s.get("transition_out", "cut"))
         if name:
@@ -84,22 +88,37 @@ def mix_audio(ep_dir, timeline, shots, cfg, t0, t1, out):
     music = timeline.get("music")
     if music:
         inputs += ["-stream_loop", "-1", "-i", str(ROOT / music["file"])]
-    cues = [c for c in sfx_cues(timeline, shots, cfg) if t0 - 0.05 <= c["start_s"] < t1]
+    cues = [c for c in sfx_cues(timeline, shots, cfg, ep_dir) if t0 - 0.05 <= c["start_s"] < t1]
+    # un fichier son = une seule entrée FFmpeg, dupliquée dans le graphe (ligne de commande courte, même sous Windows)
+    files = []
     for c in cues:
-        inputs += ["-i", str(ROOT / c["file"])]
+        if c["file"] not in files:
+            files.append(c["file"])
+    for f in files:
+        inputs += ["-i", str(ROOT / f)]
     fl = [f"[0:a]atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,asplit=2[nar][sc]"]
     mix_in = ["[nar]"]
     idx = 1
     if music:
-        fl.append(f"[1:a]atrim=0:{dur:.3f},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,volume={music['gain_db']}dB[mus]")
+        fo = min(1.5, dur / 4)
+        fl.append(f"[1:a]atrim=0:{dur:.3f},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,volume={music['gain_db']}dB,"
+                  f"afade=t=in:st=0:d=0.08,afade=t=out:st={max(0.0, dur - fo):.3f}:d={fo:.3f}[mus]")
         fl.append("[mus][sc]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350[duck]")
         mix_in.append("[duck]")
         idx = 2
     else:
         fl.append("[sc]anullsink")
+    uses = {f: [k for k, c in enumerate(cues) if c["file"] == f] for f in files}
+    src = {}
+    for j, f in enumerate(files):
+        n = len(uses[f])
+        labels = [f"[f{j}_{u}]" for u in range(n)]
+        fl.append(f"[{idx + j}:a]aformat=sample_rates=48000:channel_layouts=stereo" + (f",asplit={n}" if n > 1 else "") + "".join(labels))
+        for k, lab in zip(uses[f], labels):
+            src[k] = lab
     for k, c in enumerate(cues):
         ms = int(max(0.0, c["start_s"] - t0) * 1000)
-        fl.append(f"[{idx + k}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume={c.get('gain_db', -8)}dB,adelay={ms}|{ms}[s{k}]")
+        fl.append(f"{src[k]}volume={c.get('gain_db', -8)}dB,adelay={ms}|{ms}[s{k}]")
         mix_in.append(f"[s{k}]")
     fl.append(f"{''.join(mix_in)}amix=inputs={len(mix_in)}:normalize=0:duration=first,atrim=0:{dur:.3f}[pre]")
     graph = ";".join(fl)

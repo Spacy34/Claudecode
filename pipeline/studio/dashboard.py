@@ -195,6 +195,15 @@ def episode_detail(p):
             pass
     mdir = p / "audio" / "music"
     music = sorted(q.name for q in mdir.glob("*") if q.suffix.lower() in tts.AUDIO_EXT) if mdir.is_dir() else []
+    from . import audio as _audio
+    amb_f = mdir / "ambiance.txt"
+    ambiance = amb_f.read_text(encoding="utf-8").strip() if amb_f.exists() else ""
+    used = None
+    try:
+        tl = read_json(p / "audio_timeline.json")
+        used = {"file": Path(tl["music"]["file"]).name, "license": tl["music"].get("license", "")} if tl.get("music") else None
+    except (OSError, ValueError, KeyError):
+        pass
     rep = p / "checks" / "codex_rapport_final.md"
     brief = {}
     try:
@@ -207,7 +216,7 @@ def episode_detail(p):
     except Exception as e:   # épisode incomplet : le tableau de bord reste utilisable
         nxt = {"error": str(e)}
     return {**ov, "stages": stages, "qa": qa, "reviews": reviews, "media": media, "lines": lines, "music": music, "brief": brief,
-            "full_voice": fv.name if fv else None,
+            "full_voice": fv.name if fv else None, "ambiance": ambiance, "music_used": used, "moods": _audio.MUSIC_MOODS,
             "next": nxt, "report": rep.read_text(encoding="utf-8", errors="replace")[-6000:] if rep.exists() else ""}
 
 
@@ -280,7 +289,10 @@ class Handler(BaseHTTPRequestHandler):
                 cfg = load_config()
                 inbox = episode_dir(cfg, "_inbox")
                 eco = cfg.get("codex", {}).get("orchestrator_effort", "low") == "low" and int(cfg["quality"]["max_revision_rounds"]) <= 1
-                return self._send(200, {"autonomous": bool(cfg["quality"].get("autonomous")), "model": cfg.get("codex", {}).get("model", ""), "economy": eco,
+                from . import audio as _audio
+                libd = _audio.music_library_dir(cfg)
+                library = {m: len([q for q in (libd / m).glob("*") if q.suffix.lower() in tts.AUDIO_EXT]) if (libd / m).is_dir() else 0 for m in _audio.MUSIC_MOODS}
+                return self._send(200, {"autonomous": bool(cfg["quality"].get("autonomous")), "model": cfg.get("codex", {}).get("model", ""), "economy": eco, "music_library": library,
                                         "final_profile": cfg["render"].get("final_profile"), "codex": bool(launcher.codex_path()),
                                         "doctor": _DOCTOR, "episodes": [episode_overview(p) for p in _episodes(cfg)],
                                         "inbox": sorted(x.name for x in inbox.glob("*.txt")) if inbox.is_dir() else []})
@@ -380,6 +392,17 @@ class Handler(BaseHTTPRequestHandler):
                 st.log("retry", stage=stage, by="human:dashboard")
                 st.save()
                 return self._send(200, {"ok": True})
+            if u.path == "/api/ambiance":
+                from . import audio as _audio
+                p = self._ep(body.get("ep"))
+                m = body.get("mood", "")
+                d = p / "audio" / "music"
+                if m in _audio.MUSIC_MOODS:
+                    d.mkdir(parents=True, exist_ok=True)
+                    (d / "ambiance.txt").write_text(m, encoding="utf-8")
+                elif (d / "ambiance.txt").exists():
+                    (d / "ambiance.txt").unlink()
+                return self._send(200, {"ok": True, "note": "Ambiance enregistrée : appliquée au prochain lancement."})
             if u.path == "/api/delete":
                 return self._delete(self._ep(body.get("ep")), body)
             if u.path == "/api/settings":
@@ -425,6 +448,20 @@ class Handler(BaseHTTPRequestHandler):
         if n <= 0 or n > MAX_UPLOAD:
             raise ValueError("fichier vide ou trop volumineux (300 Mo max)")
         data = self.rfile.read(n)
+        if kind == "library":
+            from . import audio as _audio
+            mood = q.get("mood", "")
+            lic = (q.get("licence") or "").strip()
+            if mood not in _audio.MUSIC_MOODS:
+                raise ValueError("ambiance inconnue")
+            if len(lic) < 5:
+                raise ValueError("indiquez la licence du morceau (source, licence, usage commercial autorisé)")
+            d = _audio.music_library_dir(load_config()) / mood
+            d.mkdir(parents=True, exist_ok=True)
+            safe = re.sub(r"[^A-Za-z0-9._-]+", "_", Path(name).stem)[:60] + ext
+            (d / safe).write_bytes(data)
+            (d / (safe + ".licence.txt")).write_text(lic + "\n", encoding="utf-8")
+            return self._send(200, {"ok": True, "note": f"Ajouté à la bibliothèque « {mood} » : utilisé par les prochains épisodes de cette ambiance."})
         if kind == "full":
             launcher.attach_full_voice(p.name, data=data, filename=name)
             return self._send(200, {"ok": True, "note": "Voix complète enregistrée : elle sera découpée en répliques et tout se calera dessus au prochain lancement."})
@@ -439,9 +476,10 @@ class Handler(BaseHTTPRequestHandler):
             (d / f"{line}{ext}").write_bytes(data)
         elif kind == "music":
             d = p / "audio" / "music"
-            if d.exists():
-                shutil.rmtree(d)
-            d.mkdir(parents=True)
+            d.mkdir(parents=True, exist_ok=True)
+            for old in d.glob("*"):
+                if old.suffix.lower() in tts.AUDIO_EXT:
+                    old.unlink()
             (d / f"musique{ext}").write_bytes(data)
         elif kind == "sfx":
             line, word = q.get("line", ""), int(q.get("word", 0) or 0)
@@ -464,7 +502,9 @@ class Handler(BaseHTTPRequestHandler):
             for f in (p / "audio" / "recorded").glob(f"{b['line']}.*"):
                 f.unlink()
         elif kind == "music":
-            shutil.rmtree(p / "audio" / "music", ignore_errors=True)
+            for f in (p / "audio" / "music").glob("*") if (p / "audio" / "music").is_dir() else []:
+                if f.suffix.lower() in tts.AUDIO_EXT:
+                    f.unlink()
         elif kind == "full":
             shutil.rmtree(p / "audio" / "full_voice", ignore_errors=True)
         elif kind == "sfx" and LINE_RE.match(b.get("line", "")):
