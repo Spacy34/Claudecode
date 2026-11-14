@@ -59,3 +59,37 @@ def test_full_voice_line_bounds_come_from_heard_words():
     words, stats = whisper_align.align_words(lines, asr, silences=[(0.0, 1.0), (1.8, 1.95), (4.1, 5.0)], span=(1.0, 4.1))
     assert stats["matched"] == 9
     assert (words[0][0][0], words[0][-1][1]) == (1.0, 2.6) and (words[1][0][0], words[1][-1][1]) == (2.62, 4.1)
+
+
+def test_transcribe_feeds_whisper_a_decoded_array_not_a_path(tmp_path, monkeypatch):
+    """Régression Windows : faster-whisper + PyAV ≥ 14 plantait (« metadata_errors ») en décodant lui-même le
+    fichier ; le studio décode avec FFmpeg et passe un tableau 16 kHz."""
+    import shutil
+    import subprocess
+    import sys
+    import types
+    import numpy as np
+    import pytest
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("ffmpeg absent")
+    wav = tmp_path / "v.wav"
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=300:duration=1.5", "-ar", "48000", str(wav)], check=True)
+    seen = {}
+
+    class W:
+        def __init__(self, word, start, end):
+            self.word, self.start, self.end = word, start, end
+
+    class Model:
+        def __init__(self, *a, **k):
+            pass
+
+        def transcribe(self, audio, **kw):
+            seen["audio"], seen["kw"] = audio, kw
+            return iter([types.SimpleNamespace(words=[W(" Bonjour", 0.1, 0.5)])]), None
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=Model))
+    words = whisper_align.transcribe_words(wav, "small", tmp_path, prompt="Bonjour.")
+    assert isinstance(seen["audio"], np.ndarray) and seen["audio"].dtype == np.float32
+    assert abs(len(seen["audio"]) / 16000 - 1.5) < 0.05           # 16 kHz, durée conservée (temps exacts)
+    assert seen["kw"]["word_timestamps"] and seen["kw"]["language"] == "fr" and seen["kw"]["initial_prompt"] == "Bonjour."
+    assert words == [("Bonjour", 0.1, 0.5)]

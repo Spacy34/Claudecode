@@ -42,9 +42,13 @@ def status(load_model=False, model_size="small"):
         return out
     if load_model:
         try:
+            import numpy as np
             from faster_whisper import WhisperModel
-            WhisperModel(model_size, device="cpu", compute_type="int8")
+            m = WhisperModel(model_size, device="cpu", compute_type="int8")
             out["model"] = f"{model_size} : chargé"
+            segs, _ = m.transcribe(np.zeros(16000, dtype=np.float32), language="fr", word_timestamps=True)
+            list(segs)   # vraie transcription (1 s de silence) : détecte les incompatibilités de bibliothèques
+            out["transcription"] = "test OK"
         except Exception as e:
             out["error"] = f"modèle « {model_size} » non chargé (téléchargement ? espace disque ?) : {type(e).__name__}: {e}"[:500]
     return out
@@ -140,6 +144,15 @@ def _syll(word):
 
 
 # ------------------------------------------------------------------ transcription
+def load_audio_16k(path):
+    """Fichier audio -> tableau numpy float32 mono 16 kHz (format attendu par Whisper), via FFmpeg."""
+    import subprocess
+    import numpy as np
+    r = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
+                       capture_output=True, check=True)
+    return np.frombuffer(r.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+
+
 def transcribe_words(wav, model_size="small", cache_dir=None, prompt=None):
     """-> [(mot, début, fin)] de faster-whisper (cache par contenu du fichier, modèle et texte guide)."""
     wav = Path(wav)
@@ -153,7 +166,9 @@ def transcribe_words(wav, model_size="small", cache_dir=None, prompt=None):
     kw = {"language": "fr", "word_timestamps": True, "vad_filter": False, "beam_size": 5}
     if prompt:
         kw["initial_prompt"] = prompt[-900:]   # le texte attendu oriente l'orthographe et les mots
-    segments, _info = model.transcribe(str(wav), **kw)
+    # audio décodé par FFmpeg (16 kHz mono) et passé en tableau : on n'utilise PAS le décodeur PyAV de
+    # faster-whisper (incompatible avec PyAV ≥ 14 : « open() got an unexpected keyword argument 'metadata_errors' »)
+    segments, _info = model.transcribe(load_audio_16k(wav), **kw)
     words = []
     for seg in segments:
         for w in (seg.words or []):
