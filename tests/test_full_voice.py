@@ -64,3 +64,18 @@ def test_align_falls_back_when_no_pauses():
     bounds, rep = align.align(["un deux trois", "quatre cinq six sept"], [], 10.0)
     assert len(bounds) == 2 and bounds[0][0] == 0.0 and bounds[1][1] == 10.0
     assert rep["virtual_cuts"] >= 1
+
+
+def test_sync_preview_and_quotes(tmp_path, cfg):
+    """Aperçu de synchro (voix + script) ; guillemets isolés : jamais affichés seuls ni comptés comme parole."""
+    from studio import sync_preview, audio as A
+    from studio.subtitles import display_words
+    texts = ["Le mec lui dit « Je suis pas prêt ».", "Elle entend « C'est toi ».", "Elle vire 50 balles."]
+    src, truth = _voice(tmp_path, texts, [0.6, 0.7, 0.5])
+    mp4, rep = sync_preview.build(src, texts, cfg, tmp_path / "apercu.mp4", tmp_path / "work")
+    assert mp4.exists() and len(rep["lines"]) == 3
+    for l, (a, b) in zip(rep["lines"], truth):
+        assert abs(l["start"] - a) < 0.1 and abs(l["end"] - b) < 0.1
+    assert A.syllables("«") == 0 and A.word_timings(["«", "Je"], 0.0, 1.0)[0]["end_s"] == 0.0
+    shown = [w["text"] for w in display_words(A.word_timings(texts[0].split(), 0, 2))]
+    assert "«" not in shown and "« Je" in shown and "prêt »." in shown

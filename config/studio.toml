@@ -40,7 +40,7 @@ backend = "auto"
 piper_model = ""                 # chemin vers ex: assets/voices/fr_FR-xxx-medium.onnx (vérifier la licence de la voix)
 # synchro des mots : "auto" = Whisper (faster-whisper) s'il est installé, sinon proportionnel aux syllabes ; "off"
 align = "auto"
-whisper_model = "base"           # base (~150 Mo, rapide) ; small (~460 Mo, plus précis)
+whisper_model = "small"          # small (~460 Mo, précis en français) ; base (~150 Mo, plus rapide)
 espeak_voice = "fr+m3"
 espeak_speed = 165
 # backend "command" : adaptateur générique pour un TTS externe facultatif.

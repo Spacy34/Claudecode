@@ -14,6 +14,23 @@ def _esc(s):
     return s.replace("\\", "").replace("{", "(").replace("}", ")")
 
 
+def display_words(words):
+    """Ponctuation isolée (« » — …) collée au mot voisin : jamais affichée seule ni surlignée comme un mot."""
+    import re
+    out = []
+    pending = ""
+    for w in words:
+        if not re.search(r"[0-9A-Za-zÀ-ÿœæ]", w["text"]):
+            if w["text"] in ("«", "(", "[", "“") or not out:
+                pending += w["text"] + " " if w["text"] == "«" else w["text"]
+            else:
+                out[-1] = {**out[-1], "text": out[-1]["text"] + (" " if w["text"][:1] in ("»", "”") else "") + w["text"]}
+            continue
+        out.append({**w, "text": pending + w["text"]} if pending else dict(w))
+        pending = ""
+    return out
+
+
 def chunks(words, per, max_chars):
     out, cur = [], []
     for w in words:
@@ -54,7 +71,7 @@ def build_ass(timeline, cfg, out_path, t_start=0.0, t_end=None, width=1080, heig
     events = 0
     all_chunks = []
     for seg in timeline["segments"]:
-        for ch in chunks(seg["words"], int(sc["words_per_chunk"]), int(sc["max_chars_per_chunk"])):
+        for ch in chunks(display_words(seg["words"]), int(sc["words_per_chunk"]), int(sc["max_chars_per_chunk"])):
             all_chunks.append(ch)
     for ci, ch in enumerate(all_chunks):
         c0 = ch[0]["start_s"]

@@ -19,6 +19,8 @@ PUNCT_PAUSE = {",": 0.6, ";": 0.8, ":": 0.8, ".": 1.0, "!": 1.0, "?": 1.0, "…"
 
 
 def syllables(word):
+    if not re.search(r"[0-9A-Za-zÀ-ÿœæ]", word):
+        return 0   # ponctuation isolée (« » — …) : ne se prononce pas
     w = re.sub(r"[^\wàâäéèêëîïôöùûüœæç'-]", "", word.lower())
     w = re.sub(r"e$|es$|ent$", "", w) or w   # e muet final (approximation)
     return max(1, len(VOWELS.findall(w)))
@@ -31,10 +33,11 @@ def is_emphasis(word, idx, explicit):
 
 
 def word_timings(words, start, end):
+    from .align import word_syll   # chiffres et sigles prononcés (« 50 » = cinquante, « CDI » = 3)
     weights = []
     for w in words:
-        weights.append(syllables(w) + PUNCT_PAUSE.get(w[-1], 0.0) * 0.5)
-    total = sum(weights)
+        weights.append(word_syll(w) + PUNCT_PAUSE.get(w[-1], 0.0) * 0.5)
+    total = sum(weights) or 1.0
     t = start
     out = []
     span = end - start
@@ -70,8 +73,8 @@ def build_voice(ep_dir, cfg, force=False):
     alignment = "proportional_syllables"
     if full is not None:
         # voix COMPLÈTE fournie (ElevenLabs…) : elle devient l'horloge, les répliques y sont calées
-        backend, alignment = "recorded", "pauses_syllables"
-        segments, duration = _segments_from_full(ep_dir, script, full, sr, cfg, lines_dir)
+        backend = "recorded"
+        segments, duration, alignment = _segments_from_full(ep_dir, script, full, sr, cfg, lines_dir)
         voice_desc = {"voice": f"fichier complet : {full.name}",
                       "license": "voix fournie par l'utilisateur (ElevenLabs ou autre : vérifier les droits d'usage commercial de l'offre)"}
     else:
@@ -151,12 +154,15 @@ def build_voice(ep_dir, cfg, force=False):
     # synchro exacte des mots (facultative) : Whisper horodate, le texte du script fait foi
     whisper_stats = None
     from . import whisper_align
-    if cfg["tts"].get("align", "auto") in ("auto", "whisper") and whisper_align.available():
+    if alignment != "whisper" and cfg["tts"].get("align", "auto") in ("auto", "whisper") and whisper_align.available():
         import copy
+        from . import align as _align
         try:
-            asr = whisper_align.transcribe_words(narr, cfg["tts"].get("whisper_model", "base"), ep_dir / "audio")
+            asr = whisper_align.transcribe_words(narr, cfg["tts"].get("whisper_model", "small"), ep_dir / "audio",
+                                                 prompt=" ".join(l["text"] for l in script["lines"]))
+            fine, _ = _align.detect_silences(narr, noise_db=-40, min_d=0.06)
             trial = copy.deepcopy(segments)
-            st_ = whisper_align.refine(trial, asr)
+            st_ = whisper_align.refine(trial, asr, silences=fine)
             if st_["total"] and st_["matched"] >= 0.5 * st_["total"]:
                 segments, alignment, whisper_stats = trial, "whisper", st_
             else:
@@ -228,20 +234,54 @@ def full_voice_file(ep_dir):
     return files[0] if files else None
 
 
-def _segments_from_full(ep_dir, script, full, sr, cfg, lines_dir):
-    """Découpe la voix complète en répliques (pauses + durées attendues), sans retoucher le jeu de l'acteur."""
-    from . import align
-    norm = ep_dir / "audio" / "full_voice_norm.wav"
+def analyze_full_voice(src, texts, cfg, work_dir, sr=48000):
+    """Analyse d'une voix complète : -> {norm, dur, bounds, words (ou None), method, report}.
+
+    1) Whisper (si installé) : répliques découpées à partir des MOTS entendus (précis au mot près) ;
+    2) sinon : meilleur découpage sur les pauses (répliques ou morceaux de phrase).
+    Partagée par l'étape voice et par l'aperçu de synchro (`studio sync-preview`).
+    """
+    from . import align, whisper_align
+    work_dir = Path(work_dir)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    norm = work_dir / "full_voice_norm.wav"
     stamp = norm.with_suffix(".sha")
-    key = sha256_file(full)
+    key = sha256_file(src)
     if not (norm.exists() and stamp.exists() and stamp.read_text() == key):
-        run(["ffmpeg", "-y", "-v", "error", "-i", str(full), "-ar", str(sr), "-ac", "1", "-sample_fmt", "s16", str(norm)])
+        run(["ffmpeg", "-y", "-v", "error", "-i", str(src), "-ar", str(sr), "-ac", "1", "-sample_fmt", "s16", str(norm)])
         stamp.write_text(key)
     silences, dur = align.detect_silences(norm)
     if not dur:
         dur = _wav_dur(norm)
+    words_t, method, wstats = None, "pauses_syllables", None
+    if cfg["tts"].get("align", "auto") in ("auto", "whisper") and whisper_align.available():
+        try:
+            asr = whisper_align.transcribe_words(norm, cfg["tts"].get("whisper_model", "small"), work_dir, prompt=" ".join(texts))
+            fine, _ = align.detect_silences(norm, noise_db=-40, min_d=0.06)
+            sp0 = next((e for a, e in silences if a <= 0.05), 0.0)
+            sp1 = next((a for a, e in silences if e >= dur - 0.05), dur)
+            wt, wstats = whisper_align.align_words(texts, asr, silences=fine, span=(sp0, sp1))
+            if wt and wstats["matched"] >= 0.6 * wstats["total"]:
+                words_t, method = wt, "whisper"
+            else:
+                wstats = {**(wstats or {}), "rejected": "trop peu de mots reconnus : découpage sur les pauses"}
+        except Exception as e:   # jamais bloquant
+            wstats = {"error": str(e)[:300]}
+    if words_t:
+        bounds = [(ws[0][0], ws[-1][1]) for ws in words_t]
+        rep = {"virtual_cuts": 0, "lines": [{"start": round(a, 3), "end": round(b, 3), "matched_words": m,
+                                             "flag": "" if m >= 0.5 * len(ws) else "peu de mots reconnus : vérifier"}
+                                            for (a, b), ws, m in zip(bounds, words_t, wstats["per_line"])]}
+    else:
+        bounds, words_t, rep = align.best(texts, silences, dur)
+    return {"norm": norm, "dur": dur, "bounds": bounds, "words": words_t, "method": method, "whisper": wstats, "report": rep}
+
+
+def _segments_from_full(ep_dir, script, full, sr, cfg, lines_dir):
+    """Découpe la voix complète en répliques, sans retoucher le jeu de l'acteur."""
     lines = script["lines"]
-    bounds, rep = align.align([l["text"] for l in lines], silences, dur)
+    res = analyze_full_voice(full, [l["text"] for l in lines], cfg, ep_dir / "audio", sr)
+    norm, dur, bounds, words_t, method, wstats, rep = (res[k] for k in ("norm", "dur", "bounds", "words", "method", "whisper", "report"))
     with wave.open(str(norm)) as w:
         rate = w.getframerate()
         frames = w.readframes(w.getnframes())
@@ -258,16 +298,19 @@ def _segments_from_full(ep_dir, script, full, sr, cfg, lines_dir):
                 old.unlink()
         seg = {"line_id": line["id"], "speaker": line["speaker"], "wav": str(wav.relative_to(ep_dir)), "text_sha256": sha256_json(line["text"]),
                "start_s": round(a, 3), "end_s": round(b, 3), "words": word_timings(line["text"].split(), a, b)}
+        if words_t:
+            for w, (st, en) in zip(seg["words"], words_t[len(segments)]):
+                w["start_s"], w["end_s"] = round(st, 3), round(en, 3)
         explicit = set(line.get("emphasis_words", []))
         for w in seg["words"]:
             if is_emphasis(w["text"], w["i"], explicit):
                 w["emph"] = True
         segments.append(seg)
-    report = {"source": full.name, "duration_s": round(dur, 3), **rep,
+    report = {"source": full.name, "duration_s": round(dur, 3), "method": method, "whisper": wstats, **rep,
               "lines": [{"line_id": l["id"], "text": l["text"], **r} for l, r in zip(lines, rep["lines"])]}
     (ep_dir / "checks").mkdir(exist_ok=True)
     write_json(ep_dir / "checks" / "voice_alignment.json", report)
-    return segments, max(dur, bounds[-1][1] + float(cfg["audio"]["tail_s"]))
+    return segments, max(dur, bounds[-1][1] + float(cfg["audio"]["tail_s"])), method
 
 
 def _rel_root(p):

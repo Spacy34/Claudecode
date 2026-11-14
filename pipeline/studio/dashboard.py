@@ -30,6 +30,7 @@ MAX_UPLOAD = 300 * 1024 * 1024
 MEDIA = [("image", "lookdev/contact_sheet.png", "Lookdev : personnages et décors"),
          ("image", "checks/shots_contact.png", "Contrôle : une image par plan"),
          ("image", "checks/motion_contact.png", "Motion design (planche)"),
+         ("video", "checks/sync_preview.mp4", "Aperçu de synchro de la voix"),
          ("video", "renders/prototype.mp4", "Prototype (début)"),
          ("video", "renders/first_cut.mp4", "Premier montage"),
          ("video", "renders/final.mp4", "VIDÉO FINALE")]
@@ -216,7 +217,8 @@ def episode_detail(p):
     except Exception as e:   # épisode incomplet : le tableau de bord reste utilisable
         nxt = {"error": str(e)}
     return {**ov, "stages": stages, "qa": qa, "reviews": reviews, "media": media, "lines": lines, "music": music, "brief": brief,
-            "full_voice": fv.name if fv else None, "ambiance": ambiance, "music_used": used, "moods": _audio.MUSIC_MOODS,
+            "full_voice": fv.name if fv else None,
+            "sync_preview": int((p / "checks" / "sync_preview.mp4").stat().st_mtime) if (p / "checks" / "sync_preview.mp4").exists() else 0, "ambiance": ambiance, "music_used": used, "moods": _audio.MUSIC_MOODS,
             "next": nxt, "report": rep.read_text(encoding="utf-8", errors="replace")[-6000:] if rep.exists() else ""}
 
 
@@ -468,6 +470,12 @@ class Handler(BaseHTTPRequestHandler):
                 p = self._ep(body.get("ep"))
                 rid = _rt.request(p, body.get("shot", ""), body.get("note", ""))
                 return self._send(200, {"ok": True, "id": rid, "note": "Retouche enregistrée : « Lancer / reprendre » pour l'appliquer."})
+            if u.path == "/api/sync_preview":
+                from . import sync_preview
+                p = self._ep(body.get("ep"))
+                mp4, rep = sync_preview.for_episode(p, load_config())
+                return self._send(200, {"ok": True, "method": rep["method"], "lines": rep["lines"],
+                                        "note": "Aperçu prêt : écoute-le dans « Vidéos & images » ou ci-dessous."})
             if u.path == "/api/ambiance":
                 from . import audio as _audio
                 p = self._ep(body.get("ep"))

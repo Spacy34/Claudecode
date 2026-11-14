@@ -24,11 +24,11 @@ def test_refine_uses_whisper_times_and_interpolates_unknown_words():
     asr = [("Kevin", 0.30, 0.52), ("a", 0.55, 0.60), ("28", 0.62, 1.10), ("ans,", 1.12, 1.40), ("emploi.", 1.95, 2.40),
            ("Toasty", 2.90, 3.30), ("grille", 3.32, 3.60), ("du", 3.62, 3.70), ("pain", 3.72, 4.05)]
     stats = whisper_align.refine(segs, asr)
-    assert stats["matched"] == 8 and stats["total"] == 10  # « 28 » ≠ « vingt-huit » ; « aucun » non transcrit
+    assert stats["matched"] == 9 and stats["total"] == 10  # « 28 » reconnu comme « vingt-huit » ; « aucun » non transcrit
     w = {x["text"]: x for s in segs for x in s["words"]}
     assert (w["Kevin"]["start_s"], w["ans,"]["end_s"], w["pain!"]["end_s"]) == (0.3, 1.4, 4.05)
-    # mots non reconnus : interpolés entre les voisins reconnus, dans l'ordre
-    assert 0.6 <= w["vingt-huit"]["start_s"] < w["ans,"]["start_s"]
+    assert (w["vingt-huit"]["start_s"], w["vingt-huit"]["end_s"]) == (0.62, 1.1)   # chiffres convertis en lettres
+    # mot non reconnu : interpolé entre ses voisins reconnus, dans l'ordre
     assert w["ans,"]["end_s"] <= w["aucun"]["start_s"] < w["emploi."]["start_s"]
     # texte, ordre et indices inchangés (le script fait foi)
     assert [[x["text"] for x in s["words"]] for s in segs] == [[x["text"] for x in s["words"]] for s in words0]
@@ -40,3 +40,22 @@ def test_refine_rejects_absurd_matches():
     asr = [("Kevin", 9.0, 9.2)]   # même mot, mais 9 s plus loin : hors réplique, ignoré
     stats = whisper_align.refine(segs, asr)
     assert stats["matched"] == 0
+
+
+def test_french_numbers_and_spelling():
+    from studio.whisper_align import fr_number, _spell
+    assert fr_number(28) == "vingt-huit" and fr_number(71) == "soixante et onze" and fr_number(80) == "quatre-vingts"
+    assert fr_number(91) == "quatre-vingt-onze" and fr_number(200) == "deux cents" and fr_number(250) == "deux cent cinquante"
+    assert fr_number(3000000) == "trois millions" and fr_number(1000) == "mille" and fr_number(21) == "vingt et un"
+    assert _spell("50") == ["cinquante"] and _spell("50€") == ["cinquante", "euros"] and _spell("3 000 000") == ["trois", "millions"]
+    assert _spell("12,5%") == ["douze", "virgule", "cinq", "pour", "cent"] and _spell("Chloé") == ["Chloé"]
+
+
+def test_full_voice_line_bounds_come_from_heard_words():
+    """Voix complète : les répliques sont découpées à partir des mots entendus, même sans pause entre elles."""
+    lines = ["Plus de messages, plus d'appels.", "Chloé commence à paniquer."]
+    asr = [("Plus", 1.0, 1.2), ("de", 1.2, 1.3), ("messages,", 1.3, 1.8), ("plus", 1.95, 2.1), ("d'appels.", 2.1, 2.6),
+           ("Chloé", 2.62, 2.95), ("commence", 2.95, 3.4), ("à", 3.4, 3.5), ("paniquer.", 3.5, 4.1)]
+    words, stats = whisper_align.align_words(lines, asr, silences=[(0.0, 1.0), (1.8, 1.95), (4.1, 5.0)], span=(1.0, 4.1))
+    assert stats["matched"] == 9
+    assert (words[0][0][0], words[0][-1][1]) == (1.0, 2.6) and (words[1][0][0], words[1][-1][1]) == (2.62, 4.1)

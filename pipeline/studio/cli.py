@@ -952,6 +952,23 @@ def cmd_retake_done(a):
     return 0
 
 
+def cmd_sync_preview(a):
+    """Aperçu de synchro d'une voix complète (fichier + script, ou épisode) : vidéo + tableau de calage."""
+    from . import sync_preview
+    src = Path(a.source)
+    if src.is_file():
+        if not a.script:
+            sys.exit("indiquer le script : studio sync-preview <voix> <script.txt>")
+        out_p = Path(a.out or src.with_name(src.stem + "_synchro.mp4"))
+        mp4, rep = sync_preview.build(src, sync_preview.texts_from_file(a.script), cfg(), out_p, out_p.parent / (out_p.stem + "_travail"))
+    else:
+        mp4, rep = sync_preview.for_episode(ep_path(a.source), cfg())
+    for l in rep["lines"]:
+        print(f"{l['line_id']} {l['start']:7.2f} → {l['end']:7.2f}  {('⚠ ' + l['flag']) if l.get('flag') else '  '} {l['text'][:70]}")
+    print(f"\nCalage : {rep['method']}" + ("" if rep["method"] == "whisper" else "  (installer faster-whisper pour un calage au mot près)"))
+    print(f"Aperçu : {mp4}")
+
+
 def cmd_arreter(a):
     from . import launcher
     ep_path(a.episode)
@@ -1073,6 +1090,11 @@ def build_parser():
     x.add_argument("--note", default="")
     x.add_argument("--failed", action="store_true")
     x.set_defaults(fn=cmd_retake_done)
+    x = sp.add_parser("sync-preview", help="aperçu vidéo du calage d'une voix complète (voix + script, ou épisode)")
+    x.add_argument("source", help="fichier audio, ou nom d'épisode")
+    x.add_argument("script", nargs="?", help="script .txt (une réplique par ligne) si source est un fichier")
+    x.add_argument("--out")
+    x.set_defaults(fn=cmd_sync_preview)
     x = sp.add_parser("arreter", help="arrêter la production en cours d'un épisode (pilote + rendus)")
     x.add_argument("episode")
     x.set_defaults(fn=cmd_arreter)
