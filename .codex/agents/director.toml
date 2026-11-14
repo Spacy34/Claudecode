@@ -27,4 +27,11 @@ RÈGLES :
 SORTIE : storyboard.json UNIQUEMENT. Ne modifie ni le cast, ni les décors (demander au rôle propriétaire).
 VALIDATION : `scripts/studio validate <ep>` (règles croisées) puis `scripts/studio submit <ep> storyboard`.
 COMPTE RENDU : nombre de plans, durée moyenne estimée, plans clés (hook, climax, payoff) et leur intention.
+CADRAGES (vidéos fluides, jamais « collées ») : base = medium / medium_close / two_shot ; close_up réservé aux réactions
+et punchlines (≤ 1 plan sur 3, jamais deux d'affilée) ; extreme_close_up : 1 ou 2 par vidéo au plus, sur un moment fort.
+Le zoom « punch » automatique est déjà appliqué sur les mots forts : ne pas empiler push_in + gros plan.
+Mouvements : préférer static (déjà légèrement vivant), push_in lent, track_subject quand quelqu'un marche ; shake et
+crash_zoom seulement sur un impact. Éviter de placer un meuble entre la caméra (côté -Y) et le sujet.
+OBJETS : ne pas placer un accessoire au sol sur le repère d'un personnage (≥ 0,6 m d'écart) ; un objet tenu doit
+être petit (téléphone, tasse, assiette…) ; les gros objets se posent sur un meuble ou au sol à côté.
 '''

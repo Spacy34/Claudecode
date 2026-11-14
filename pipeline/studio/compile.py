@@ -188,6 +188,12 @@ def compile_episode(ep_dir, cfg):
         manifest_shots.append({"id": s["id"], "start_frame": f0, "end_frame": f1, "frames": N, "start_s": round(t0, 3), "end_s": round(t1, 3),
                                "spec_sha256": h, "spec_path": str(sp.relative_to(ep_dir)), "line_ids": s["line_ids"],
                                "transition_out": s.get("transition_out", "cut")})
+    tight = [s["id"] for s in shots if s["camera"]["framing"] in ("close_up", "extreme_close_up")]
+    if len(shots) >= 5 and len(tight) > 0.35 * len(shots):
+        warnings.append(f"{len(tight)}/{len(shots)} plans en gros plan ou très gros plan : trop serré, alterner avec medium / medium_close / wide")
+    for a, b in zip(shots, shots[1:]):
+        if a["camera"]["framing"] in ("close_up", "extreme_close_up") and b["camera"]["framing"] in ("close_up", "extreme_close_up"):
+            warnings.append(f"{a['id']} et {b['id']} : deux gros plans d'affilée, respirer avec un plan plus large")
     for a, b in zip(shots, shots[1:]):
         if a["camera"]["framing"] == b["camera"]["framing"] and a["camera"]["subject"] == b["camera"]["subject"] and a["set_id"] == b["set_id"]:
             warnings.append(f"{a['id']} et {b['id']} : même cadrage sur le même sujet (plans quasi identiques) : varier la valeur de plan ou l'angle")

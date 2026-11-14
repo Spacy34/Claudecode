@@ -352,9 +352,15 @@ class CharAnim:
         self.claim(f0 + 1, f1, loc=True)
         self.pose(name, f0 + 5, blend=1.15 * k)    # léger dépassement
         self.pose(name, f0 + 8, blend=1.0 * k)
+        # pose TENUE mais vivante (moving hold) : petites variations lentes, jamais une statue
+        fm, sgn = f0 + 20, 1
+        while fm < f1 - 10:
+            self.pose(name, fm, blend=k * (1.0 + 0.05 * sgn))
+            fm += 16
+            sgn = -sgn
         if settle:
-            self.pose(name, f1 - 6, blend=0.97 * k)
-            self.pose("rest", f1)
+            self.pose(name, f1 - 8, blend=0.97 * k)
+            self.pose("rest", f1 + 2)   # retour au repos sur 10 images : plus souple
         return f1
 
     def act_idle(self, f0, dur, k, target, world):

@@ -8,6 +8,10 @@ import bpy
 from mathutils import Vector
 from bpy_extras.object_utils import world_to_camera_view
 
+# au-delà : plan anormalement serré pour la valeur demandée (tête qui remplit l'écran, sensation de caméra collée)
+# (têtes « goofy » volumineuses : un medium normal montre déjà ~40 % de tête ; on ne vise que les plans collés)
+MAX_HEAD_FRAC = {"wide": 0.25, "full": 0.36, "medium": 0.56, "medium_close": 0.66, "close_up": 0.82, "extreme_close_up": 2.0,
+                 "two_shot": 0.50, "over_shoulder": 0.66, "insert": 2.0}
 MIN_HEAD_FRAC = {"wide": 0.025, "full": 0.05, "medium": 0.09, "medium_close": 0.13, "close_up": 0.2, "extreme_close_up": 0.3,
                  "two_shot": 0.07, "over_shoulder": 0.12, "insert": 0.0}
 
@@ -49,6 +53,9 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
                 if head_frac < MIN_HEAD_FRAC.get(framing, 0.0) * 0.7:
                     out.append({"id": f"subject_too_small:{cid}", "severity": "major", "status": "fail", "frame": f,
                                 "message": f"Tête du sujet = {head_frac:.1%} de la hauteur, attendu ≥ {MIN_HEAD_FRAC[framing]:.0%} pour {framing}."})
+                if head_frac > MAX_HEAD_FRAC.get(framing, 2.0):
+                    out.append({"id": f"subject_too_close:{cid}", "severity": "minor", "status": "warn", "frame": f,
+                                "message": f"Plan trop serré pour un {framing} : la tête occupe {head_frac:.0%} de la hauteur (max {MAX_HEAD_FRAC[framing]:.0%})."})
                 if ty > 1.0 and framing not in ("close_up", "extreme_close_up"):
                     out.append({"id": f"head_cropped:{cid}", "severity": "major", "status": "fail", "frame": f,
                                 "message": f"Haut de la tête coupé (y={ty:.2f})."})
@@ -83,6 +90,20 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
                 if (Vector((pa.x, pa.y)) - Vector((pb.x, pb.y))).length < lim and abs(pa.z - pb.z) < 0.5:
                     out.append({"id": f"char_overlap:{ids[i]}:{ids[j]}", "severity": "minor", "status": "warn", "frame": f,
                                 "message": f"{ids[i]} et {ids[j]} s'interpénètrent probablement."})
+        # objets qui traversent un personnage (tenu ou posé) : corps approché par le torse et la tête
+        for pid, st in props_state.items():
+            o = st["obj"]
+            if o.scale.x < 0.01 or st.get("airborne_at", {}).get(f):
+                continue
+            lo, hi = _bbox(o)
+            for cid, ch in chars.items():
+                lm = ch.landmarks_world()
+                for part, pt in (("ventre", (lm["hips"] + lm["chest"]) / 2), ("tête", lm["head"])):
+                    m = -0.02 if st.get("held") == cid else 0.0
+                    if lo.x - m < pt.x < hi.x + m and lo.y - m < pt.y < hi.y + m and lo.z - m < pt.z < hi.z + m:
+                        out.append({"id": f"prop_in_character:{pid}:{cid}", "severity": "minor", "status": "warn", "frame": f,
+                                    "message": f"{pid} traverse {cid} ({part}) : écarter l'objet ou réduire sa taille."})
+                        break
         for pid, st in props_state.items():
             if st.get("held") or st.get("airborne_at", {}).get(f):
                 continue

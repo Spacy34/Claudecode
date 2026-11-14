@@ -54,6 +54,15 @@ def setup_render(sc, profile, engine_pref='auto', threads=0):
             sc.view_settings.look = 'None'
     except Exception:
         pass
+    # flou de mouvement : la clé de la fluidité perçue à 30 images/s. Obturateur ouvert À l'image (« START ») :
+    # les changements instantanés (bouches, clignements, apparitions) ne laissent pas d'image fantôme.
+    if profile.get('motion_blur', False):
+        try:
+            sc.render.use_motion_blur = True
+            sc.render.motion_blur_shutter = float(profile.get('motion_blur_shutter', 0.35))
+            sc.render.motion_blur_position = 'START'
+        except Exception:
+            pass
     if threads:
         sc.render.threads_mode = 'FIXED'
         sc.render.threads = int(threads)

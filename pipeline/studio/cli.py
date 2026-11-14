@@ -36,7 +36,8 @@ def human_gates():
 FIX_OWNER = {"char_never_visible": "director", "char_offscreen": "director", "subject_too_small": "director", "head_cropped": "director",
              "face_under_subtitles": "director", "face_away": "director/animator", "face_profile": "director/animator",
              "foreground_occluder": "director", "out_of_set": "director/animator", "inside_furniture": "animator",
-             "char_overlap": "director/animator", "floating_prop": "environment-artist/animator", "render_failed": "pipeline-engineer"}
+             "char_overlap": "director/animator", "floating_prop": "environment-artist/animator", "render_failed": "pipeline-engineer",
+             "prop_in_character": "director/animator", "subject_too_close": "director"}
 
 
 # Seuls ces défauts BLOQUENT une validation automatique : vidéo inutilisable (sévérité blocker : conteneur, codec,

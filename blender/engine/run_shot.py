@@ -128,7 +128,37 @@ class Shot:
             o.rotation_euler = (0, 0, D(p.get("rot_deg", 0.0)))
             self.props[p["id"]] = o
             self.props_state[p["id"]] = {"obj": o, "held": p.get("held_by"), "hand": p.get("hand", "R"), "airborne_at": {}}
+        self._separate_props_from_characters()
         lighting.setup(self.sc, sp["mood"], center=(0, 0.5, 1.0), interior=self.set["interior"], sky=self.set.get("sky"))
+
+    # meubles avec lesquels on interagit (s'asseoir, se tenir derrière) : jamais déplacés automatiquement
+    FURNITURE = {"sofa", "chair", "bench", "bed", "toilet", "car", "desk", "school_desk", "table", "restaurant_table", "counter",
+                 "stove", "fridge", "shelf", "lifeguard_tower", "building", "tree", "palm_tree", "streetlight", "door", "window",
+                 "rug", "beach_towel", "blackboard", "menu_board", "painting", "parasol"}
+
+    def _separate_props_from_characters(self):
+        """Un objet posé AU SOL sur le repère d'un personnage s'enfoncerait dans son corps : on l'écarte juste assez."""
+        for p in self.spec.get("props", []):
+            o = self.props[p["id"]]
+            if p.get("held_by") or p.get("height", 0.0) > 0.3 or p["type"] in self.FURNITURE:
+                continue
+            bpy.context.view_layer.update()
+            lo, hi = checks._bbox(o)
+            rp = max(hi.x - lo.x, hi.y - lo.y) / 2.0
+            for cid, ch in self.chars.items():
+                c = Vector((ch.joints["root"].location.x, ch.joints["root"].location.y))
+                pp = Vector((o.location.x, o.location.y))
+                need = rp + ch.torso_w * 1.25 + 0.04
+                v = pp - c
+                if v.length >= need:
+                    continue
+                if v.length < 1e-3:
+                    v = Vector((1.0 if c.x <= 0 else -1.0, 0.0))   # vers le centre du décor
+                v.normalize()
+                newp = c + v * need
+                o.location.x, o.location.y = newp.x, newp.y
+                self.report.setdefault("adjustments", []).append(
+                    {"type": "prop_moved_off_character", "prop": p["id"], "character": cid, "to": [round(newp.x, 2), round(newp.y, 2)]})
 
     # ------------------------------------------------------------ animation personnages
     def animate_characters(self):
@@ -242,10 +272,21 @@ class Shot:
                         pa.key(o, 'rotation_euler', 2, f + dur, o.rotation_euler.z + D(720))
                 if holder and holder in self.chars:
                     self.sc.frame_set(f)
-                    hj = self.chars[holder].joints[f"hand_{hand}"]
-                    p = hj.matrix_world @ Vector((0, -0.05, -0.09 * self.chars[holder].H))
-                    p.z -= 0.05
-                    rz = self.chars[holder].joints["root"].matrix_world.to_euler().z
+                    chh = self.chars[holder]
+                    hj = chh.joints[f"hand_{hand}"]
+                    p = hj.matrix_world @ Vector((0, -0.05, -0.09 * chh.H))
+                    rz = chh.joints["root"].matrix_world.to_euler().z
+                    # objet tenu DEVANT la main, décalé de sa propre taille (sinon il s'enfonce dans le bras ou le ventre)
+                    ext = st.get("ext")
+                    if ext is None:
+                        o.location, o.rotation_euler = (0, 0, 0), (0, 0, 0)
+                        bpy.context.view_layer.update()
+                        lo_, hi_ = checks._bbox(o)
+                        ext = st["ext"] = (hi_.x - lo_.x, hi_.y - lo_.y, hi_.z - lo_.z, lo_.z)
+                    fwd = Vector((math.sin(rz), -math.cos(rz), 0.0))
+                    side = Vector((math.cos(rz), math.sin(rz), 0.0)) * (1 if hand == "L" else -1)
+                    p += fwd * (ext[1] * 0.5 + 0.03) + side * (ext[0] * 0.25)
+                    p.z -= ext[3] + ext[2] * 0.35   # la main tient l'objet vers son tiers bas, pas par le dessous
                     for ax in range(3):
                         pa.key(o, 'location', ax, f, p[ax], 'LINEAR')
                     pa.key(o, 'rotation_euler', 2, f, rz, 'LINEAR')
@@ -316,13 +357,67 @@ class Shot:
             return {"kind": "point", "point": Vector((p[0], p[1], p[2] if len(p) > 2 else 1.0))}
         return fn
 
+    _last_occluder = None
+    _transp = None
+
+    def _transparent_props(self):
+        """Accessoires que la caméra ne cherche pas à contourner : sujet du plan, objets tenus, petits objets.
+        Les GROS accessoires (table, canapé, voiture…) sont de vrais obstacles."""
+        if self._transp is None:
+            cs = self.spec["camera"]
+            keep = {x.get("id") for x in (cs.get("subject"), cs.get("secondary_subject")) if isinstance(x, dict)}
+            ids = []
+            for p in self.spec.get("props", []):
+                o = self.props.get(p["id"])
+                if o is None:
+                    continue
+                lo, hi = checks._bbox(o)
+                big = max(hi.x - lo.x, hi.y - lo.y, hi.z - lo.z) >= 0.5
+                if p["id"] in keep or p.get("held_by") or not big:
+                    ids.append(p["id"])
+            self._transp = tuple(ids) or ("\0",)
+        return self._transp
+
+    def _hide_blocking_objects(self, rig, subj, cs):
+        """Obstacle impossible à contourner : masqué pour la CAMÉRA seulement, dans ce plan (jusqu'à 4 objets)."""
+        f = 1
+        self.sc.frame_set(f)
+        cam_p = rig.keys[0][1]
+        pts = [rig.keys[0][2]]
+        if subj is not None and cs["subject"].get("kind") == "char":
+            lm = subj(f)["lm"]
+            pts = [lm["eyes"], lm["chest"], rig.keys[0][2]]
+        hidden = []
+        for _ in range(4):
+            found = None
+            for p_ in pts:
+                v = cam_p - p_
+                self._last_occluder = None
+                h = self._occluder(p_, v.normalized(), v.length)
+                if h is not None and h < v.length - 0.05 and self._last_occluder is not None:
+                    found = self._last_occluder
+                    break
+            if found is None:
+                break
+            top = found
+            while top.parent is not None:
+                top = top.parent
+            for o in [top] + list(top.children_recursive):
+                if hasattr(o, "visible_camera"):
+                    o.visible_camera = False   # invisible pour la caméra, garde ses ombres et sa lumière
+                    o.hide_viewport = True     # ignoré par les lancers de rayons suivants (ce test, contrôles)
+            bpy.context.view_layer.update()
+            hidden.append(top.name)
+        if hidden:
+            self.report.setdefault("adjustments", []).append({"type": "occluder_hidden_for_camera", "objects": hidden})
+
     def _occluder(self, aim, direction, dist):
         dg = bpy.context.evaluated_depsgraph_get()
         org = aim + direction * 0.3
         rem = dist - 0.3
         travelled = 0.3
         char_prefix = tuple(c + "_" for c in self.chars)
-        prop_prefix = tuple(self.props) or ("\0",)
+        prop_prefix = self._transparent_props()
         for _ in range(16):
             hit, loc, nrm, idx, ob, mw = self.sc.ray_cast(dg, org, direction, distance=rem)
             if not hit:
@@ -337,6 +432,7 @@ class Shot:
                 if rem <= 0:
                     return None
                 continue
+            self._last_occluder = ob
             return travelled
         return None
 
@@ -358,11 +454,22 @@ class Shot:
         else:
             p0 = rig.solve(cs, subj, sec, 1, self._occluder, 0.0)
             p1 = rig.solve(cs, subj, sec, self.N, self._occluder, 1.0)
-            if move in ("static", "shake", "handheld"):
+            if move in ("shake", "handheld"):
                 p1 = (p0[0], p0[1], p0[2], p0[3])   # cadre fixe : pas de dérive si le sujet bouge peu
+            elif move == "static":
+                # plan « fixe » vivant : très légère avancée + glissement latéral, en douceur (jamais une image figée)
+                pos0, aim0 = p0[0], p0[1]
+                fwd = (aim0 - pos0)
+                side = fwd.cross(Vector((0, 0, 1)))
+                if side.length > 1e-6:
+                    side.normalize()
+                drift = fwd * 0.04 + side * (fwd.length * 0.015 * (1 if self.spec["shot_id"][-1] in "02468" else -1))
+                p1 = (pos0 + drift, aim0 + side * (fwd.length * 0.01), p0[2], p0[3])
             rig.key(1, *p0)
             rig.key(self.N, *p1)
         self.cam.data.lens = rig.keys[0][3]
+        if rig.blocked:
+            self._hide_blocking_objects(rig, subj, cs)
         # montage nerveux : zoom « punch » sur les mots forts (calculés à la compilation)
         for pnch in self.spec.get("punches", []):
             fp = int(pnch["frame"])

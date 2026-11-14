@@ -4,7 +4,7 @@ Les tests vérifient que ces listes sont identiques aux enums des schémas JSON 
 toute capacité déclarée dans un contrat est réellement implémentée par le moteur.
 """
 
-ENGINE_VERSION = "0.4.0"
+ENGINE_VERSION = "0.5.0"
 
 HAIR_STYLES = ["none", "short", "spiky", "bowl", "mohawk", "bun", "long", "curly"]
 TOPS = ["tshirt", "shirt", "hoodie", "suit", "dress", "tank"]
