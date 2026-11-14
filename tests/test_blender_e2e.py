@@ -244,3 +244,20 @@ def test_wardrobe_v2_builds_and_validates(compiled):
         rec = render.render_shot(cfg, ep, {"id": "sh_001", "spec_path": f"shots/ward_{lay}.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]},
                                  "tiny", mode="stills", frames="1")
         assert rec["status"] in ("rendered", "cached"), rec.get("error")
+
+
+def test_big_held_prop_never_enters_the_head(compiled):
+    """Régression (constaté par l'utilisateur) : un gros colis tenu pendant un geste finissait dans la tête.
+    Gros objet = porté à deux mains devant le buste ; aucune intersection avec la tête sur tout le plan."""
+    ep, cfg, man = compiled
+    spec = read_json(ep / next(s for s in man["shots"] if s["id"] == "sh_003")["spec_path"])   # plan avec gestes de parole
+    cid = spec["characters"][0]["id"]
+    spec["props"] = [{"id": "pr_bigbox", "type": "box", "color": "#C68B59", "scale": 1.0, "label": "COLIS", "parts": None, "external_path_abs": None,
+                      "target_height": None, "rot_offset_deg": 0, "external_sha256": None, "pos": None, "height": 0, "held_by": cid, "hand": "R", "rot_deg": 0}]
+    write_json(ep / "shots" / "carry.json", spec)
+    frames = ",".join(str(f) for f in range(1, spec["frames"] + 1, 6))
+    rec = render.render_shot(cfg, ep, {"id": "sh_003", "spec_path": "shots/carry.json", "spec_sha256": sha256_json(spec), "frames": spec["frames"]},
+                             "tiny", mode="stills", frames=frames)
+    rep = rec["scene_report"]
+    assert any("portage à deux mains" in e.get("what", "") for e in rep.get("events", []))
+    assert not [c for c in rep["checks"] if c["id"].startswith("prop_in_character") and "tête" in c["message"]], rep["checks"]

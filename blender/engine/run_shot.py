@@ -138,6 +138,11 @@ class Shot:
 
     def _separate_props_from_characters(self):
         """Un objet posé AU SOL sur le repère d'un personnage s'enfoncerait dans son corps : on l'écarte juste assez."""
+        bpy.context.view_layer.update()
+        self.prop_size = {}
+        for pid, o in self.props.items():
+            lo, hi = checks._bbox(o)
+            self.prop_size[pid] = max(hi.x - lo.x, hi.y - lo.y, hi.z - lo.z)
         for p in self.spec.get("props", []):
             o = self.props[p["id"]]
             if p.get("held_by") or p.get("height", 0.0) > 0.3 or p["type"] in self.FURNITURE:
@@ -208,6 +213,7 @@ class Shot:
                 if a1 - a0 >= 24 and not any(b0 < a1 and a0 < b1 for b0, b1 in busy):
                     ca.act_talk_gesture(int(a0), int(a1 - a0), 0.8, None, None)
                     self.report["events"].append({"char": t["char"], "frame": a0, "what": "auto:talk_gesture"})
+        self._carry_arms()
         for ca in self.cas.values():
             ca.follow_through(1, self.N)
         for ca in self.cas.values():
@@ -216,6 +222,46 @@ class Shot:
         self.anim.apply()
 
     # ------------------------------------------------------------ accessoires (cuits frame par frame)
+    def is_big(self, pid, cid):
+        ch = self.chars.get(cid)
+        return ch is not None and self.prop_size.get(pid, 0.0) >= 0.30 * ch.H
+
+    def carry_intervals(self):
+        """(personnage, objet, début, fin) pour chaque objet tenu (held_by au départ, attach … detach/throw/fall)."""
+        out = []
+        acts = sorted(self.spec.get("prop_actions", []), key=lambda a: a["frame"])
+        for p in self.spec.get("props", []):
+            holder, f0 = p.get("held_by"), 1
+            for a in [a for a in acts if a["prop"] == p["id"]]:
+                if a["action"] == "attach":
+                    if holder:
+                        out.append((holder, p["id"], f0, a["frame"] - 1))
+                    holder, f0 = a.get("char"), a["frame"]
+                elif a["action"] in ("detach", "throw", "fall") and holder:
+                    out.append((holder, p["id"], f0, a["frame"] - (10 if a["action"] == "throw" else 0)))
+                    holder = None
+            if holder:
+                out.append((holder, p["id"], f0, self.N))
+        return [x for x in out if x[0] in self.cas and x[3] > x[2]]
+
+    def _carry_arms(self):
+        """Gros objet tenu : porté À DEUX MAINS devant le buste (bras en avant), gestes de bras suspendus pendant le
+        portage. Sinon la boîte suit une main qui gesticule et finit dans la tête (constaté)."""
+        arms = ["upper_arm_L", "upper_arm_R", "forearm_L", "forearm_R"]
+        for cid, pid, f0, f1 in self.carry_intervals():
+            if not self.is_big(pid, cid):
+                continue
+            ca = self.cas[cid]
+            ca.claim(f0 + 1 if f0 > 1 else 1, f1 - 1 if f1 < self.N else self.N, joints=arms)
+            fs = sorted({f0 if f0 == 1 else f0 + 6} | set(range(f0 + 20, f1 - 4, 18)) | {f1 if f1 == self.N else f1 - 2})
+            for k, f in enumerate(fs):
+                bob = 3.0 * math.sin(k * 1.3)
+                for side, sg in (("L", 1), ("R", -1)):
+                    ca.rot(f"upper_arm_{side}", 0, f, -(34 + bob))   # bras devant, objet au niveau du ventre
+                    ca.rot(f"upper_arm_{side}", 1, f, -sg * -10)
+                    ca.rot(f"forearm_{side}", 0, f, -(48 - bob))
+            self.report["events"].append({"char": cid, "frame": f0, "what": f"portage à deux mains de {pid}"})
+
     def animate_props(self):
         pa = animation.Animator(self.fps)
         acts = sorted(self.spec.get("prop_actions", []), key=lambda a: a["frame"])
@@ -285,8 +331,17 @@ class Shot:
                         ext = st["ext"] = (hi_.x - lo_.x, hi_.y - lo_.y, hi_.z - lo_.z, lo_.z)
                     fwd = Vector((math.sin(rz), -math.cos(rz), 0.0))
                     side = Vector((math.cos(rz), math.sin(rz), 0.0)) * (1 if hand == "L" else -1)
-                    p += fwd * (ext[1] * 0.5 + 0.03) + side * (ext[0] * 0.25)
-                    p.z -= ext[3] + ext[2] * 0.35   # la main tient l'objet vers son tiers bas, pas par le dessous
+                    if self.is_big(pid, holder):
+                        # porté à deux mains : centré entre les mains, devant le buste
+                        hl = chh.joints["hand_L"].matrix_world @ Vector((0, -0.05, -0.06 * chh.H))
+                        hr_ = chh.joints["hand_R"].matrix_world @ Vector((0, -0.05, -0.06 * chh.H))
+                        p = (hl + hr_) / 2 + fwd * (ext[1] * 0.5 - 0.02)
+                        p.z -= ext[3] + ext[2] * 0.3
+                        p = self._keep_out_of_body(p, ext, chh, fwd)
+                    else:
+                        p += fwd * (ext[1] * 0.5 + 0.03) + side * (ext[0] * 0.25)
+                        p.z -= ext[3] + ext[2] * 0.35   # la main tient l'objet vers son tiers bas, pas par le dessous
+                        p = self._keep_out_of_body(p, ext, chh, side)
                     for ax in range(3):
                         pa.key(o, 'location', ax, f, p[ax], 'LINEAR')
                     pa.key(o, 'rotation_euler', 2, f, rz, 'LINEAR')
@@ -321,6 +376,39 @@ class Shot:
                 pa.key(o, 'rotation_euler', 2, f, rz0 + D(6) * math.sin(k * 0.9))
                 k += 1
         pa.apply()
+
+    @staticmethod
+    def body_volumes(ch):
+        """Volumes du corps (centre, rayon horizontal, z bas, z haut) : tête et buste, en coordonnées monde."""
+        lm = ch.landmarks_world()
+        hr = ch.head_r * 1.08
+        head = (lm["head"], hr, lm["head"].z - hr, lm["head"].z + hr)
+        torso = ((lm["hips"] + lm["neck"]) / 2, ch.torso_w * 1.05, lm["hips"].z - 0.05 * ch.H, lm["neck"].z)
+        return {"tête": head, "buste": torso}
+
+    def _keep_out_of_body(self, p, ext, ch, side):
+        """L'objet tenu ne doit traverser ni la tête ni le buste de celui qui le tient (bras levé pour un geste,
+        geste de parole…) : on l'écarte horizontalement, de préférence vers l'extérieur, juste assez."""
+        rp = 0.5 * max(ext[0], ext[1])
+        for _ in range(3):
+            moved = False
+            z0, z1 = p.z + ext[3], p.z + ext[3] + ext[2]
+            for c, r, lo, hi in self.body_volumes(ch).values():
+                if z1 < lo or z0 > hi:
+                    continue
+                v = Vector((p.x - c.x, p.y - c.y))
+                need = rp + r + 0.02
+                if v.length >= need:
+                    continue
+                if v.length < 1e-3 or v.dot(Vector((side.x, side.y))) < 0:
+                    v = Vector((side.x, side.y)) + v * 0.3   # vers l'extérieur, côté de la main
+                v.normalize()
+                q = Vector((c.x, c.y)) + v * need
+                p = Vector((q.x, q.y, p.z))
+                moved = True
+            if not moved:
+                break
+        return p
 
     def _drop(self, o, f):
         p0 = o.location.copy()

@@ -90,7 +90,8 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
                 if (Vector((pa.x, pa.y)) - Vector((pb.x, pb.y))).length < lim and abs(pa.z - pb.z) < 0.5:
                     out.append({"id": f"char_overlap:{ids[i]}:{ids[j]}", "severity": "minor", "status": "warn", "frame": f,
                                 "message": f"{ids[i]} et {ids[j]} s'interpénètrent probablement."})
-        # objets qui traversent un personnage (tenu ou posé) : corps approché par le torse et la tête
+        # objets qui traversent un personnage (tenu ou posé) : boîte englobante de l'objet contre les VOLUMES de la tête
+        # et du buste (un simple test de point au centre laissait passer une boîte devant le visage)
         for pid, st in props_state.items():
             o = st["obj"]
             if o.scale.x < 0.01 or st.get("airborne_at", {}).get(f):
@@ -98,11 +99,15 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
             lo, hi = _bbox(o)
             for cid, ch in chars.items():
                 lm = ch.landmarks_world()
-                for part, pt in (("ventre", (lm["hips"] + lm["chest"]) / 2), ("tête", lm["head"])):
-                    m = -0.02 if st.get("held") == cid else 0.0
-                    if lo.x - m < pt.x < hi.x + m and lo.y - m < pt.y < hi.y + m and lo.z - m < pt.z < hi.z + m:
-                        out.append({"id": f"prop_in_character:{pid}:{cid}", "severity": "minor", "status": "warn", "frame": f,
-                                    "message": f"{pid} traverse {cid} ({part}) : écarter l'objet ou réduire sa taille."})
+                vols = (("tête", lm["head"], ch.head_r * 0.95), ("buste", (lm["hips"] + lm["neck"]) / 2, ch.torso_w * 0.9))
+                for part, c, r in vols:
+                    q = Vector((min(max(c.x, lo.x), hi.x), min(max(c.y, lo.y), hi.y), min(max(c.z, lo.z), hi.z)))
+                    if (q - c).length < r:
+                        held = st.get("held") == cid
+                        out.append({"id": f"prop_in_character:{pid}:{cid}", "severity": "major" if part == "tête" else "minor",
+                                    "status": "warn", "frame": f,
+                                    "message": f"{pid} {'tenu par' if held else 'traverse'} {cid} entre dans {'sa tête' if part == 'tête' else 'son buste'} : "
+                                               f"{'tenir avec l autre main / geste moins haut' if held else 'écarter l objet'}."})
                         break
         for pid, st in props_state.items():
             if st.get("held") or st.get("airborne_at", {}).get(f):
@@ -118,7 +123,8 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
                 if gap > 0.06:
                     out.append({"id": f"floating_prop:{pid}", "severity": "minor", "status": "warn", "frame": f,
                                 "message": f"{pid} flotte à {gap:.2f} m au-dessus de son support."})
-    fg = foreground_occlusion(sc, cam, chars, spec, sample_frames[len(sample_frames) // 2])
+    held = tuple(pid for pid, st in props_state.items() if st.get("held"))
+    fg = foreground_occlusion(sc, cam, chars, spec, sample_frames[len(sample_frames) // 2], ignore=held)
     if fg is not None and fg["fraction"] > 0.25:
         out.append({"id": "foreground_occluder", "severity": "major" if fg["fraction"] > 0.4 else "minor",
                     "status": "fail" if fg["fraction"] > 0.4 else "warn", "frame": fg["frame"],
@@ -163,7 +169,7 @@ def _bbox(o):
             Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts))))
 
 
-def foreground_occlusion(sc, cam, chars, spec, f):
+def foreground_occlusion(sc, cam, chars, spec, f, ignore=()):
     """Lance une grille de rayons depuis la caméra : part de l'image occupée par un objet (ni sol, ni personnage)
     situé nettement plus près que le sujet. Repère les tables/meubles qui bouchent le premier plan."""
     subj = spec["camera"].get("subject") or {}
@@ -193,7 +199,7 @@ def foreground_occlusion(sc, cam, chars, spec, f):
             d = (rot @ local).normalized()
             total += 1
             ok, loc, nrm, idx, ob, mw = sc.ray_cast(dg, cpos, d, distance=sdist * 0.75)
-            if not ok or ob is None or ob.name.startswith(char_prefix) or ob.name.startswith("fx_"):
+            if not ok or ob is None or ob.name.startswith(char_prefix) or ob.name.startswith("fx_") or (ignore and ob.name.startswith(ignore)):
                 continue
             if nrm.z > 0.85 and loc.z < 0.08:   # sol
                 continue
