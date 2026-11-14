@@ -169,18 +169,28 @@ function renderNew(){
       ${inbox.length?`<span class="upl">ou depuis _inbox <select id="nInbox"><option value="">—</option>${inbox.map(f=>`<option>${esc(f)}</option>`).join("")}</select></span>`:""}
     </div>
     <textarea id="nText" placeholder="Script imposé : une réplique par ligne.&#10;Narrateur : la ligne telle quelle.&#10;Personnage : « Prénom: sa réplique »&#10;&#10;Chloé avait 47 notifications non lues.&#10;Chloé: Je réponds jamais, c'est un principe."></textarea>
-    <p class="hint">Les voix enregistrées, la musique et les bruitages se fournissent ensuite dans l'onglet « Voix &amp; sons » de l'épisode (avant ou pendant la production).</p>
+    <label>Voix complète déjà enregistrée (facultatif)</label>
+    <div class="row"><label class="filebtn">Choisir le fichier audio (ElevenLabs…)<input type="file" id="nVoice" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac,.opus,.webm"></label>
+      <span class="hint" id="nVoiceName">aucune : voix de synthèse</span></div>
+    <p class="hint">Toute la vidéo se calera sur ce fichier : il doit dire exactement le texte ci-dessus, dans l'ordre. Pour un découpage
+      fiable, laisse une pause nette entre deux répliques (dans ElevenLabs : une ligne vide ou <code>&lt;break time="0.7s" /&gt;</code>).
+      Musique, bruitages et voix réplique par réplique se règlent ensuite dans l'onglet « Voix &amp; sons ».</p>
     <div class="row"><label class="switch"><input type="checkbox" id="nLaunch" checked> Lancer la production tout de suite</label>
       <button class="primary" id="nGo">Créer la vidéo</button></div>
     <pre class="log" id="nOut" style="display:none"></pre>
   </div>`;
   $("nFile").onchange = async (ev) => { const f = ev.target.files[0]; if (f){ $("nText").value = await f.text(); if(!$("nName").value) $("nName").value = f.name.replace(/\.txt$/,""); } };
   if ($("nInbox")) $("nInbox").onchange = async (ev) => { if (!ev.target.value) return; const j = await api("/api/inbox?name="+encodeURIComponent(ev.target.value)); $("nText").value=j.text; if(!$("nName").value) $("nName").value=ev.target.value.replace(/\.txt$/,""); };
+  $("nVoice").onchange = (ev) => { const f = ev.target.files[0]; $("nVoiceName").textContent = f ? f.name : "aucune : voix de synthèse"; };
   $("nGo").onclick = async () => {
     const b = $("nGo"); b.disabled = true; b.textContent = "Création…";
     try {
-      const j = await post("/api/new", {mode:$("nMode").value, name:$("nName").value, duration:$("nDur").value||null, text:$("nText").value, launch:$("nLaunch").checked});
-      toast(`Épisode ${j.ep} créé${j.pid?" et lancé":""}.`); S.view="ep"; S.ep=j.ep; S.sig={}; await refresh(); loadDetail();
+      const voice = $("nVoice").files[0];
+      const launch = $("nLaunch").checked;
+      const j = await post("/api/new", {mode:$("nMode").value, name:$("nName").value, duration:$("nDur").value||null, text:$("nText").value, launch: launch && !voice});
+      S.ep = j.ep;
+      if (voice){ b.textContent = "Envoi de la voix…"; await upload("full", voice); if (launch) await post("/api/launch", {ep:j.ep}); }
+      toast(`Épisode ${j.ep} créé${voice?" avec ta voix":""}${launch?" et lancé":""}.`); S.view="ep"; S.sig={}; await refresh(); loadDetail();
     } catch(e){ const o=$("nOut"); o.style.display="block"; o.textContent = e.message; b.disabled=false; b.textContent="Créer la vidéo"; }
   };
 }
@@ -259,7 +269,13 @@ async function upload(kind, file, extra={}){
 }
 function tabAudio(d){
   const lines = d.lines;
-  setBody("audio", {l:lines, m:d.music}, `<div class="panel">
+  const full = d.full_voice;
+  setBody("audio", {l:lines, m:d.music, f:full}, `<div class="panel">
+    <b>Voix complète</b> <span class="hint">(ElevenLabs ou enregistrement : découpée en répliques, toute la vidéo se cale dessus)</span>
+    <div class="row" style="margin-top:8px">${full?`<audio controls src="${fileUrl(d,"audio/full_voice/"+full)}"></audio> <button class="small danger" id="fDel">Retirer</button>`:'<span class="hint">aucune : synthèse ou voix réplique par réplique</span>'}
+      ${upField("fUp", full ? "Remplacer…" : "Fournir la voix complète…")}</div>
+    ${full?'<p class="hint">Le découpage s\'affiche dans la colonne « Voix » ci-dessous après le calcul de la voix (⚠ = à vérifier : laisse des pauses nettes entre les répliques).</p>':""}</div>
+    <div class="panel">
     <b>Musique de fond</b> <span class="hint">(remplace la musique générée ; vous devez avoir les droits d'usage)</span>
     <div class="row" style="margin-top:8px">${d.music.length?`<audio controls src="${fileUrl(d,"audio/music/"+d.music[0])}"></audio> <button class="small danger" id="mDel">Retirer</button>`:'<span class="hint">musique générée par défaut</span>'}
       ${upField("mUp", d.music.length ? "Changer la musique…" : "Choisir une musique…")}</div></div>
@@ -268,14 +284,17 @@ function tabAudio(d){
     Les changements sont pris en compte au prochain « Lancer / reprendre ».</p>
     ${lines.length?`<table><tr><th>#</th><th>Qui</th><th>Texte</th><th>Voix</th><th>Bruitage</th></tr>${lines.map(l=>`<tr>
       <td class="note nw">${esc(l.id)}</td><td class="note nw">${esc(l.speaker.replace(/^ch_/,""))}</td><td>${esc(l.text)}</td>
-      <td>${l.recording?`<audio controls src="${fileUrl(d,"audio/recorded/"+l.recording)}"></audio><br><button class="small danger" data-dl="${esc(l.id)}">Retirer</button>`:"synthèse"}
-        <div>${upField("v_"+l.id, l.recording ? "Remplacer…" : "Ma voix…")}</div></td>
+      <td>${full ? (l.align ? `<span class="note nw">${l.align.start.toFixed(2)} → ${l.align.end.toFixed(2)} s</span>${l.align.flag?`<div class="sev minor">⚠ ${esc(l.align.flag)}</div>`:""}` : '<span class="note">voix complète</span>')
+        : `${l.recording?`<audio controls src="${fileUrl(d,"audio/recorded/"+l.recording)}"></audio><br><button class="small danger" data-dl="${esc(l.id)}">Retirer</button>`:"synthèse"}
+        <div>${upField("v_"+l.id, l.recording ? "Remplacer…" : "Ma voix…")}</div>`}</td>
       <td>${l.sfx.map(s=>`<div class="note">mot ${s.word} : ${esc(s.original||s.file)} <button class="small danger" data-ds="${esc(l.id)}" data-w="${s.word}">×</button></div>`).join("")}
         <div class="upl"><select id="w_${esc(l.id)}">${l.text.split(/\s+/).filter(Boolean).map((w,i)=>`<option value="${i}">${i} · ${esc(w.slice(0,18))}</option>`).join("")}</select>${upField("s_"+l.id, "+ son")}</div></td></tr>`).join("")}</table>`
       : '<p class="hint">Les répliques apparaîtront ici dès que le script existe.</p>'}</div>`, () => {
     const done = (j) => { toast(j.note || "Fichier enregistré."); S.sig={}; loadDetail(); };
     const fail = (e) => toast("Erreur : " + e.message);
     const m = $("mUp"); if (m) m.onchange = (ev) => ev.target.files[0] && upload("music", ev.target.files[0]).then(done, fail);
+    const fu = $("fUp"); if (fu) fu.onchange = (ev) => ev.target.files[0] && upload("full", ev.target.files[0]).then(done, fail);
+    if ($("fDel")) $("fDel").onclick = () => post("/api/delete",{ep:S.ep, kind:"full"}).then(done, fail);
     if ($("mDel")) $("mDel").onclick = () => post("/api/delete",{ep:S.ep, kind:"music"}).then(done, fail);
     lines.forEach(l => {
       const v = $("v_"+l.id); if (v) v.onchange = (ev) => ev.target.files[0] && upload("line", ev.target.files[0], {line:l.id}).then(done, fail);

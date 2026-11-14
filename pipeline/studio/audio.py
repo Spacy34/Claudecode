@@ -62,12 +62,21 @@ def build_voice(ep_dir, cfg, force=False):
     cast_p = ep_dir / "cast_bible.json"
     cast = {c["id"]: c for c in read_json(cast_p)["characters"]} if cast_p.exists() else {}
     sr = int(cfg["audio"]["sample_rate"])
-    backend = tts.pick_backend(cfg, ep_dir)
     lines_dir = ep_dir / "audio" / "lines"
     lines_dir.mkdir(parents=True, exist_ok=True)
     t = float(cfg["audio"]["lead_in_s"])
     segments, voice_desc, synthesized, recorded = [], None, 0, []
-    for line in script["lines"]:
+    full = full_voice_file(ep_dir)
+    alignment = "proportional_syllables"
+    if full is not None:
+        # voix COMPLÈTE fournie (ElevenLabs…) : elle devient l'horloge, les répliques y sont calées
+        backend, alignment = "recorded", "pauses_syllables"
+        segments, duration = _segments_from_full(ep_dir, script, full, sr, cfg, lines_dir)
+        voice_desc = {"voice": f"fichier complet : {full.name}",
+                      "license": "voix fournie par l'utilisateur (ElevenLabs ou autre : vérifier les droits d'usage commercial de l'offre)"}
+    else:
+        backend = tts.pick_backend(cfg, ep_dir)
+    for line in (script["lines"] if full is None else []):
         vcfg = cast.get(line["speaker"], {}).get("voice", {}) if line["speaker"] != "narrator" else {}
         rec = tts.recording_for(ep_dir, line["id"])   # voix enregistrée par l'utilisateur : prioritaire sur la synthèse
         if rec is not None:
@@ -104,7 +113,8 @@ def build_voice(ep_dir, cfg, force=False):
         if pause is None:
             pause = 350 if line["text"].rstrip()[-1:] in "?!…" else 220
         t += dur + pause / 1000.0
-    duration = t + float(cfg["audio"]["tail_s"])
+    if full is None:
+        duration = t + float(cfg["audio"]["tail_s"])
     # bruitages : ancrés sur les mots
     sfx_dir = ROOT / cfg["paths"]["assets_dir"] / "sfx"
     sfxlib.ensure_library(sfx_dir)
@@ -139,13 +149,62 @@ def build_voice(ep_dir, cfg, force=False):
           "provenance": {"created_by": "studio voice", "created_at": now(), "tool": f"tts:{backend}", "depends_on": provenance_deps(ep_dir, ["story_script", "cast_bible"])},
           "sample_rate": sr, "duration_s": round(duration, 3), "narration_wav": str(narr.relative_to(ep_dir)),
           "tts": {"backend": backend, "voice": (voice_desc or {}).get("voice", "cache"), "license": (voice_desc or {}).get("license", "voir backend"),
-                  "alignment": "proportional_syllables"},
+                  "alignment": alignment},
           "segments": segments, "sfx": cues,
           "music": {"file": _rel_root(music), "gain_db": cfg["audio"]["music_gain_db"] + (4 if custom else 0), "license": music_lic}}
     if recorded:
         tl["tts"]["recorded_lines"] = recorded
     write_json(ep_dir / "audio_timeline.json", tl)
     return {"backend": backend, "synthesized_lines": synthesized, "recorded_lines": recorded, "duration_s": round(duration, 2)}
+
+
+def full_voice_file(ep_dir):
+    """Voix complète fournie par l'utilisateur : episodes/<ep>/audio/full_voice/<fichier>, ou None."""
+    d = Path(ep_dir) / "audio" / "full_voice"
+    files = sorted(q for q in d.glob("*") if q.suffix.lower() in tts.AUDIO_EXT) if d.is_dir() else []
+    return files[0] if files else None
+
+
+def _segments_from_full(ep_dir, script, full, sr, cfg, lines_dir):
+    """Découpe la voix complète en répliques (pauses + durées attendues), sans retoucher le jeu de l'acteur."""
+    from . import align
+    norm = ep_dir / "audio" / "full_voice_norm.wav"
+    stamp = norm.with_suffix(".sha")
+    key = sha256_file(full)
+    if not (norm.exists() and stamp.exists() and stamp.read_text() == key):
+        run(["ffmpeg", "-y", "-v", "error", "-i", str(full), "-ar", str(sr), "-ac", "1", "-sample_fmt", "s16", str(norm)])
+        stamp.write_text(key)
+    silences, dur = align.detect_silences(norm)
+    if not dur:
+        dur = _wav_dur(norm)
+    lines = script["lines"]
+    bounds, rep = align.align([l["text"] for l in lines], silences, dur)
+    with wave.open(str(norm)) as w:
+        rate = w.getframerate()
+        frames = w.readframes(w.getnframes())
+    segments = []
+    for line, (a, b) in zip(lines, bounds):
+        wav = lines_dir / f"{line['id']}_full.wav"
+        with wave.open(str(wav), "wb") as o:
+            o.setnchannels(1)
+            o.setsampwidth(2)
+            o.setframerate(rate)
+            o.writeframes(frames[int(a * rate) * 2:int(b * rate) * 2])
+        for old in lines_dir.glob(f"{line['id']}_*.wav"):
+            if old != wav:
+                old.unlink()
+        seg = {"line_id": line["id"], "speaker": line["speaker"], "wav": str(wav.relative_to(ep_dir)), "text_sha256": sha256_json(line["text"]),
+               "start_s": round(a, 3), "end_s": round(b, 3), "words": word_timings(line["text"].split(), a, b)}
+        explicit = set(line.get("emphasis_words", []))
+        for w in seg["words"]:
+            if is_emphasis(w["text"], w["i"], explicit):
+                w["emph"] = True
+        segments.append(seg)
+    report = {"source": full.name, "duration_s": round(dur, 3), **rep,
+              "lines": [{"line_id": l["id"], "text": l["text"], **r} for l, r in zip(lines, rep["lines"])]}
+    (ep_dir / "checks").mkdir(exist_ok=True)
+    write_json(ep_dir / "checks" / "voice_alignment.json", report)
+    return segments, max(dur, bounds[-1][1] + float(cfg["audio"]["tail_s"]))
 
 
 def _rel_root(p):

@@ -182,6 +182,17 @@ def episode_detail(p):
         rec = tts.recording_for(p, l["id"])
         l["recording"] = rec.name if rec else None
         l["sfx"] = [u for u in usfx if u["line"] == l["id"]]
+    from .audio import full_voice_file
+    fv = full_voice_file(p)
+    al = p / "checks" / "voice_alignment.json"
+    if fv and al.exists():
+        try:
+            byid = {x["line_id"]: x for x in read_json(al)["lines"]}
+            for l in lines:
+                if l["id"] in byid:
+                    l["align"] = {k: byid[l["id"]].get(k) for k in ("start", "end", "flag")}
+        except (ValueError, KeyError):
+            pass
     mdir = p / "audio" / "music"
     music = sorted(q.name for q in mdir.glob("*") if q.suffix.lower() in tts.AUDIO_EXT) if mdir.is_dir() else []
     rep = p / "checks" / "codex_rapport_final.md"
@@ -196,6 +207,7 @@ def episode_detail(p):
     except Exception as e:   # épisode incomplet : le tableau de bord reste utilisable
         nxt = {"error": str(e)}
     return {**ov, "stages": stages, "qa": qa, "reviews": reviews, "media": media, "lines": lines, "music": music, "brief": brief,
+            "full_voice": fv.name if fv else None,
             "next": nxt, "report": rep.read_text(encoding="utf-8", errors="replace")[-6000:] if rep.exists() else ""}
 
 
@@ -296,7 +308,7 @@ class Handler(BaseHTTPRequestHandler):
             f.relative_to(p.resolve())
         except ValueError:
             return self._err(403, "chemin refusé")
-        if not f.is_file() or f.suffix.lower() not in (".png", ".jpg", ".mp4", ".wav", ".mp3", ".m4a", ".ogg", ".json", ".md", ".txt", ".ass"):
+        if not f.is_file() or f.suffix.lower() not in (".png", ".jpg", ".mp4", ".wav", ".mp3", ".m4a", ".ogg", ".flac", ".opus", ".webm", ".aac", ".json", ".md", ".txt", ".ass"):
             return self._err(404, "introuvable")
         size = f.stat().st_size
         ctype = mimetypes.guess_type(f.name)[0] or "application/octet-stream"
@@ -413,6 +425,9 @@ class Handler(BaseHTTPRequestHandler):
         if n <= 0 or n > MAX_UPLOAD:
             raise ValueError("fichier vide ou trop volumineux (300 Mo max)")
         data = self.rfile.read(n)
+        if kind == "full":
+            launcher.attach_full_voice(p.name, data=data, filename=name)
+            return self._send(200, {"ok": True, "note": "Voix complète enregistrée : elle sera découpée en répliques et tout se calera dessus au prochain lancement."})
         if kind == "line":
             line = q.get("line", "")
             if not LINE_RE.match(line):
@@ -450,6 +465,8 @@ class Handler(BaseHTTPRequestHandler):
                 f.unlink()
         elif kind == "music":
             shutil.rmtree(p / "audio" / "music", ignore_errors=True)
+        elif kind == "full":
+            shutil.rmtree(p / "audio" / "full_voice", ignore_errors=True)
         elif kind == "sfx" and LINE_RE.match(b.get("line", "")):
             d = p / "audio" / "user_sfx"
             keep = []

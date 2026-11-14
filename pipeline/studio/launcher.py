@@ -41,7 +41,28 @@ def studio_env():
     return env
 
 
-def create_episode(ep, text, mode="script", duration=None, inbox_name=None):
+def attach_full_voice(ep, src_path=None, data=None, filename=None):
+    """Range la voix complète (ElevenLabs…) de l'épisode dans audio/full_voice/ (remplace la précédente)."""
+    from . import tts
+    name = Path(filename or src_path).name
+    ext = Path(name).suffix.lower()
+    if ext not in tts.AUDIO_EXT:
+        raise ValueError(f"format audio non pris en charge ({ext}) : {', '.join(tts.AUDIO_EXT)}")
+    d = episode_dir(load_config(), ep) / "audio" / "full_voice"
+    if d.exists():
+        import shutil
+        shutil.rmtree(d)
+    d.mkdir(parents=True)
+    dst = d / f"voix{ext}"
+    if data is not None:
+        dst.write_bytes(data)
+    else:
+        import shutil
+        shutil.copyfile(src_path, dst)
+    return dst
+
+
+def create_episode(ep, text, mode="script", duration=None, inbox_name=None, voice_file=None):
     """mode : 'script' (texte imposé, verrouillé) ou 'libre' (histoire brute, Codex écrit le script).
     -> (ok, sortie texte)."""
     if not EP_RE.match(ep):
@@ -53,12 +74,20 @@ def create_episode(ep, text, mode="script", duration=None, inbox_name=None):
     inbox.mkdir(parents=True, exist_ok=True)
     src = inbox / (inbox_name or f"{ep}.txt")
     src.write_text(text.replace("\r\n", "\n"), encoding="utf-8")
+    if voice_file and not duration:
+        from .util import media_duration
+        try:
+            duration = int(media_duration(voice_file)) + 1   # la voix fournie fixe la durée
+        except Exception:
+            duration = None
     args = ["new", ep, "--script-file" if mode == "script" else "--story-file", str(src), "--stop-after", "final"]
     if duration:
         args += ["--duration", str(int(duration))]
     elif mode != "script":
         args += ["--duration", "60"]
     r = subprocess.run(studio_cmd(*args), cwd=ROOT, env=studio_env(), capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if r.returncode == 0 and voice_file:
+        attach_full_voice(ep, src_path=voice_file)
     return r.returncode == 0, (r.stdout or "") + (r.stderr or "")
 
 

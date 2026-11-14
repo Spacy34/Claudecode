@@ -892,7 +892,8 @@ def cmd_produire(a):
             print(f"L'épisode {ep} existe déjà : reprise là où il s'est arrêté.")
         else:
             ok, txt = launcher.create_episode(ep, src.read_text(encoding="utf-8"), mode="libre" if a.libre else "script",
-                                              duration=a.duree, inbox_name=src.name if src.parent != episode_dir(cfg(), "_inbox") else None)
+                                              duration=a.duree, inbox_name=src.name if src.parent != episode_dir(cfg(), "_inbox") else None,
+                                              voice_file=a.voix)
             print(txt.strip())
             if not ok:
                 return 1
@@ -900,6 +901,9 @@ def cmd_produire(a):
         ep = src.name
         if not episode_dir(cfg(), ep).exists():
             sys.exit(f"ni fichier, ni épisode existant : {a.source}")
+        if a.voix:
+            launcher.attach_full_voice(ep, src_path=a.voix)
+            print(f"Voix complète remplacée : {a.voix} (la voix et les plans seront recalés)")
     if not cfg()["quality"].get("autonomous"):
         print("ATTENTION : mode autonome désactivé -> la production s'arrêtera à chaque validation humaine.")
     if not launcher.codex_path():
@@ -1023,6 +1027,7 @@ def build_parser():
     x.add_argument("--nom")
     x.add_argument("--duree", type=int)
     x.add_argument("--modele", default="")
+    x.add_argument("--voix", help="voix COMPLÈTE déjà enregistrée (ElevenLabs, .mp3/.wav…) : tout se cale dessus")
     x.set_defaults(fn=cmd_produire)
     x = sp.add_parser("arreter", help="arrêter la production en cours d'un épisode (pilote + rendus)")
     x.add_argument("episode")

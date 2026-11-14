@@ -17,7 +17,7 @@
         "backend": {"enum": ["piper", "espeak", "command", "recorded"]},
         "voice": {"type": "string"},
         "license": {"type": "string"},
-        "alignment": {"enum": ["proportional_syllables", "forced_aligner", "whisper"]}
+        "alignment": {"enum": ["proportional_syllables", "pauses_syllables", "forced_aligner", "whisper"]}
       }
     },
     "segments": {

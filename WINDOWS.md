@@ -99,6 +99,14 @@ ouverte tant que tu utilises la page.
 
 La vidéo finale : `C:\studio\episodes\<épisode>\renders\final.mp4`. Rien n'est jamais publié automatiquement.
 
+## 6 bis. Ta voix complète (ElevenLabs ou autre)
+Dans **+ Nouvelle vidéo**, colle le script puis **Choisir le fichier audio** : le fichier doit dire exactement ce texte,
+dans l'ordre. Le studio le découpe en répliques (sur les pauses) et cale tout dessus : plans, animations, bouches,
+sous-titres, motion design. Pour un découpage fiable, laisse une pause nette entre deux répliques (dans ElevenLabs :
+une ligne vide, ou `<break time="0.7s" />`). Le découpage s'affiche dans **Voix & sons** (⚠ = réplique à vérifier).
+Sur un épisode existant : **Voix & sons → Fournir la voix complète…**. En ligne de commande :
+`scripts\studio.cmd produire episodes\_inbox\mon_script.txt --voix C:\chemin\voix.mp3`.
+
 ## 7. Reprendre un épisode commencé ailleurs (ex. ep_chloe sur le VPS)
 Depuis PowerShell, dans `C:\studio` (remplace l'adresse ; `scp` est inclus dans Windows) :
 ```powershell
@@ -138,7 +146,17 @@ scripts\studio.cmd arreter ep_xxx
 ```
 Mode non autonome : les validations se font dans PowerShell, par toi, avec `scripts\studio.cmd approve <ep> <gate>`.
 
-## 10. Économiser les tokens Codex
+## 10. Blocages : ce qui arrête (ou pas) la production
+- Les critiques ne bloquent que pour un vrai problème (droits, histoire incompréhensible, réplique-clé non illustrée,
+  personnage absent). Le reste = notes, sans nouveau tour d'agents.
+- Un problème de **droits ou de choix créatif** s'arrête tout de suite pour toi (pas de tours inutiles) : tranche avec
+  `scripts\studio.cmd approve <ep> <gate> --override --note "ta décision"`, puis **Lancer / reprendre**.
+- Après 2 tours de correction, un défaut restant est **accepté avec réserves** (listées dans `episode_manifest.json`)
+  au lieu d'arrêter. Pour revenir à l'arrêt strict : `config\local.toml`, `[quality] on_budget_exhausted = "stop"`.
+- Contrôles des rendus : seule une vidéo inutilisable bloque (écran noir, rendu en échec, personnage principal invisible) ;
+  tête coupée, profil, volume… deviennent des réserves.
+
+## 11. Économiser les tokens Codex
 - **Économe** (case en haut du tableau de bord) : l'orchestrateur raisonne en effort bas (il ne fait surtout que
   déléguer) et chaque revue n'a droit qu'à 1 tour de correction au lieu de 2. Les rôles gardent leur propre effort.
 - Le total de tokens s'affiche par épisode (liste et bandeau) ; le journal donne le coût de chaque session Codex.

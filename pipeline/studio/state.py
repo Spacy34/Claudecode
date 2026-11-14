@@ -24,7 +24,7 @@ STAGES = {
     "storyboard":       ("director", "agent", ["story_script.json", "cast_bible.json", "asset_manifest.json"], ["storyboard.json"], ["design"], False),
     "animation":        ("animator", "agent", ["storyboard.json"], ["animation_plan.json"], ["storyboard"], False),
     "motion":           ("motion-designer", "agent", ["story_script.json", "storyboard.json"], ["motion_design.json"], ["storyboard"], False),
-    "voice":            ("pipeline", "auto", ["story_script.json", "cast_bible.json", "audio/recorded", "audio/music", "audio/user_sfx"], ["audio_timeline.json"], ["gate_script"], False),
+    "voice":            ("pipeline", "auto", ["story_script.json", "cast_bible.json", "audio/recorded", "audio/music", "audio/user_sfx", "audio/full_voice"], ["audio_timeline.json"], ["gate_script"], False),
     "storyboard_review": ("continuity-auditor", "review", ["storyboard.json", "animation_plan.json"], [], ["animation"], False),
     "compile":          ("pipeline", "auto", ["story_script.json", "cast_bible.json", "asset_manifest.json", "storyboard.json", "animation_plan.json", "audio_timeline.json"], ["shot_manifest.json"], ["storyboard_review", "voice"], False),
     "lookdev":          ("pipeline", "auto", ["cast_bible.json", "asset_manifest.json"], ["lookdev/contact_sheet.png"], ["design"], False),
