@@ -315,7 +315,10 @@ def _render_and_assemble(p, shots, profile, out_rel, kind):
     write_json(p / f"qa_{Path(out_rel).stem}.json", qa)
     if kind == "final":
         write_json(p / "qa_report.json", qa)
-    return {"output": str(p / out_rel), **stats, "qa_summary": qa["summary"], "duration_s": round(dur, 2)}
+    tm = {"rendu_3d": round(sum(r.get("render_seconds", 0) for r in recs), 1), **res.get("timings_s", {})}
+    devices = sorted({(r.get("scene_report") or {}).get("device", "?") for r in recs if r["status"] == "rendered"})
+    print(f"⏱ {kind} : " + ", ".join(f"{k} {v:.0f} s" for k, v in tm.items()) + (f"  (rendu sur {', '.join(devices)})" if devices else ""))
+    return {"output": str(p / out_rel), **stats, "qa_summary": qa["summary"], "duration_s": round(dur, 2), "timings_s": tm, "render_device": devices}
 
 
 def stage_voice(p, st):
@@ -436,7 +439,9 @@ def stage_shots_check(p, st, profile="draft"):
 
 
 def stage_first_cut(p, st, profile=None):
-    profile = profile or cfg()["render"].get("first_cut_profile", "preview")
+    profile = profile or cfg()["render"].get("first_cut_profile", "auto")
+    if profile in ("auto", "", None):
+        profile = cfg()["render"].get("final_profile", "final")   # rendu une fois en qualité finale : le final réutilise le cache
     return _render_and_assemble(p, None, profile, "renders/first_cut.mp4", "first_cut")
 
 

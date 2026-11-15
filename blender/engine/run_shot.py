@@ -609,7 +609,7 @@ def main():
         shot.run_checks()
         rep = shot.report
         rep.update({"blender_version": bpy.app.version_string, "engine_version": registry.ENGINE_VERSION,
-                    "render_engine": shot.render_engine, "frames": shot.N, "build_seconds": round(time.time() - t0, 2)})
+                    "render_engine": shot.render_engine, "device": core.LAST_DEVICE, "frames": shot.N, "build_seconds": round(time.time() - t0, 2)})
         sc = shot.sc
         if args.mode == "blend":
             bpy.ops.wm.save_as_mainfile(filepath=os.path.join(args.out, f"{spec['shot_id']}.blend"))

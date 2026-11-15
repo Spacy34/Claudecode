@@ -8,6 +8,7 @@ Clé de cache d'un plan = sha256(spec du plan + profil + code du moteur + moteur
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -48,11 +49,35 @@ def blender_script_cmd(cfg, script_name):
     return [cmd[0], script]
 
 
+_GPU = {}
+
+
+def gpu_info():
+    """Carte graphique utilisable pour le rendu (NVIDIA, AMD, Intel Arc/Iris, Apple) -> nom, ou None."""
+    if "v" in _GPU:
+        return _GPU["v"]
+    name = None
+    try:
+        if which("nvidia-smi"):
+            r = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True, timeout=10)
+            if r.returncode == 0 and "GPU" in r.stdout:
+                name = r.stdout.splitlines()[0].split(":", 1)[-1].split("(")[0].strip()
+        if name is None and os.name == "nt":
+            r = subprocess.run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"],
+                               capture_output=True, text=True, timeout=20)
+            cands = [l.strip() for l in (r.stdout or "").splitlines() if l.strip()]
+            good = [c for c in cands if re.search(r"NVIDIA|GeForce|RTX|GTX|Quadro|AMD|Radeon|Arc|Iris", c, re.I)]
+            name = good[0] if good else None
+        if name is None and sys.platform == "darwin":
+            name = "Apple (Metal)"
+    except (OSError, subprocess.SubprocessError):
+        name = None
+    _GPU["v"] = name
+    return name
+
+
 def has_gpu():
-    if which("nvidia-smi"):
-        r = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True)
-        return r.returncode == 0 and "GPU" in r.stdout
-    return False
+    return gpu_info() is not None
 
 
 def pick_engine(cfg, mode):
@@ -107,11 +132,14 @@ def _run_until_done(command, output, done_path, timeout_s, exit_grace_s=5):
             proc.wait()
 
 
-def render_shot(cfg, ep_dir, shot, profile_name, mode="render", frames="", log=print):
+_EEVEE_KO = {}
+
+
+def render_shot(cfg, ep_dir, shot, profile_name, mode="render", frames="", log=print, _force_engine=None):
     ep_dir = Path(ep_dir)
     prof = profile_dict(cfg, profile_name)
     inv_mode, cmd = blender_invocation(cfg)
-    reng = pick_engine(cfg, inv_mode)
+    reng = _force_engine or ("cycles" if _EEVEE_KO.get("v") and cfg["render"]["engine"] == "auto" else pick_engine(cfg, inv_mode))
     key = shot_cache_key(shot["spec_sha256"], prof, engine_hash(), reng, mode, frames)
     out = cache_dir(cfg) / "shots" / key
     rec = {"id": shot["id"], "cache_key": key, "frames_dir": str(out), "render_engine": reng}
@@ -134,6 +162,11 @@ def render_shot(cfg, ep_dir, shot, profile_name, mode="render", frames="", log=p
     with open(out / "blender.log", "w") as lf:
         code = _run_until_done(full, lf, out / "done.json", int(cfg["limits"]["shot_timeout_s"]))
     rec["render_seconds"] = round(time.time() - t0, 1)
+    if (code != 0 or not (out / "done.json").exists()) and reng == "eevee" and not _force_engine:
+        # EEVEE indisponible sur cette machine (pilote, mode sans écran) : repli sur Cycles (GPU si possible)
+        log(f"  {shot['id']} : EEVEE a échoué, nouvel essai avec Cycles")
+        _EEVEE_KO["v"] = True
+        return render_shot(cfg, ep_dir, shot, profile_name, mode, frames, log, _force_engine="cycles")
     if code != 0 or not (out / "done.json").exists():
         rec["status"] = "failed"
         rep = _report(out)
@@ -158,7 +191,9 @@ def _touch(p):
 
 
 def render_shots(cfg, ep_dir, shots, profile_name, mode="render", frames="", log=print):
-    par = max(1, int(cfg["limits"]["max_parallel_renders"]))
+    par = int(cfg["limits"]["max_parallel_renders"])
+    if par <= 0:   # auto : 2 rendus simultanés sur carte graphique (le CPU prépare la scène suivante), 1 sur CPU
+        par = 2 if pick_engine(cfg, blender_invocation(cfg)[0]) == "eevee" else 1
     if par == 1:
         return [render_shot(cfg, ep_dir, s, profile_name, mode, frames, log) for s in shots]
     with ThreadPoolExecutor(max_workers=par) as ex:

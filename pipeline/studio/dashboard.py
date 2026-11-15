@@ -49,6 +49,10 @@ def _doctor_bg():
     try:
         d = hardware.diagnose(load_config())
         d["codex"] = bool(launcher.codex_path())
+        from . import render as _r
+        cfg = load_config()
+        d["render_gpu"] = _r.gpu_info()
+        d["render_engine"] = _r.pick_engine(cfg, _r.blender_invocation(cfg)[0])
         _DOCTOR.clear()
         _DOCTOR.update(d)
         _DOCTOR["status"] = "ok"
@@ -143,6 +147,16 @@ def episode_detail(p):
     st = State(p)
     stages = [{"name": n, "label": STAGE_LABELS.get(n, n), "status": status, "owner": owner, "kind": kind, "attempts": att,
                "note": (note or "")[:400], "rounds": st.st(n).get("revision_rounds", 0)} for n, status, owner, kind, att, note in st.summary()]
+    from datetime import datetime as _dt
+    for s_ in stages:
+        raw = st.st(s_["name"])
+        try:
+            if raw.get("started_at") and raw.get("finished_at") and s_["kind"] in ("auto", "agent", "review"):
+                sec = (_dt.fromisoformat(raw["finished_at"]) - _dt.fromisoformat(raw["started_at"])).total_seconds()
+                if sec >= 1:
+                    s_["duration"] = f"{int(sec // 60)} min {int(sec % 60):02d} s" if sec >= 60 else f"{int(sec)} s"
+        except (ValueError, TypeError):
+            pass
     for s_ in stages:
         if s_["status"] == "failed":
             s_["note"] = (st.st(s_["name"]).get("error") or s_["note"] or "")[:600]

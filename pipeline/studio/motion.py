@@ -9,6 +9,7 @@ que le montage superpose sous les sous-titres. Mise en cache par contenu.
 """
 import hashlib
 import math
+import os
 import re
 import subprocess
 import sys
@@ -813,26 +814,33 @@ def build_overlay(cfg, ep_dir, timeline, W, H, fps, t0, t1):
     empty = d / "empty.png"
     Image.new("RGBA", (W, H), (0, 0, 0, 0)).save(empty)
     n = int(round((t1 - t0) * fps))
-    entries = []   # [png, nb_images]
-    last_hash, k = None, 0
+    active = [i for i in range(n) if any(e["_t0"] <= t0 + i / fps < e["_t1"] for e in els)]
+    # dessin réparti sur tous les cœurs (processus) ; chaque image unique n'est écrite qu'une fois (nom = empreinte)
+    hashes = {}
+    workers = max(1, min(os.cpu_count() or 1, 16))
+    chunks = [active[k::workers] for k in range(workers)] if len(active) > 40 and workers > 1 else [active]
+    jobs = [(els, W, H, fps, t0, str(d), c) for c in chunks if c]
+    try:
+        if len(jobs) > 1:
+            from concurrent.futures import ProcessPoolExecutor
+            with ProcessPoolExecutor(max_workers=len(jobs)) as ex:
+                for part in ex.map(_render_frames, jobs):
+                    hashes.update(part)
+        else:
+            hashes.update(_render_frames(jobs[0]) if jobs else {})
+    except Exception:   # environnement sans multiprocessus : même résultat, sur un seul cœur
+        hashes = {}
+        for j in jobs:
+            hashes.update(_render_frames(j))
+    entries = []   # [png, nb_images] : images consécutives identiques fusionnées
+    last = None
     for i in range(n):
-        t = t0 + i / fps
-        if not any(e["_t0"] <= t < e["_t1"] for e in els):
-            png, h = empty, "empty"
-        else:
-            cv, _ = render_canvas(els, t, W, H)
-            h = hashlib.md5(cv.tobytes()).hexdigest()
-            if h == last_hash:
-                entries[-1][1] += 1
-                continue
-            png = d / f"o{k:05d}.png"
-            k += 1
-            cv.save(png, compress_level=1)
-        if h == last_hash:
+        h = hashes.get(i, "empty")
+        if h == last:
             entries[-1][1] += 1
-        else:
-            entries.append([png, 1])
-            last_hash = h
+            continue
+        entries.append([empty if h == "empty" else d / f"o_{h}.png", 1])
+        last = h
     lines = ["ffconcat version 1.0"]
     for png, cnt in entries:
         lines += [f"file '{Path(png).as_posix()}'", f"duration {cnt / fps:.6f}"]
@@ -841,6 +849,26 @@ def build_overlay(cfg, ep_dir, timeline, W, H, fps, t0, t1):
     tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
     tmp.replace(lst)
     return lst
+
+
+def _render_frames(job):
+    """Travailleur (processus) : dessine les images demandées -> {indice: empreinte}. Fichier o_<empreinte>.png."""
+    els, W, H, fps, t0, d, frames = job
+    d = Path(d)
+    out = {}
+    for i in frames:
+        cv, _ = render_canvas(els, t0 + i / fps, W, H)
+        h = hashlib.md5(cv.tobytes()).hexdigest()
+        png = d / f"o_{h}.png"
+        if not png.exists():
+            tmp = d / f"o_{h}.{os.getpid()}.tmp.png"
+            cv.save(tmp, compress_level=1)
+            try:
+                os.replace(tmp, png)
+            except OSError:
+                tmp.unlink(missing_ok=True)
+        out[i] = h
+    return out
 
 
 def progress_settings(md):

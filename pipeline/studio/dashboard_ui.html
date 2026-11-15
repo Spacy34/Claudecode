@@ -127,6 +127,7 @@ function renderMachine(){
     chips.push(c(d.ffmpeg, "FFmpeg"));
     chips.push(c(S.ov.codex, "Codex"));
     chips.push(c(d.piper_model || d.espeak_ng, d.piper_model ? "Voix Piper" : (d.espeak_ng ? "Voix espeak (test)" : "Voix")));
+    chips.push(`<span class="chip ${d.render_engine==="eevee"?"ok":""}" title="${esc(d.render_gpu||"aucune carte graphique détectée")}">Rendu : ${d.render_engine==="eevee"?"EEVEE (carte graphique)":"Cycles"}</span>`);
     chips.push(`<span class="chip ${d.whisper_sync?"ok":""}">${d.whisper_sync?"✓":"·"} Synchro Whisper</span>`);
     if (d.gpu) chips.push(`<span class="chip ok">GPU ${esc(d.gpu.split(",")[0])}</span>`);
   } else chips.push(`<span class="chip">diagnostic machine ${esc(d.status||"…")}</span>`);
@@ -244,7 +245,7 @@ function tabProgress(d){
     <table><tr><th>Étape</th><th>État</th><th>Qui</th><th>Détail</th><th></th></tr>
     ${d.stages.map(s=>`<tr><td>${esc(s.label)}<div class="note">${esc(s.name)}</div></td><td class="st ${s.status}">${STATUS[s.status]||esc(s.status)}</td>
       <td class="note">${esc(s.owner)}${s.attempts>1?` · ${s.attempts} essais`:""}${s.rounds?` · correction ${s.rounds}`:""}</td>
-      <td class="note">${esc(s.note)}</td>
+      <td class="note">${s.duration?`⏱ ${esc(s.duration)} · `:""}${esc(s.note)}</td>
       <td>${["failed","needs_review","interrupted"].includes(s.status)&&!d.running?`<button class="small" data-retry="${esc(s.name)}">Réessayer</button>`:""}</td></tr>`).join("")}
     </table></div>`, () => document.querySelectorAll("[data-retry]").forEach(b => b.onclick = async () => {
       try { await post("/api/retry",{ep:S.ep, stage:b.dataset.retry}); toast("Étape remise en attente : cliquez sur « Lancer / reprendre »."); loadDetail(); } catch(e){ toast("Erreur : "+e.message); } }));

@@ -12,7 +12,7 @@ from . import sfx as sfxlib
 from .subtitles import build_ass
 from .util import ROOT, cache_dir, run, sha256_json
 
-ENC_VERSION = "clip-v2"
+ENC_VERSION = "clip-v3"
 
 
 def encode_clip(cfg, rec, shot, profile, t_in, t_out, fps):
@@ -27,18 +27,19 @@ def encode_clip(cfg, rec, shot, profile, t_in, t_out, fps):
     T = N / fps
     vf = [f"fps={fps}", f"scale={w}:{h}:flags=lanczos", "tpad=stop_mode=clone:stop_duration=2", f"trim=end_frame={N}", "setpts=PTS-STARTPTS"]
     fd = min(0.25, T / 3)
+    # transitions DISCRÈTES : flash blanc partiel et très court, flou de « whip » léger sur 2 images
     if t_in == "fade_black":
         vf.append(f"fade=t=in:st=0:d={fd:.3f}")
     elif t_in == "flash_white":
-        vf.append(f"fade=t=in:st=0:d={min(0.12, fd):.3f}:color=white")
+        vf.append(f"curves=all='0/0.35 1/1':enable='lte(n\\,1)'")
     if t_out == "fade_black":
         vf.append(f"fade=t=out:st={T - fd:.3f}:d={fd:.3f}")
     elif t_out == "flash_white":
-        vf.append(f"fade=t=out:st={T - min(0.1, fd):.3f}:d={min(0.1, fd):.3f}:color=white")
+        vf.append(f"curves=all='0/0.3 1/1':enable='gte(n\\,{max(0, N - 2)})'")
     elif t_out == "whip":
-        vf.append(f"boxblur=luma_radius=min(h\\,w)/12:luma_power=2:enable='gte(n\\,{max(0, N - 4)})'")
+        vf.append(f"boxblur=luma_radius=min(h\\,w)/40:luma_power=1:enable='gte(n\\,{max(0, N - 2)})'")
     if t_in == "whip":
-        vf.append("boxblur=luma_radius=min(h\\,w)/14:luma_power=2:enable='lte(n\\,2)'")
+        vf.append("boxblur=luma_radius=min(h\\,w)/48:luma_power=1:enable='lte(n\\,1)'")
     vf.append("format=yuv420p")
     # Liste ffconcat (portable : -pattern_type glob n'existe pas dans les builds FFmpeg Windows)
     fdir = Path(rec["frames_dir"])
@@ -73,11 +74,12 @@ def sfx_cues(timeline, shots, cfg, ep_dir=None):
     if ep_dir is not None and cfg["audio"].get("auto_sfx", "discret") not in (False, "aucun", "off"):
         from .sound_design import auto_cues
         cues += auto_cues(ep_dir, shots, timeline, cfg, existing=list(cues))
+    from .sound_design import level
     for s in shots[:-1]:
-        name = sfxlib.TRANSITION_SFX.get(s.get("transition_out", "cut"))
+        name = sfxlib.TRANSITION_SFX.get(s.get("transition_out", "cut")) if level(cfg) == "complet" else None
         if name:
             cues.append({"name": name, "file": str((sfx_dir / f"{name}.wav").relative_to(ROOT)), "start_s": max(0, s["end_s"] - (0.18 if name == "whoosh" else 0.0)),
-                         "gain_db": cfg["audio"]["sfx_gain_db"] - 6, "source": "transition"})
+                         "gain_db": cfg["audio"]["sfx_gain_db"] - 12, "source": "transition"})
     return cues
 
 
@@ -141,7 +143,14 @@ def mix_audio(ep_dir, timeline, shots, cfg, t0, t1, out):
 
 def assemble(cfg, ep_dir, manifest, timeline, recs, profile, out_path, fps=30):
     """recs : enregistrements de rendu (même ordre que manifest['shots'] sélectionnés)."""
+    import time as _time
     ep_dir = Path(ep_dir)
+    tm, _t = {}, [_time.time()]
+
+    def lap(name):
+        now_ = _time.time()
+        tm[name] = round(now_ - _t[0], 1)
+        _t[0] = now_
     shots = [s for s in manifest["shots"] if s["id"] in {r["id"] for r in recs}]
     by_id = {r["id"]: r for r in recs}
     all_ids = [s["id"] for s in manifest["shots"]]
@@ -153,12 +162,15 @@ def assemble(cfg, ep_dir, manifest, timeline, recs, profile, out_path, fps=30):
         nxt_in = (i + 1 < len(all_ids)) and all_ids[i + 1] in by_id
         t_out = s.get("transition_out", "cut") if nxt_in else ("cut" if i + 1 < len(all_ids) else s.get("transition_out", "cut"))
         clips.append(encode_clip(cfg, by_id[s["id"]], s, profile, t_in, t_out, fps))
+    lap("clips_par_plan")
     work = Path(out_path).parent / ".work"
     work.mkdir(parents=True, exist_ok=True)
     stem = Path(out_path).stem
     video = concat(clips, work / f"{stem}_video.mp4")
     t0, t1 = shots[0]["start_s"], shots[-1]["end_s"]
+    lap("assemblage_video")
     audio, cues = mix_audio(ep_dir, timeline, shots, cfg, t0, t1, work / f"{stem}_mix.wav")
+    lap("mixage_audio")
     ass = Path(out_path).with_suffix(".ass")
     n_sub = build_ass(timeline, cfg, ass, t0, t1)
     up = profile.get("upscale_to_delivery", True)
@@ -176,6 +188,7 @@ def assemble(cfg, ep_dir, manifest, timeline, recs, profile, out_path, fps=30):
     from . import motion
     md = motion.load(ep_dir)
     overlay = motion.build_overlay(cfg, ep_dir, timeline, W, H, fps, t0, t1) if md else None
+    lap("motion_design")
     prog = motion.progress_settings(md)
     inputs = ["-i", str(Path(video).resolve()), "-i", str(Path(audio).resolve())]
     graph = [f"[0:v]scale={W}:{H}:flags=lanczos[b0]"]
@@ -191,8 +204,9 @@ def assemble(cfg, ep_dir, manifest, timeline, recs, profile, out_path, fps=30):
         graph.append(f"color=c=0x{col}:s={W}x{ph}:r={fps}[pb];[{cur}][pb]overlay=x='-w+w*(t+{t0:.3f})/{total:.3f}':y={int(H * 0.012)}:shortest=1[b2]")
         cur = "b2"
     graph.append(f"[{cur}]{ass_f},format=yuv420p[v]")
-    run(["ffmpeg", "-y", "-v", "error"] + inputs + ["-filter_complex", ";".join(graph), "-map", "[v]", "-map", "1:a", "-r", str(fps), "-c:v", "libx264", "-preset", "medium",
+    run(["ffmpeg", "-y", "-v", "error"] + inputs + ["-filter_complex", ";".join(graph), "-map", "[v]", "-map", "1:a", "-r", str(fps), "-c:v", "libx264", "-preset", "fast" if profile["name"] == "final" else "veryfast",
          "-crf", "18" if profile["name"] == "final" else "21", "-profile:v", "high", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
          "-ac", "2", "-t", f"{t1 - t0:.3f}", "-movflags", "+faststart", str(Path(out_path).resolve())], cwd=str(ass.parent))
-    return {"output": str(out_path), "start_s": t0, "end_s": t1, "subtitle_events": n_sub, "sfx_cues": len(cues), "clips": [str(c) for c in clips],
+    lap("encodage_final")
+    return {"timings_s": tm, "output": str(out_path), "start_s": t0, "end_s": t1, "subtitle_events": n_sub, "sfx_cues": len(cues), "clips": [str(c) for c in clips],
             "expected_frames": sum(s["frames"] for s in shots), "resolution": [W, H], "motion_overlay": bool(overlay), "progress_bar": bool(prog)}

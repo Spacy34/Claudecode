@@ -20,14 +20,14 @@ default_profile = "preview"
 # Profils utilisés par les étapes automatiques (studio run). Petit VPS : "draft" pour aller vite,
 # puis rendu final sur une machine plus puissante.
 prototype_profile = "preview"
-first_cut_profile = "preview"
+first_cut_profile = "auto"       # "auto" = même qualité que le rendu final : le final ne fait plus que remonter la vidéo
 final_profile = "final"          # petit VPS : "preview" (540x960 rendu, agrandi en 1080x1920 à l'export)
 fps = 30
 # moteur : "auto" choisit EEVEE si un GPU est utilisable par Blender, sinon Cycles CPU.
 engine = "auto"
 
 [limits]
-max_parallel_renders = 1        # processus Blender simultanés
+max_parallel_renders = 0        # processus Blender simultanés ; 0 = auto (2 sur carte graphique, 1 sur processeur)
 shot_timeout_s = 3600           # au-delà, le plan est marqué failed
 max_cache_gb = 20               # purge LRU au-delà (studio cache --prune)
 max_ram_gb = 0                  # 0 = 75 % de la RAM détectée

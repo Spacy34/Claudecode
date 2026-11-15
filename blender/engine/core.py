@@ -33,6 +33,39 @@ def _engine_ids():
     return [i.identifier for i in items]
 
 
+LAST_DEVICE = "?"
+
+
+def _enable_cycles_gpu():
+    """Active la carte graphique pour Cycles (OptiX, CUDA, HIP, oneAPI, Metal) -> type, ou None (CPU)."""
+    try:
+        prefs = bpy.context.preferences.addons['cycles'].preferences
+    except Exception:
+        return None
+    for dev_type in ('OPTIX', 'CUDA', 'HIP', 'ONEAPI', 'METAL'):
+        try:
+            prefs.compute_device_type = dev_type
+        except (TypeError, ValueError):
+            continue
+        try:
+            prefs.refresh_devices()
+        except Exception:
+            try:
+                prefs.get_devices()
+            except Exception:
+                pass
+        devs = [d for d in prefs.devices if d.type == dev_type]
+        if devs:
+            for d in prefs.devices:
+                d.use = d.type == dev_type
+            return dev_type
+    try:
+        prefs.compute_device_type = 'NONE'
+    except Exception:
+        pass
+    return None
+
+
 def setup_render(sc, profile, engine_pref='auto', threads=0):
     """profile : dict issu de config/profiles.toml (+ 'fps')."""
     ids = _engine_ids()
@@ -66,9 +99,12 @@ def setup_render(sc, profile, engine_pref='auto', threads=0):
     if threads:
         sc.render.threads_mode = 'FIXED'
         sc.render.threads = int(threads)
+    global LAST_DEVICE
     if engine == 'CYCLES':
         cy = sc.cycles
-        cy.device = 'CPU'
+        gpu = _enable_cycles_gpu()
+        cy.device = 'GPU' if gpu else 'CPU'
+        LAST_DEVICE = f"GPU {gpu}" if gpu else "CPU"
         cy.samples = int(profile.get('cycles_samples', 12))
         cy.use_adaptive_sampling = True
         cy.max_bounces = 4
@@ -84,6 +120,7 @@ def setup_render(sc, profile, engine_pref='auto', threads=0):
         except Exception:
             cy.use_denoising = False
     else:
+        LAST_DEVICE = "GPU (EEVEE)"
         try:
             sc.eevee.taa_render_samples = int(profile.get('eevee_samples', 16))
         except Exception:
