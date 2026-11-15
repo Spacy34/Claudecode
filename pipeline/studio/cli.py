@@ -234,6 +234,11 @@ def cmd_submit(a):
             if low and r["verdict"] == "approve":
                 print(f"attention : {rp} approuve malgré des scores bas {low}")
         s = st.st(stage)
+        if blockers:
+            from . import rejections
+            for rp in a.review:
+                r = read_json((p / rp) if not Path(rp).is_absolute() else Path(rp))
+                rejections.record_review(p, stage, r, [f for f in r["findings"] if f["severity"] == "blocker"])
         if not blockers:
             # seuls les findings « blocker » bloquent ; major/minor = notes (pas de nouveau tour de revue)
             st.finish(stage, note=f"revues: {a.review} (verdicts {verdicts}, notes non bloquantes)")
@@ -1023,6 +1028,22 @@ def cmd_preflight(a):
     return 0 if rep["ok"] else 1
 
 
+def cmd_rejets(a):
+    """Pourquoi ça bloque : synthèse du journal des refus (un épisode ou tous) et coût en tokens des corrections."""
+    from . import rejections
+    if a.all or not a.episode:
+        root = episode_dir(cfg(), "x").parent
+        eps = [d for d in sorted(root.glob("ep_*")) if d.is_dir() and (d / "state.json").exists()]
+    else:
+        eps = [ep_path(a.episode)]
+    s = rejections.summary(eps, top=a.top)
+    if a.json:
+        out(s)
+    else:
+        print(rejections.format_text(s))
+    return 0
+
+
 def cmd_arreter(a):
     from . import launcher
     ep_path(a.episode)
@@ -1151,6 +1172,12 @@ def build_parser():
     x.add_argument("--no-3d", action="store_true")
     x.add_argument("--shots", default="", help="limiter aux plans sh_001,sh_004…")
     x.set_defaults(fn=cmd_preflight)
+    x = sp.add_parser("rejets", help="pourquoi ça bloque : motifs de refus les plus fréquents et tokens de correction")
+    x.add_argument("episode", nargs="?")
+    x.add_argument("--all", action="store_true", help="tous les épisodes")
+    x.add_argument("--top", type=int, default=12)
+    x.add_argument("--json", action="store_true")
+    x.set_defaults(fn=cmd_rejets)
     x = sp.add_parser("sync-preview", help="aperçu vidéo du calage d'une voix complète (voix + script, ou épisode)")
     x.add_argument("source", help="fichier audio, ou nom d'épisode")
     x.add_argument("script", nargs="?", help="script .txt (une réplique par ligne) si source est un fichier")

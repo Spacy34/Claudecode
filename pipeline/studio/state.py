@@ -165,6 +165,10 @@ class State:
             s.update(status="failed", pid=None, finished_at=now(), error=str(error)[-2000:])
             self.log("fail", stage=name, error=str(error)[-300:])
             self.save()
+            from . import rejections   # journal des refus (pourquoi ça bloque) ; les critiques sont détaillés à part
+            source, reasons = rejections.from_error(error)
+            if reasons:
+                rejections.record(self.dir, name, source, reasons)
         finally:
             self._release_stage_lock(name)
 

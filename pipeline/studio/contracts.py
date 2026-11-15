@@ -298,6 +298,7 @@ def capability_errors():
         ("transitions", sb["properties"]["shots"]["items"]["properties"]["transition_out"]["enum"], R.TRANSITIONS),
         ("hair", cb["properties"]["characters"]["items"]["properties"]["design"]["properties"]["hair"]["properties"]["style"]["enum"], R.HAIR_STYLES),
         ("accessories", cb["properties"]["characters"]["items"]["properties"]["design"]["properties"]["accessories"]["items"]["enum"], R.ACCESSORIES),
+        ("postures", cb["properties"]["characters"]["items"]["properties"]["acting"]["properties"]["posture"]["enum"], R.POSTURES),
     ]
     outfit = cb["properties"]["characters"]["items"]["properties"]["design"]["properties"]["outfit"]["properties"]
     pairs += [("tops", outfit["top"]["properties"]["type"]["enum"], R.TOPS), ("bottoms", outfit["bottom"]["properties"]["type"]["enum"], R.BOTTOMS),

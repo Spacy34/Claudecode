@@ -4,7 +4,7 @@ Les tests vérifient que ces listes sont identiques aux enums des schémas JSON 
 toute capacité déclarée dans un contrat est réellement implémentée par le moteur.
 """
 
-ENGINE_VERSION = "0.8.0"
+ENGINE_VERSION = "0.9.0"
 
 HAIR_STYLES = ["none", "short", "spiky", "bowl", "mohawk", "bun", "long", "curly"]
 TOPS = ["tshirt", "shirt", "hoodie", "suit", "dress", "tank", "polo", "sweater", "jersey"]
@@ -17,6 +17,7 @@ ACCESSORIES = ["cap", "glasses", "sunglasses", "tie", "bowtie", "mustache", "bea
                "bandana", "badge", "flower_pin"]
 NOSES = ["round", "long", "pointy", "potato"]
 EXPRESSIONS = ["neutral", "happy", "laugh", "sad", "angry", "shocked", "scared", "smug", "disgusted", "confused", "deadpan", "crying", "evil_grin", "love"]
+POSTURES = ["neutral", "confident", "shy", "arrogant", "nervous", "energetic", "lazy", "grumpy", "sneaky"]
 ACTIONS = ["idle", "walk_to", "run_to", "turn_to", "look_at", "wave", "point", "shrug", "facepalm", "jump", "shocked_jump",
            "fall_back", "slip_fall", "cower", "stomp", "celebrate", "dance", "sit", "stand_up", "throw", "flail", "nod",
            "shake_head", "take_hit", "faint", "arms_crossed", "hands_on_hips", "lean_in", "talk_gesture"]

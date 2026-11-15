@@ -187,7 +187,7 @@ def episode_detail(p):
             sc_ = [v.get("score") for v in j.get("scores", {}).values() if isinstance(v, dict)]
             reviews.append({"file": r.name, "reviewer": j.get("reviewer"), "gate": j.get("gate"), "verdict": j.get("verdict"),
                             "score": round(sum(sc_) / len(sc_), 1) if sc_ else None,
-                            "findings": [{"severity": f.get("severity"), "issue": (f.get("issue") or f.get("message") or "")[:200]} for f in j.get("findings", [])[:6]]})
+                            "findings": [{"severity": f.get("severity"), "issue": (f.get("description") or f.get("issue") or f.get("message") or "")[:200]} for f in j.get("findings", [])[:6]]})
         except (ValueError, AttributeError):
             continue
     media = [{"kind": k, "path": rel, "label": lab, "mtime": int((p / rel).stat().st_mtime)} for k, rel, lab in MEDIA if (p / rel).exists()]
@@ -230,7 +230,13 @@ def episode_detail(p):
         nxt = next_summary(p)
     except Exception as e:   # épisode incomplet : le tableau de bord reste utilisable
         nxt = {"error": str(e)}
-    return {**ov, "stages": stages, "qa": qa, "reviews": reviews, "media": media, "lines": lines, "music": music, "brief": brief,
+    from . import rejections
+    rj = rejections.summary([p])
+    try:
+        ra = rejections.summary([e for e in _episodes(load_config()) if (e / "checks" / rejections.FILE).exists()])
+    except Exception:   # tableau de bord toujours utilisable
+        ra = {}
+    return {**ov, "rejections": rj, "rejections_all": ra, "stages": stages, "qa": qa, "reviews": reviews, "media": media, "lines": lines, "music": music, "brief": brief,
             "full_voice": fv.name if fv else None,
             "sync_preview": int((p / "checks" / "sync_preview.mp4").stat().st_mtime) if (p / "checks" / "sync_preview.mp4").exists() else 0, "ambiance": ambiance, "music_used": used, "moods": _audio.MUSIC_MOODS,
             "next": nxt, "report": rep.read_text(encoding="utf-8", errors="replace")[-6000:] if rep.exists() else ""}

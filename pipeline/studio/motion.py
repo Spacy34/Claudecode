@@ -20,10 +20,10 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from .util import ROOT, cache_dir, read_json, sha256_json
 
-MOTION_VERSION = "motion-v2"
+MOTION_VERSION = "motion-v3"
 TYPES = ["phone", "text_pop", "sticker", "name_tag", "counter", "arrow"]
 PHONE_SCREENS = ["chat", "notification", "call", "post", "search"]
-TEXT_STYLES = ["impact", "label", "typewriter"]
+TEXT_STYLES = ["impact", "label", "typewriter", "banner"]
 STICKERS = ["heart", "broken_heart", "skull", "fire", "question", "exclamation", "money", "clock", "check", "cross",
             "star", "lightning", "laugh", "sweat"]
 POSITIONS = ["top", "center", "left", "right", "top_left", "top_right"]
@@ -197,7 +197,7 @@ def declutter(els, timeline, phones=()):
     spoken = [(_norm_word(w["text"]), w["start_s"]) for seg in timeline["segments"] for w in seg["words"]]
     kept, dropped = [], []
     for e in sorted(els, key=lambda x: x["_t0"]):
-        if e["type"] == "text_pop":
+        if e["type"] == "text_pop" and not e.get("_hook"):
             tw = [x for x in (_norm_word(w) for w in str(e.get("text", "")).split()) if x]
             near = {w for w, t in spoken if e["_t0"] - 2.5 <= t <= e["_t1"] + 1.0}
             if tw and sum(1 for x in tw if x in near) >= 0.7 * len(tw):
@@ -617,14 +617,42 @@ def sticker_sprite(el, t, s):
 def text_sprite(el, t, s):
     style = el.get("style", "impact")
     txt = clean(el.get("text", ""))
+    if style == "banner":   # titre d'accroche : gros, sur bandeau coloré, 2 lignes max
+        txt = txt.upper()
+        size = 96 * s
+        f = font(size)
+        lines = wrap(txt, f, 900 * s)
+        while (len(lines) > 2 or max(f.getlength(l) for l in lines) > 900 * s) and size > 44 * s:
+            size *= 0.93
+            f = font(size)
+            lines = wrap(txt, f, 900 * s)
+        lines = lines[:3]
+        lh = int(size * 1.12)
+        W = int(max(f.getlength(l) for l in lines) + 90 * s)
+        H = lh * len(lines) + int(56 * s)
+        im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        d.rounded_rectangle((0, 0, W - 1, H - 1), radius=int(30 * s), fill=hexcol(el.get("color"), default="#FFE14D"),
+                            outline=(0, 0, 0, 255), width=max(3, int(7 * s)))
+        for k, l in enumerate(lines):
+            d.text((W // 2, int(28 * s) + lh * k + lh // 2), l, font=f, fill=(15, 15, 18, 255), anchor="mm")
+        im = _with_shadow(im, s, off=10, blur=8, alpha=150)
+        # entrée « pop » : léger dépassement d'échelle pendant 0,25 s
+        k = clamp((t - el["_t0"]) / 0.25)
+        sc = 0.6 + 0.55 * ease_out(k) - 0.15 * max(0.0, k - 0.6) / 0.4 if k < 1 else 1.0
+        if abs(sc - 1.0) > 0.01:
+            im = im.resize((max(1, int(im.width * sc)), max(1, int(im.height * sc))), Image.BICUBIC)
+        return im.rotate(-2.5 + math.sin(t * 4) * 0.8, resample=Image.BICUBIC, expand=True)
     if style == "impact":
         txt = txt.upper()
         size = 100 * s
         f = font(size)
-        while f.getlength(txt) > 940 * s and size > 40 * s:
+        lines = wrap(txt, f, 940 * s)
+        while (len(lines) > 3 or max(f.getlength(l) for l in lines) > 940 * s) and size > 40 * s:   # 3 lignes plutôt que minuscule
             size *= 0.92
             f = font(size)
-        lines = wrap(txt, f, 940 * s)[:3]
+            lines = wrap(txt, f, 940 * s)
+        lines = lines[:3]
         lh = int(size * 1.08)
         W = int(max(f.getlength(l) for l in lines) + 60 * s)
         H = lh * len(lines) + int(50 * s)
@@ -790,9 +818,45 @@ def render_canvas(elements, t, W, H, base=None):
 
 
 # ------------------------------------------------------------------ piste d'incrustation
-def load(ep_dir):
+def load(ep_dir, with_hook=True):
+    """motion_design.json + titre d'ACCROCHE automatique (2 premières secondes) s'il est activé ([hook] title)."""
     p = Path(ep_dir) / "motion_design.json"
-    return read_json(p) if p.exists() else None
+    md = read_json(p) if p.exists() else None
+    if with_hook:
+        h = hook_element(ep_dir)
+        if h:
+            md = dict(md or {"contract": "motion_design", "elements": []})
+            if not any(e.get("id") == h["id"] for e in md.get("elements", [])):
+                md["elements"] = [h] + list(md.get("elements", []))
+    return md
+
+
+def hook_text(ep_dir):
+    try:
+        sc = read_json(Path(ep_dir) / "story_script.json")
+    except (OSError, ValueError):
+        return None, None
+    hk = sc.get("hook") or {}
+    txt = (hk.get("on_screen_text") or "").strip()
+    if not txt:
+        t = (sc.get("title") or "").strip()
+        txt = t if len(t) <= 40 else re.split(r"[,:;—-]", t)[0].strip()[:40]
+    first = (sc.get("lines") or [{}])[0].get("id")
+    return (txt or None), (hk.get("line_id") or first)
+
+
+def hook_element(ep_dir):
+    from .util import load_config
+    try:
+        if not load_config().get("hook", {}).get("title", True):
+            return None
+    except Exception:
+        pass
+    txt, line = hook_text(ep_dir)
+    if not txt or not line:
+        return None
+    return {"id": "mo_hook", "type": "text_pop", "at": {"line": line, "word": 0}, "duration_s": 1.9, "position": "top",
+            "scale": 1.0, "style": "banner", "text": txt, "intent": "accroche : promesse de la vidéo en gros, dès la 1re image", "_hook": True}
 
 
 def build_overlay(cfg, ep_dir, timeline, W, H, fps, t0, t1):

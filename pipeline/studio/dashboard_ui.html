@@ -283,7 +283,14 @@ function tabChecks(d){
     ${d.reviews.map(r=>`<tr><td>${esc(r.reviewer)}</td><td class="note">${esc(r.gate)}</td><td class="st ${r.verdict==="approve"?"completed":"failed"}">${esc(r.verdict)}</td><td>${r.score??""}</td>
       <td class="note">${r.findings.map(f=>`<span class="sev ${esc(f.severity)}">${esc(f.severity)}</span> ${esc(f.issue)}`).join("<br>")}</td></tr>`).join("")}</table></div>` : "";
   const rep = d.report ? `<div class="panel"><b>Dernier rapport de Codex</b><pre class="log">${esc(d.report)}</pre></div>` : "";
-  setBody("checks", {qa:d.qa, rv:d.reviews, rep:d.report}, (qa + rv + rep) || `<div class="empty">Pas encore de vérification : elles apparaissent après le prototype.</div>`);
+  const rj = d.rejections || {}, ra = d.rejections_all || {};
+  const rjBlock = (title, s) => !s.motifs ? "" : `<div class="panel"><b>${title}</b>
+    <p class="hint">${s.refus} soumission(s) refusée(s), ${s.motifs} motif(s)${s.tokens_total?` — tokens Codex ${s.tokens_total.toLocaleString("fr-FR")}, dont <b>${s.tokens_corrections.toLocaleString("fr-FR")}</b> en corrections (${Math.round(100*s.tokens_corrections/Math.max(1,s.tokens_total))} %)`:""}</p>
+    <p class="hint">Par étape : ${Object.entries(s.par_etape).map(([k,v])=>`${esc(k)} ${v}`).join(", ")}</p>
+    <table><tr><th>Part</th><th>Fois</th><th>Catégorie</th><th>Motif</th><th>Exemple</th></tr>
+    ${s.top_motifs.map(m=>`<tr><td><b>${m.part} %</b></td><td>${m.fois}</td><td class="note">${esc(m.categorie)}</td><td>${esc(m.motif)}</td><td class="note">${esc(m.exemple)}</td></tr>`).join("")}</table></div>`;
+  const why = rjBlock("Pourquoi ça bloque (cet épisode)", rj) + (ra.episodes > 1 ? rjBlock(`Pourquoi ça bloque (tous les épisodes : ${ra.episodes})`, ra) : "");
+  setBody("checks", {qa:d.qa, rv:d.reviews, rep:d.report, rj, ra}, (why + qa + rv + rep) || `<div class="empty">Pas encore de vérification : elles apparaissent après le prototype.</div>`);
 }
 function fileUrl(d, path, mt){ return `/file?ep=${encodeURIComponent(d.id)}&path=${encodeURIComponent(path)}${mt?`&v=${mt}`:""}`; }
 function tabMedia(d){

@@ -64,6 +64,12 @@
         },
         "why_it_works": {
           "type": "string"
+        },
+        "on_screen_text": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "description": "Gros titre affiché dans les 2 premières secondes (≠ ce que dit la voix). Ex. « Mon grille-pain a 2M d'abonnés » ."
         }
       }
     },

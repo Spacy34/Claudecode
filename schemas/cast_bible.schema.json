@@ -468,6 +468,32 @@
                 "love"
               ]
             }
+          },
+          "acting": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Jeu d'acteur : posture de base liée à la personnalité (au repos, en écoute, entre deux actions) et énergie des gestes.",
+            "properties": {
+              "posture": {
+                "enum": [
+                  "neutral",
+                  "confident",
+                  "shy",
+                  "arrogant",
+                  "nervous",
+                  "energetic",
+                  "lazy",
+                  "grumpy",
+                  "sneaky"
+                ]
+              },
+              "energy": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 1.6,
+                "description": "amplitude des gestes et du rebond (1 = normal, goofy ≈ 1.2–1.4)"
+              }
+            }
           }
         }
       }

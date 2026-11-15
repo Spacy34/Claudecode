@@ -189,7 +189,7 @@ def assemble(cfg, ep_dir, manifest, timeline, recs, profile, out_path, fps=30):
     md = motion.load(ep_dir)
     overlay = motion.build_overlay(cfg, ep_dir, timeline, W, H, fps, t0, t1) if md else None
     lap("motion_design")
-    prog = motion.progress_settings(md)
+    prog = motion.progress_settings(motion.load(ep_dir, with_hook=False))   # barre : seulement si le motion designer l'a voulue
     inputs = ["-i", str(Path(video).resolve()), "-i", str(Path(audio).resolve())]
     graph = [f"[0:v]scale={W}:{H}:flags=lanczos[b0]"]
     cur = "b0"

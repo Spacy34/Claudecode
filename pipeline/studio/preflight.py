@@ -55,6 +55,7 @@ def run(ep_dir, cfg, with_3d=True, only=None, log=lambda *_: None):
                  "plans_avec_action": sum(bool(specs[k]["actions"]) for k in specs)}
         if stats["plans_avec_action"] < 0.6 * len(fr) and (ep_dir / "animation_plan.json").exists():
             advice.append(f"seulement {stats['plans_avec_action']}/{len(fr)} plans ont une action : un plan sans action = personnage qui ne fait que parler")
+        advice += hook_advice(ep_dir, man, specs, cfg)
         if with_3d:
             shots = [s for s in man["shots"] if not only or s["id"] in only]
             workers = max(1, min(6, (os.cpu_count() or 2) // 2))
@@ -87,6 +88,33 @@ def run(ep_dir, cfg, with_3d=True, only=None, log=lambda *_: None):
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return _done(ep_dir, blocking, advice, stats, t0, "complet" if with_3d else "sans 3D")
+
+
+def hook_advice(ep_dir, man, specs, cfg):
+    """Les 2 premières secondes décident de tout : action visible, texte d'accroche, voix immédiate, coupe rapide."""
+    out = []
+    if not man["shots"]:
+        return out
+    s0 = man["shots"][0]
+    sp = specs[s0["id"]]
+    fps = float(sp.get("fps", 30))
+    early = int(fps * 0.8)
+    acts = [a for a in sp.get("actions", []) if a["frame"] <= early]
+    exprs = [e for e in sp.get("expressions", []) if 1 < e["frame"] <= early]
+    if not acts and not exprs and not sp.get("prop_actions") and not sp.get("fx"):
+        out.append(f"[accroche] {s0['id']} : rien ne BOUGE dans la 1re seconde (aucune action, expression ou objet animé) : "
+                   "commencer en pleine action (in medias res) ou sur une réaction forte")
+    try:
+        sc = read_json(Path(ep_dir) / "story_script.json")
+        if not (sc.get("hook") or {}).get("on_screen_text"):
+            out.append("[accroche] story_script.hook.on_screen_text absent : le titre de l'épisode sera affiché à la place")
+        tl = read_json(Path(ep_dir) / "audio_timeline.json")
+        first = min((w["start_s"] for seg in tl["segments"] for w in seg["words"]), default=0.0)
+        if first > 0.45:
+            out.append(f"[accroche] la voix commence à {first:.2f} s : la 1re demi-seconde est muette")
+    except (OSError, ValueError, KeyError):
+        pass
+    return out
 
 
 def _done(ep_dir, blocking, advice, stats, t0, level):

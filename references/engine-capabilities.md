@@ -100,7 +100,17 @@ mots des répliques du personnage présent dans le plan (approximation syllabiqu
 - Écrasement-étirement (pivot aux pieds) : sauts (anticipation, décollage, réception), take_hit, stomp,
   célébration, et sursaut du corps sur les expressions shocked/scared (étirement), angry/evil_grin, laugh (rebonds).
 - Cheveux et chapeaux en retard sur la tête et le corps (follow-through) ; repos avec rebond.
-- Gestes automatiques (talk_gesture) quand un personnage parle ≥ 0,8 s sans action prévue.
+- Gestes automatiques (talk_gesture) quand un personnage parle ≥ 0,8 s sans action prévue, choisis selon sa
+  posture (mains ouvertes, main sur le cœur, désigne devant soi…), amplitude = `acting.energy`.
+- Posture de base par personnalité (`cast_bible.characters[].acting.posture`) : repos, écoute et retours de geste
+  se font dans CETTE posture ; « business » automatique entre les répliques (transfert de poids, regard qui se
+  promène, se gratte la tête, mains qui s'agitent, soupir, rebonds) selon la posture.
+- Actions tenues (wave, point, shrug…) : anticipation (contre-mouvement), dépassement franc puis stabilisation
+  élastique, amplitude proportionnelle à `energy`.
+- Bouche par son (visèmes) calée sur les temps exacts des mots : A, E/I, O, U/OU, M/B/P (lèvres fermées),
+  F/V (dents) ; retour à l'expression pendant les pauses.
+- Objets posés : déposés automatiquement sur la surface réelle en dessous (meuble, autre objet, sol) ; la
+  `height` du storyboard n'a plus besoin d'être exacte (empilements compris).
 - Montage nerveux : zoom « punch » vers le VISAGE du sujet sur les mots forts (`emphasis_words` du script +
   détection auto des chiffres, mots en « ! » et MAJUSCULES ; 2 max par plan, espacés de 1,5 s) ;
   secousse caméra automatique sur chaque impact (take_hit, chutes, stomp, réception de shocked_jump,
@@ -137,6 +147,11 @@ changement de lieu, jamais deux plans serrés d'affilée, ≥ 40 % de plans ouve
 - Figurants : `storyboard.shots[].extras = {"count": 0-6, "activity": "idle"|"chat"|"walk", "zone": "back"|"sides"}`.
   Silhouettes variées aux couleurs sobres, placées DERRIÈRE l'action hors des repères, ignorées par les contrôles.
   Omis (et signalé) si le décor n'a pas de place. Recettes : references/staging-recipes.md.
+
+## Accroche automatique (config [hook])
+Titre d'accroche (`story_script.hook.on_screen_text`, sinon le titre) en haut de l'image pendant ~1,9 s dès le 1er
+mot, son d'attaque (whoosh) à 0 s s'il n'y a aucun bruitage dans la 1re demi-seconde, 1er plan fixe -> push_in.
+La pré-vérification signale un 1er plan sans mouvement dans la 1re seconde, trop long (> 2,5 s) ou une voix tardive.
 
 ## Ambiances (`mood`)
 day_warm, day_cool, night, interior_warm, office_flat, dramatic, spooky, sunset.

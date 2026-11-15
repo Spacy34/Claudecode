@@ -15,7 +15,8 @@
   "hook": {
     "line_id": "l001",
     "technique": "absurd_claim",
-    "why_it_works": "Promesse absurde et concrète dès la 1re seconde : un objet banal veut devenir star."
+    "why_it_works": "Promesse absurde et concrète dès la 1re seconde : un objet banal veut devenir star.",
+    "on_screen_text": "Mon grille-pain veut devenir une star"
   },
   "beats": [
     {

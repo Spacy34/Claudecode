@@ -44,11 +44,13 @@ def _merge(base, over):
 
 
 class Character:
-    MOUTHS = ("line", "smile", "frown", "smirk", "open_o", "open_wide", "grin", "talk_a", "talk_b")
+    MOUTHS = ("line", "smile", "frown", "smirk", "open_o", "open_wide", "grin", "talk_a", "talk_b",
+              "v_E", "v_U", "v_M", "v_F")
 
     def __init__(self, cid, design, coll=None):
         self.id = cid
         self.d = d = _merge(DEFAULT_DESIGN, design)
+        self.acting = {}
         self.coll = coll
         self.rng = random.Random(d.get("seed", sum(map(ord, cid))))
         b = d["body"]
@@ -278,6 +280,19 @@ class Character:
         b_ = core.empty(f"{self.id}__m_talk_b", (0, 0, 0), mouth, self.coll)
         core.ball(f"{self.id}_m_tb", (mw * 0.17, r * 0.05, mw * 0.07), m["mouth"], (0, 0, 0), parent=b_, coll=self.coll, detail=2, smooth=True)
         shapes["talk_b"] = b_
+        # visèmes (bouche par son) : A = talk_a, O = open_o ; formes propres pour E, U, M, F
+        e_ = core.empty(f"{self.id}__m_v_E", (0, 0, 0), mouth, self.coll)
+        core.ball(f"{self.id}_m_ve", (mw * 0.28, r * 0.05, mw * 0.075), m["mouth"], (0, 0, 0), parent=e_, coll=self.coll, detail=2, smooth=True)
+        core.box(f"{self.id}_m_vet", (mw * 0.36, r * 0.03, mw * 0.035), m["teeth"], (0, -r * 0.03, mw * 0.035), parent=e_, coll=self.coll)
+        shapes["v_E"] = e_
+        u_ = core.empty(f"{self.id}__m_v_U", (0, 0, 0), mouth, self.coll)
+        core.ball(f"{self.id}_m_vu", (mw * 0.075, r * 0.06, mw * 0.085), m["mouth"], (0, -r * 0.01, 0), parent=u_, coll=self.coll, detail=2, smooth=True)
+        shapes["v_U"] = u_
+        shapes["v_M"] = core.arc_strip(f"{self.id}_m_vm", mw * 0.26, 40, r * 0.034, r * 0.024, m["mouth"], parent=mouth, coll=self.coll, bend=0.0)
+        f_ = core.empty(f"{self.id}__m_v_F", (0, 0, 0), mouth, self.coll)
+        core.ball(f"{self.id}_m_vf", (mw * 0.22, r * 0.05, mw * 0.06), m["mouth"], (0, 0, -r * 0.01), parent=f_, coll=self.coll, detail=2, smooth=True)
+        core.box(f"{self.id}_m_vft", (mw * 0.26, r * 0.03, mw * 0.04), m["teeth"], (0, -r * 0.035, mw * 0.02), parent=f_, coll=self.coll)
+        shapes["v_F"] = f_
         for k, o in shapes.items():
             o.scale = (1, 1, 1) if k == "line" else (0.001, 0.001, 0.001)
         self.face["mouths"] = shapes

@@ -66,6 +66,14 @@ vertical_position = 0.68         # 0 = haut, 1 = bas (zone sûre TikTok : évite
 highlight_color = "&H0000E5FF"   # ASS BGR : jaune
 base_color = "&H00FFFFFF"
 
+[hook]
+# Accroche des 2 premières secondes (rétention TikTok), appliquée automatiquement :
+# titre à l'écran (story_script.hook.on_screen_text, sinon le titre), son d'attaque, caméra jamais fixe au 1er plan.
+title = true
+sound = true
+first_shot_move = true
+max_first_shot_s = 2.5
+
 [quality]
 # Mode autonome : true = plus AUCUNE validation humaine. Les gates sont validées automatiquement par
 # `studio run` dès que les critiques ont approuvé (sans bloquant) et que la QA technique n'est pas bloquante,

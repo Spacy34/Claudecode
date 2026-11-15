@@ -100,6 +100,7 @@ class Shot:
         self.sc.collection.children.link(col)
         for i, c in enumerate(sp["characters"]):
             ch = characters.Character(c["id"], c["design"], col)
+            ch.acting = c.get("acting") or {}
             x, y = c["pos"]
             if c.get("facing_target") is not None:
                 tx, ty = c["facing_target"]
@@ -130,6 +131,7 @@ class Shot:
             self.props_state[p["id"]] = {"obj": o, "held": p.get("held_by"), "hand": p.get("hand", "R"), "airborne_at": {}}
         self._build_extras()
         self._separate_props_from_characters()
+        self._settle_props()
         lighting.setup(self.sc, sp["mood"], center=(0, 0.5, 1.0), interior=self.set["interior"], sky=self.set.get("sky"))
 
     EXTRA_SKIN = ["#F2C29B", "#E0A982", "#C68B59", "#8D5524", "#F1D3B6", "#B07850"]
@@ -264,12 +266,61 @@ class Shot:
                 self.report.setdefault("adjustments", []).append(
                     {"type": "prop_moved_off_character", "prop": p["id"], "character": cid, "to": [round(newp.x, 2), round(newp.y, 2)]})
 
+    WALL_ITEMS = {"painting", "blackboard", "menu_board", "window", "door", "streetlight", "building", "tree", "palm_tree"}
+
+    def _settle_props(self):
+        """Gravité de mise en place : un objet posé repose EXACTEMENT sur la surface en dessous (meuble, autre objet,
+        sol), quelle que soit la hauteur estimée dans le storyboard (cause n°1 des objets qui flottent ou s'enfoncent).
+        Du plus bas au plus haut, pour que les empilements (tartine sur grille-pain sur enceinte) tombent juste."""
+        specs = {p["id"]: p for p in self.spec.get("props", [])}
+        order = sorted(self.props, key=lambda k: self.props[k].location.z)
+        char_prefix = tuple(c + "_" for c in list(self.chars) + list(getattr(self, "extras", {}) or {}))
+        for i, pid in enumerate(order):
+            p, o = specs.get(pid, {}), self.props[pid]
+            if p.get("held_by") or p.get("type") in self.FURNITURE or p.get("type") in self.WALL_ITEMS or p.get("no_settle"):
+                continue
+            bpy.context.view_layer.update()
+            lo, hi = checks._bbox(o)
+            # l'objet lui-même ET ceux pas encore posés (au-dessus) sont ignorés par les rayons
+            parts = [x for q in order[i:] for x in [self.props[q]] + list(self.props[q].children_recursive)
+                     if specs.get(q, {}).get("type") not in self.FURNITURE]
+            for ob in parts:
+                ob.hide_viewport = True
+            try:
+                dg = bpy.context.evaluated_depsgraph_get()
+                top = None
+                for fx_, fy_ in ((0.5, 0.5), (0.25, 0.25), (0.75, 0.25), (0.25, 0.75), (0.75, 0.75)):
+                    org = Vector((lo.x + (hi.x - lo.x) * fx_, lo.y + (hi.y - lo.y) * fy_, hi.z + 0.02))
+                    for _ in range(6):
+                        hit, loc, nrm, idx, ob, mw = self.sc.ray_cast(dg, org, Vector((0, 0, -1)), distance=6.0)
+                        if not hit:
+                            break
+                        if ob is not None and (ob.name.startswith(char_prefix) or ob.name.startswith("fx_")):
+                            org = loc - Vector((0, 0, 0.01))
+                            continue
+                        top = loc.z if top is None else max(top, loc.z)
+                        break
+            finally:
+                for ob in parts:
+                    ob.hide_viewport = False
+            if top is None:
+                top = 0.0
+            dz = top - lo.z
+            if abs(dz) < 0.015:
+                continue
+            if dz < -0.9:   # aucun meuble dessous alors qu'une hauteur était donnée : on le signale, on ne le fait pas tomber
+                self.report["warnings"].append(f"{pid} : aucun support sous l'objet (hauteur {lo.z:.2f} m), vérifier le repère")
+                continue
+            o.location.z += dz
+            self.report.setdefault("adjustments", []).append({"type": "prop_settled", "prop": pid, "dz": round(dz, 3)})
+
     # ------------------------------------------------------------ animation personnages
     def animate_characters(self):
         sp = self.spec
         for cid, ca in self.cas.items():
             if sp.get("auto_idle", True):
                 ca.idle(1, self.N)
+                ca.ambient(1, self.N)
             start = next((c.get("start_pose") for c in sp["characters"] if c["id"] == cid), "stand")
             if start == "sit":
                 ca.act_sit(1, 1, 1.0, None, None)
@@ -293,7 +344,10 @@ class Shot:
                 ca.expression(int(e["frame"]), e["expr"], float(e.get("intensity", 1.0)))
         for t in sp.get("talk", []):
             if t["char"] in self.cas:
-                self.cas[t["char"]].talk([tuple(w) for w in t["words"]])
+                if t.get("visemes"):
+                    self.cas[t["char"]].talk_visemes(t["visemes"], [tuple(w) for w in t["words"]])
+                else:
+                    self.cas[t["char"]].talk([tuple(w) for w in t["words"]])
         # gestes automatiques quand un personnage parle sans action prévue (jamais de bras ballants en dialogue)
         for t in sp.get("talk", []):
             ca = self.cas.get(t["char"])

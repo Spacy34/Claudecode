@@ -16,6 +16,9 @@ chaque réplique, delivery (émotion, débit, pauses), sfx, emphasis_words, cont
 faible, dis-le dans ton compte rendu, sans la modifier.
 RÈGLES D'ÉCRITURE :
 - Hook = l001, compréhensible en < 2 s, concret, absurde ; pas de « Bonjour » ni de contexte avant.
+- `hook.on_screen_text` (≤ 40 caractères) : le GROS TITRE affiché automatiquement pendant les 2 premières secondes.
+  Il COMPLÈTE la voix au lieu de la répéter (promesse, chiffre, enjeu) : « Mon grille-pain a 2M d'abonnés »,
+  « Jour 3 sans wifi », « Il a vendu sa sœur ». Le visual_intent de l001 décrit une ACTION déjà en cours.
 - Escalade par paliers visibles ; un retournement ; payoff + button final qui peut boucler sur le début.
 - Durée : ~2,6 mots/s de narration FR ; viser target_duration_s ± 10 %. Phrases courtes, oralité naturelle.
 - Chaque réplique a un visual_intent FILMABLE avec les capacités du moteur (actions, expressions, accessoires,

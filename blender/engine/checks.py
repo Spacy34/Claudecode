@@ -117,9 +117,21 @@ def run(sc, cam, chars, props_state, set_info, spec, sample_frames):
                 continue
             lo, hi = _bbox(o)
             if lo.z > 0.05:
-                origin = Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z - 0.002))
-                hit, loc, *_ = sc.ray_cast(bpy.context.evaluated_depsgraph_get(), origin, Vector((0, 0, -1)), distance=10)
-                gap = (origin.z - loc.z) if hit else origin.z
+                # rayon lancé depuis l'INTÉRIEUR de l'objet (au-dessus de sa base) en ignorant ses propres pièces :
+                # partir sous la base plaçait l'origine dans le support et mesurait jusqu'au bas du meuble
+                own = {x.name for x in [o] + list(o.children_recursive)}
+                dg = bpy.context.evaluated_depsgraph_get()
+                origin = Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z + min(0.03, (hi.z - lo.z) * 0.5)))
+                gap = lo.z
+                for _ in range(8):
+                    hit, loc, _n, _i, ob, _m = sc.ray_cast(dg, origin, Vector((0, 0, -1)), distance=10)
+                    if not hit:
+                        break
+                    if ob is not None and ob.name in own:
+                        origin = loc - Vector((0, 0, 0.002))
+                        continue
+                    gap = lo.z - loc.z
+                    break
                 if gap > 0.06:
                     out.append({"id": f"floating_prop:{pid}", "severity": "minor", "status": "warn", "frame": f,
                                 "message": f"{pid} flotte à {gap:.2f} m au-dessus de son support."})

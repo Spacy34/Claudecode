@@ -44,6 +44,10 @@ OBJETS : ne pas placer un accessoire au sol sur le repère d'un personnage (≥ 
 TÉLÉPHONE ET MOTION DESIGN : quand l'histoire fait LIRE un écran (messages, notification, story), le motion designer
 l'affiche en 2D plein écran ; le plan 3D correspondant montre la RÉACTION du personnage (visage, medium_close),
 pas un insert sur un téléphone 3D (doublon).
+ACCROCHE (le 1er plan décide si le spectateur reste) : sh_001 dure ≤ 2,5 s (couper sur un mot), montre une ACTION
+déjà en cours ou une réaction forte (pas un personnage immobile qui commence à parler), cadrage medium/medium_close
+plein de vie ; jamais un plan d'installation lent. Un 1er plan fixe reçoit automatiquement un push_in ; le titre
+d'accroche s'affiche en haut pendant ~2 s (laisser le haut du cadre respirer) et un son d'attaque est posé à 0 s.
 PLANS RICHES (plusieurs couches, jamais « une personne devant un mur ») : premier plan (meuble, accessoire, épaule),
 sujet, arrière-plan vivant. Outils : 2 personnages dans le champ dès que l'histoire le permet (l'écoutant réagit
 tout seul : regard vers celui qui parle, hochements) ; accessoires de décor qui racontent le lieu ; figurants

@@ -177,11 +177,18 @@ def parse_tokens(out):
     return None
 
 
-def record_tokens(ep, stages, tokens):
-    """Journal des tokens Codex de l'épisode (checks/codex_tokens.jsonl) -> total."""
+def utc_now():
+    import datetime as _dt
+    return _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
+
+
+def record_tokens(ep, stages, tokens, started=None):
+    """Journal des tokens Codex de l'épisode (checks/codex_tokens.jsonl) -> total. `started` (UTC) permet de savoir
+    si la session corrigeait un refus antérieur (journal des refus, `studio rejets`)."""
     f = ep_dir(ep) / "checks" / "codex_tokens.jsonl"
+    f.parent.mkdir(exist_ok=True)
     with open(f, "a", encoding="utf-8") as h:
-        h.write(json.dumps({"at": time.strftime("%Y-%m-%dT%H:%M:%S"), "stages": stages, "tokens": tokens}, ensure_ascii=False) + "\n")
+        h.write(json.dumps({"at": utc_now(), "started": started, "stages": stages, "tokens": tokens}, ensure_ascii=False) + "\n")
     return episode_tokens(ep)
 
 
@@ -222,12 +229,13 @@ def main():
         n = nxt(ep)
         if n.get("retakes"):
             log(f"retouches demandées : {', '.join(r['id'] + ' ' + r['shot'] for r in n['retakes'])}")
+            started = utc_now()
             rc, out = run_codex(ep, retake_prompt(ep, n), a.modele, logf)
             if rc == 127:
                 return 6
             tok = parse_tokens(out)
             if tok:
-                log(f"session retouches : {tok:,} tokens (total de l'épisode : {record_tokens(ep, ['retakes'], tok):,})".replace(",", " "))
+                log(f"session retouches : {tok:,} tokens (total de l'épisode : {record_tokens(ep, ['retakes'], tok, started):,})".replace(",", " "))
             left = json.loads(studio("next", ep, capture=True).stdout or "{}").get("retakes", [])
             for r in left:   # jamais de boucle : une retouche non traitée est marquée et signalée
                 studio("retake-done", ep, r["id"], "--failed", "--note", "non traitée par la session Codex : reformuler la demande", capture=True)
@@ -245,13 +253,14 @@ def main():
             return 3
         if n["agent"] or n["review"] or n["failed"]:
             t_start = time.time()
+            started = utc_now()
             rc, out = run_codex(ep, codex_prompt(ep, n), a.modele, logf)
             if rc == 127:
                 return 6
             tok = parse_tokens(out)
             if tok:
                 stages = [x["stage"] for x in n["agent"] + n["review"]] + list(n["failed"])
-                total = record_tokens(ep, stages, tok)
+                total = record_tokens(ep, stages, tok, started)
                 log(f"session Codex : {tok:,} tokens (total de l'épisode : {total:,})".replace(",", " "))
             if rc != 0:
                 last = [l for l in out.splitlines() if l.strip()][-6:]

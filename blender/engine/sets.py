@@ -40,6 +40,11 @@ def _interior_shell(sid, kit, pal, w, d, col, surf=None):
         decor.wainscot(sid + "_wains", w, d / 2, _shade(pal["wall"], 0.7), _shade(pal.get("accent", pal["wall"]), 0.75), col)
     # plafond suggéré : bandeau sombre en haut du mur du fond (cadre l'image verticale)
     core.box(sid + "_ceilband", (w, 0.3, 0.25), core.toon_mat(sid + "_ceil", _shade(pal["wall"], 0.6)), (0, d / 2 - 0.1, 3.3), coll=col)
+    # au-dessus : pénombre du plafond (les plans d'ensemble en 9:16 montent haut ; jamais de vide gris)
+    up_m = core.toon_mat(sid + "_upper", _shade(pal["wall"], 0.42))
+    core.box(sid + "_upperwall", (w + 0.4, 0.2, 5.0), up_m, (0, d / 2 + 0.12, 3.2 + 2.5), coll=col)
+    for s in (1, -1):
+        core.box(sid + f"_upperside{s}", (0.2, d, 5.0), up_m, (s * (w / 2 + 0.1), 0, 3.2 + 2.5), coll=col)
 
 
 def _wall_decor(sid, kit, pal, d, col, rng):

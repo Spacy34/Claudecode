@@ -106,7 +106,25 @@ POSES = {
     "lying": P(armL=(0, 75, 20), armR=(0, 75, 20), legL=(5, 10), legR=(-5, 10), head=(-10, 0, 0)),
     "talk_a": P(armR=(35, 14, 70), armL=(8, 12, 20), head=(-3, 4, 0)),
     "talk_b": P(armR=(25, 25, 55), armL=(30, 18, 60), head=(3, -4, 0)),
+    "talk_c": P(armL=(32, 38, 45), armR=(32, 38, 45), head=(-4, 0, 0), spine=(-3, 0, 0)),      # mains ouvertes
+    "talk_d": P(armR=(55, 6, 100), armL=(12, 14, 35), head=(4, -6, 0), spine=(4, 0, 0)),        # main sur le cœur
+    "talk_e": P(armL=(60, 8, 30), armR=(10, 16, 25), head=(-2, 8, 0), spine=(2, 0, -6)),        # désigne devant soi
 }
+
+# postures de base par personnalité (cast_bible.acting.posture) : ce que fait le corps quand rien d'autre ne le pilote
+POSTURES = {
+    "neutral": P(),
+    "confident": P(armL=(-10, 20, 28), armR=(-10, 20, 28), spine=(-9, 0, 0), head=(-9, 0, 0), shrug=-0.01),
+    "shy": P(armL=(22, 2, 70), armR=(22, 2, 70), spine=(10, 0, 0), head=(14, 0, 0), shrug=0.035),
+    "arrogant": P(armL=(38, -22, 102), armR=(34, -22, 98), spine=(-9, 0, 0), head=(-13, 0, 0)),
+    "nervous": P(armL=(14, 6, 82), armR=(14, 6, 82), spine=(7, 0, 0), head=(5, 0, 0), shrug=0.03),
+    "energetic": P(armL=(6, 24, 34), armR=(6, 24, 34), spine=(-5, 0, 0), head=(-5, 0, 0)),
+    "lazy": P(armL=(-4, 5, 4), armR=(-4, 5, 4), spine=(-11, 0, 5), head=(12, 0, 0), hip_dz=-0.02),
+    "grumpy": P(armL=(36, -22, 100), armR=(32, -22, 96), spine=(9, 0, 0), head=(11, 0, 0)),
+    "sneaky": P(armL=(28, 10, 95), armR=(28, 10, 95), spine=(16, 0, 0), head=(-8, 0, 0), hip_dz=-0.03),
+}
+POSTURE_ENERGY = {"neutral": 1.0, "confident": 1.1, "shy": 0.7, "arrogant": 0.85, "nervous": 1.15, "energetic": 1.45,
+                  "lazy": 0.6, "grumpy": 0.8, "sneaky": 0.9}
 
 
 EXPRESSIONS = {
@@ -137,6 +155,10 @@ class CharAnim:
         self.frames = frames
         self.rng = random.Random(seed)
         self.mouth_base = {}   # frame -> forme de bouche de l'expression active
+        acting = getattr(ch, "acting", None) or {}
+        self.posture = acting.get("posture", "neutral") if acting.get("posture") in POSTURES else "neutral"
+        self.energy = float(acting.get("energy", POSTURE_ENERGY[self.posture]))
+        self.base = POSTURES[self.posture]
         self.events = []       # (frame, description) pour le rapport
 
     # ---------------- bas niveau
@@ -152,6 +174,8 @@ class CharAnim:
         self.a.key(self.j(joint), 'rotation_euler', axis, f, D(deg), interp)
 
     def pose(self, name_or_dict, f, interp='BEZIER', blend=1.0):
+        if name_or_dict == "rest":   # « repos » = la posture de CE personnage (frimeur, timide…), pas un mannequin
+            name_or_dict = self.base
         p = POSES[name_or_dict] if isinstance(name_or_dict, str) else name_or_dict
         r = POSES["rest"]
         mix = (lambda k, i: r[k][i] + (p[k][i] - r[k][i]) * blend)
@@ -249,23 +273,137 @@ class CharAnim:
 
     # ---------------- couches automatiques
     def idle(self, f0, f1, energy=1.0):
-        """Respiration, balancement, micro-mouvements de tête : jamais de personnage figé."""
+        """Respiration, balancement, micro-mouvements de tête AUTOUR de la posture du personnage : jamais figé."""
+        energy *= self.energy
+        b = self.base
         self.pose("rest", f0)
-        period = int(self.a.fps * 1.6)
+        period = int(self.a.fps * (1.25 if self.posture in ("nervous", "energetic") else 1.6))
         f = f0
         k = 0
         while f <= f1:
             ph = math.sin(k * 0.9 + self.rng.random())
-            self.rot("spine", 0, f, 1.5 * ph * energy)
-            self.rot("spine", 1, f, 2.6 * math.cos(k * 0.7) * energy)
-            self.rot("head", 1, f, 3.0 * math.sin(k * 0.6 + 1.3) * energy)
-            self.rot("head", 2, f, 4.0 * math.sin(k * 0.45) * energy)
+            self.rot("spine", 0, f, b["spine"][0] + 1.5 * ph * energy)
+            self.rot("spine", 1, f, b["spine"][1] + 2.6 * math.cos(k * 0.7) * energy)
+            self.rot("head", 1, f, b["head"][1] + 3.0 * math.sin(k * 0.6 + 1.3) * energy)
+            self.rot("head", 2, f, b["head"][2] + 4.0 * math.sin(k * 0.45) * energy)
             for side in ("L", "R"):
                 s = 1 if side == "L" else -1
-                self.rot(f"upper_arm_{side}", 1, f, -s * (8 + 2.5 * ph * energy))
-            self.a.key(self.j("hips"), 'location', 2, f, self.c.hip_z + 0.012 * self.c.H * ph * energy)   # rebond cartoon
+                arm = b["arm" + side]
+                self.rot(f"upper_arm_{side}", 1, f, -s * (arm[1] + 2.5 * ph * energy))
+            hz = self.c.hip_z + b["hip_dz"] * self.c.H
+            self.a.key(self.j("hips"), 'location', 2, f, hz + 0.012 * self.c.H * ph * energy)   # rebond cartoon
             f += period // 2
             k += 1
+
+    def ambient(self, f0, f1):
+        """« Business » de personnage entre deux répliques : transfert de poids, petit geste propre à la personnalité.
+        Écrit AVANT les actions et les gestes de parole, qui le remplacent sur leur fenêtre (claim)."""
+        fps = self.a.fps
+        f = f0 + self.rng.randint(int(fps * 0.8), int(fps * 2.0))
+        while f < f1 - fps:
+            kind = self.rng.choice(self.BUSINESS.get(self.posture, ("shift", "shift", "look")))
+            d = getattr(self, "_biz_" + kind)(f)
+            self.events.append((f, f"auto:{kind}"))
+            f += d + self.rng.randint(int(fps * 1.8), int(fps * 3.6))
+
+    BUSINESS = {"neutral": ("shift", "look", "scratch"), "confident": ("shift", "chest", "look"), "shy": ("look_down", "fidget", "shift"),
+                "arrogant": ("chest", "look", "shift"), "nervous": ("fidget", "look", "fidget", "scratch"), "energetic": ("bounce", "shift", "look"),
+                "lazy": ("shift", "scratch", "look_down"), "grumpy": ("shift", "look", "huff"), "sneaky": ("fidget", "look", "look")}
+
+    def _own(self, f0, f1, chans):
+        """Le geste remplace la respiration d'idle sur ses canaux (sinon les deux couches se battent : tremblement)."""
+        for n, path, idx in chans:
+            self.a.clear(self.j(n), path, idx, f0 + 1, f1 - 1)
+
+    def _biz_shift(self, f):          # transfert du poids d'une jambe sur l'autre (hanche + colonne)
+        self._own(f, f + 40, [("spine", "rotation_euler", 2)])
+        s = self.rng.choice((-1, 1))
+        b = self.base
+        self.rot("spine", 2, f, b["spine"][2])
+        self.rot("spine", 2, f + 8, b["spine"][2] + 5 * s * self.energy)
+        self.rot("spine", 2, f + 30, b["spine"][2] + 4 * s * self.energy)
+        self.rot("spine", 2, f + 40, b["spine"][2])
+        return 40
+
+    def _biz_look(self, f):           # regard qui se promène puis revient
+        self._own(f, f + 32, [("head", "rotation_euler", 2)])
+        s = self.rng.choice((-1, 1))
+        b = self.base["head"]
+        self.rot("head", 2, f, b[2])
+        self.rot("head", 2, f + 7, b[2] + 24 * s)
+        self.rot("head", 2, f + 24, b[2] + 22 * s)
+        self.rot("head", 2, f + 32, b[2])
+        return 32
+
+    def _biz_look_down(self, f):
+        self._own(f, f + 36, [("head", "rotation_euler", 0)])
+        b = self.base["head"]
+        self.rot("head", 0, f, b[0])
+        self.rot("head", 0, f + 8, b[0] + 12)
+        self.rot("head", 0, f + 28, b[0] + 10)
+        self.rot("head", 0, f + 36, b[0])
+        return 36
+
+    def _biz_scratch(self, f):        # se gratte la tête
+        self._own(f, f + 34, [("upper_arm_R", "rotation_euler", 0), ("forearm_R", "rotation_euler", 0), ("head", "rotation_euler", 1)])
+        a = self.base["armR"]
+        self.rot("upper_arm_R", 0, f, -a[0])
+        self.rot("forearm_R", 0, f, -a[2])
+        self.rot("upper_arm_R", 0, f + 8, -120)
+        self.rot("forearm_R", 0, f + 8, -120)
+        for i, g in enumerate(range(f + 10, f + 26, 4)):
+            self.rot("forearm_R", 0, g, -120 - (12 if i % 2 else 0))
+        self.rot("upper_arm_R", 0, f + 34, -a[0])
+        self.rot("forearm_R", 0, f + 34, -a[2])
+        self.rot("head", 1, f + 8, 8)
+        self.rot("head", 1, f + 34, self.base["head"][1])
+        return 34
+
+    def _biz_fidget(self, f):         # mains qui s'agitent devant le ventre
+        self._own(f, f + 36, [("forearm_L", "rotation_euler", 0), ("forearm_R", "rotation_euler", 0)])
+        for side in ("L", "R"):
+            a = self.base["arm" + side]
+            for i, g in enumerate(range(f, f + 30, 5)):
+                self.rot(f"forearm_{side}", 0, g, -(max(a[2], 70) + (14 if (i + (side == "R")) % 2 else 0)))
+            self.rot(f"forearm_{side}", 0, f + 36, -a[2])
+        return 36
+
+    def _biz_chest(self, f):          # bombe le torse
+        self._own(f, f + 34, [("spine", "rotation_euler", 0), ("head", "rotation_euler", 0), ("shoulder_L", "location", 2), ("shoulder_R", "location", 2)])
+        b = self.base
+        self.rot("spine", 0, f, b["spine"][0])
+        self.rot("spine", 0, f + 6, b["spine"][0] - 9)
+        self.rot("head", 0, f + 6, b["head"][0] - 8)
+        self.rot("spine", 0, f + 26, b["spine"][0] - 7)
+        self.rot("spine", 0, f + 34, b["spine"][0])
+        self.rot("head", 0, f + 34, b["head"][0])
+        self.a.key(self.j("shoulder_L"), 'location', 2, f + 6, self.c.rest["shoulder_L"][0][2] + 0.03 * self.c.H)
+        self.a.key(self.j("shoulder_R"), 'location', 2, f + 6, self.c.rest["shoulder_R"][0][2] + 0.03 * self.c.H)
+        self.a.key(self.j("shoulder_L"), 'location', 2, f + 34, self.c.rest["shoulder_L"][0][2] + b["shrug"] * self.c.H)
+        self.a.key(self.j("shoulder_R"), 'location', 2, f + 34, self.c.rest["shoulder_R"][0][2] + b["shrug"] * self.c.H)
+        return 34
+
+    def _biz_bounce(self, f):         # petits rebonds d'impatience
+        self._own(f, f + 26, [("hips", "location", 2)])
+        hz = self.c.hip_z + self.base["hip_dz"] * self.c.H
+        for i in range(3):
+            self.a.key(self.j("hips"), 'location', 2, f + i * 8, hz - 0.025 * self.c.H)
+            self.a.key(self.j("hips"), 'location', 2, f + i * 8 + 4, hz + 0.01 * self.c.H)
+            self._sq(f + i * 8, -0.04)
+            self._sq(f + i * 8 + 4, 0.03)
+        self._sq(f + 26, 0.0)
+        self.a.key(self.j("hips"), 'location', 2, f + 26, hz)
+        return 26
+
+    def _biz_huff(self, f):           # soupir agacé : épaules qui montent et retombent
+        self._own(f, f + 28, [("shoulder_L", "location", 2), ("shoulder_R", "location", 2)])
+        for side in ("L", "R"):
+            z0 = self.c.rest[f"shoulder_{side}"][0][2] + self.base["shrug"] * self.c.H
+            self.a.key(self.j(f"shoulder_{side}"), 'location', 2, f, z0)
+            self.a.key(self.j(f"shoulder_{side}"), 'location', 2, f + 8, z0 + 0.045 * self.c.H)
+            self.a.key(self.j(f"shoulder_{side}"), 'location', 2, f + 20, z0 - 0.01 * self.c.H)
+            self.a.key(self.j(f"shoulder_{side}"), 'location', 2, f + 28, z0)
+        return 28
 
     def blinks(self, f0, f1):
         f = f0 + self.rng.randint(10, 40)
@@ -322,6 +460,28 @@ class CharAnim:
         cands = [k for k in self.mouth_base if k <= f]
         return self.mouth_base[max(cands)] if cands else "line"
 
+    VISEME_SHAPE = {"A": "talk_a", "E": "v_E", "O": "open_o", "U": "v_U", "M": "v_M", "F": "v_F"}
+
+    def talk_visemes(self, vis, words):
+        """vis : [(frame, A|E|O|U|M|F|rest)] calés sur les mots exacts. La bouche suit les sons ; 'rest' rend la
+        bouche à l'expression (sourire, moue…) pendant les pauses."""
+        shapes = self.c.face["mouths"]
+        for f, v in vis:
+            f = int(f)
+            if v == "rest":
+                self.set_mouth(f, self.base_mouth_at(f))
+            else:
+                sh = self.VISEME_SHAPE.get(v, "talk_b")
+                self.set_mouth(f, sh if sh in shapes else "talk_a")
+        self._talk_head(words)
+
+    def _talk_head(self, words):
+        """Accents de tête sur les mots (petit hochement, plus marqué sur les mots longs)."""
+        for fs, fe in words:
+            amp = 3.0 if fe - fs < 8 else 5.0
+            self.a.key(self.j("head"), 'rotation_euler', 0, fs, D(-amp))
+            self.a.key(self.j("head"), 'rotation_euler', 0, fs + 3, D(amp))
+
     def talk(self, words):
         """words : liste (f_start, f_end) locales. Ouvre/ferme la bouche par syllabe approximative."""
         alt = 0
@@ -350,8 +510,15 @@ class CharAnim:
         f1 = f0 + max(dur, 8)
         self.hold_current(f0)
         self.claim(f0 + 1, f1, loc=True)
-        self.pose(name, f0 + 5, blend=1.15 * k)    # léger dépassement
-        self.pose(name, f0 + 8, blend=1.0 * k)
+        ex = self.energy
+        # goofy : ANTICIPATION (petit contre-mouvement), DÉPASSEMENT franc, puis stabilisation élastique
+        self.pose(name, f0 + 2, blend=-0.15 * k * ex)
+        self._sq(f0 + 2, -0.05 * ex)
+        self.pose(name, f0 + 6, blend=(1.0 + 0.28 * ex) * k)
+        self._sq(f0 + 6, 0.05 * ex)
+        self.pose(name, f0 + 9, blend=(1.0 - 0.07 * ex) * k)
+        self._sq(f0 + 10, 0.0)
+        self.pose(name, f0 + 12, blend=1.0 * k)
         # pose TENUE mais vivante (moving hold) : petites variations lentes, jamais une statue
         fm, sgn = f0 + 20, 1
         while fm < f1 - 10:
@@ -419,14 +586,22 @@ class CharAnim:
             s, f = -s, f + 5
         self._sq(f, 0.0)
 
+    TALK_SETS = {"confident": ("talk_c", "talk_e", "talk_a"), "arrogant": ("talk_e", "talk_d", "talk_b"),
+                 "shy": ("talk_d", "talk_b"), "nervous": ("talk_b", "talk_d", "talk_a"), "energetic": ("talk_c", "talk_a", "talk_e", "talk_b")}
+
     def act_talk_gesture(self, f0, dur, k, target, world):
         self.hold_current(f0)
         self.claim(f0 + 1, f0 + dur, joints=["upper_arm_L", "upper_arm_R", "forearm_L", "forearm_R"])
-        f, i = f0 + 4, 0
+        poses = self.TALK_SETS.get(self.posture, ("talk_a", "talk_b", "talk_c", "talk_d"))
+        k = k * self.energy
+        f, prev = f0 + 4, None
         while f < f0 + dur - 6:
-            self.pose("talk_a" if i % 2 == 0 else "talk_b", f, blend=k)
-            f += self.rng.randint(9, 15)
-            i += 1
+            name = self.rng.choice([p for p in poses if p != prev] or poses)
+            self.pose(name, f, blend=k * 1.12)        # temps fort, puis léger relâchement (geste élastique)
+            if f + 5 < f0 + dur - 6:
+                self.pose(name, f + 5, blend=k * 0.95)
+            prev = name
+            f += self.rng.randint(10, 16)
         self.pose("rest", f0 + dur)
 
     def act_nod(self, f0, dur, k, target, world):

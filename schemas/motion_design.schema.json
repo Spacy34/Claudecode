@@ -206,7 +206,8 @@
             "enum": [
               "impact",
               "label",
-              "typewriter"
+              "typewriter",
+              "banner"
             ]
           },
           "color": {

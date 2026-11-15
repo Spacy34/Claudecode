@@ -14,6 +14,8 @@ ASPECT = 9.0 / 16.0
 LENS = {"wide": 24, "full": 28, "medium": 35, "medium_close": 45, "close_up": 55, "extreme_close_up": 75,
         "two_shot": 30, "over_shoulder": 45, "insert": 50}
 ELEV = {"eye": -4, "low": -20, "high": 28, "dutch": -2, "top_down": 72}
+OPEN_ELEV = {"wide": 13, "full": 8}      # degrés de plongée des plans d'ensemble « à hauteur d'yeux »
+OPEN_AIM = {"wide": 0.10, "full": 0.05}  # remontée du point visé (fraction de la hauteur de cadre)
 
 
 def vfov(lens):
@@ -108,11 +110,18 @@ class CameraRig:
             if v.length > 0.1:
                 az = math.atan2(v.x, -v.y) + D(12)
         el = D(ELEV.get(spec.get("angle", "eye"), -4))
+        open_plan = framing in ("wide", "full") and spec.get("angle", "eye") == "eye"
+        if open_plan:
+            # plan d'ensemble à hauteur d'yeux en 9:16 = moitié basse de carrelage vide. Légère plongée : le sol
+            # devant disparaît au profit du décor autour et derrière les personnages.
+            el = D(OPEN_ELEV[framing])
         if subj["kind"] == "bbox" and subj["bbox"][0].z > 0.3:
             el = max(el, D(10))   # objet posé sur un meuble : une contre-plongée filmerait le meuble
         roll = D(14) if spec.get("angle") == "dutch" else 0.0
         aim = Vector((cxy.x, cxy.y, (lo + hi) / 2))
-        if framing in ("medium", "over_shoulder", "two_shot"):
+        if open_plan:
+            aim.z += OPEN_AIM[framing] * H   # personnages dans le tiers bas-milieu, le décor au-dessus
+        elif framing in ("medium", "over_shoulder", "two_shot"):
             aim.z -= 0.08 * H   # visages dans la moitié haute : les sous-titres occupent le tiers bas
         elif framing in ("medium_close", "close_up"):
             aim.z -= 0.04 * H   # plan serré : décalage réduit, sinon le haut du crâne sort du cadre

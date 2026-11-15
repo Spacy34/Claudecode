@@ -25,6 +25,13 @@ RÈGLES :
 - Si l'histoire fait évoluer le personnage (rendez-vous, promotion, déchéance), le dire dans `signature` : le
   réalisateur pourra le montrer par les accessoires/objets ; la fiche reste unique par épisode.
 - `signature` décrit ce que le spectateur doit reconnaître. `voice` (espeak_voice/pitch ou piper_speaker) cohérente.
+- JEU D'ACTEUR = PERSONNALITÉ : chaque personnage a `acting: {"posture": …, "energy": …}`. Postures : confident
+  (torse bombé, menton haut), shy (tête basse, mains jointes), arrogant (bras croisés, menton levé), nervous (mains qui
+  s'agitent), energetic (bras ouverts, rebondit), lazy (avachi), grumpy (bras croisés, tête basse), sneaky (voûté,
+  mains devant), neutral. C'est ce que fait le corps quand il ne joue pas d'action : repos, écoute, petits gestes
+  automatiques (transfert de poids, se gratte la tête, soupire…). `energy` : 1 = normal ; 1,2–1,4 pour un personnage
+  comique exubérant (gestes amples, anticipation et dépassement marqués) ; 0,6–0,8 pour un blasé ou un timide.
+  Deux personnages d'une même scène ont de préférence des postures CONTRASTÉES (le frimeur face au timide).
 - Aucun personnage existant (dessin animé, jeu, chaîne YouTube/TikTok) ni célébrité.
 LOOKDEV : après `scripts/studio lookdev <ep>` (lancé par l'orchestrateur), regarder lookdev/contact_sheet.png
 (outil d'affichage d'image) et corriger les fiches si un trait est illisible.

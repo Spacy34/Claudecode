@@ -8,6 +8,7 @@ import math
 import sys
 from pathlib import Path
 
+from . import visemes as _vis
 from .contracts import CONTRACT_VERSION, provenance_deps
 from .util import ROOT, now, read_json, sha256_file, sha256_json, write_json
 
@@ -134,7 +135,7 @@ def compile_episode(ep_dir, cfg, out_dir=None):
                         raise CompileError(f"{s['id']} : {c['id']} regarde {ft['id']} qui n'a pas de position dans le plan")
                     ft = resolve(other["mark"])
                 facing_target = ft
-            chars.append({"id": c["id"], "design": cast[c["id"]]["design"], "pos": pos, "facing_deg": facing_deg, "facing_target": facing_target,
+            chars.append({"id": c["id"], "design": cast[c["id"]]["design"], "acting": cast[c["id"]].get("acting", {}), "pos": pos, "facing_deg": facing_deg, "facing_target": facing_target,
                           "start_pose": c.get("start_pose", "stand"), "offscreen": bool(c.get("offscreen", False))})
         props = []
         for p in s.get("props", []):
@@ -172,13 +173,16 @@ def compile_episode(ep_dir, cfg, out_dir=None):
             talkers.setdefault(t["char"], []).append(t["line"])
         talk = []
         for cid, lids in talkers.items():
-            ws = []
+            ws, vis = [], []
             for lid in lids:
-                for w in words[lid]:
-                    if t0 <= w["start_s"] < t1:
-                        ws.append([loc(w["start_s"]), loc(w["end_s"])])
+                inside = [w for w in words[lid] if t0 <= w["start_s"] < t1]
+                for w in inside:
+                    ws.append([loc(w["start_s"]), loc(w["end_s"])])
+                # formes de bouche par son, calées sur les temps exacts des mots
+                for ts, shape in _vis.for_words(inside, fps):
+                    vis.append([loc(ts), shape])
             if ws:
-                talk.append({"char": cid, "words": ws})
+                talk.append({"char": cid, "words": ws, "visemes": vis})
         # zooms « punch » sur les mots forts du plan : 2 max par plan, espacés d'au moins 1,5 s
         punches = []
         if s["camera"].get("move", "static") not in ("crash_zoom",):
@@ -190,6 +194,14 @@ def compile_episode(ep_dir, cfg, out_dir=None):
                             punches.append({"frame": fr, "strength": 1.0, "word": w["text"]})
         cam = dict(s["camera"])
         cam["framing"] = framings[i]
+        hk = cfg.get("hook", {})
+        if i == 0 and hk.get("first_shot_move", True) and cam.get("move", "static") == "static" and cam["framing"] != "insert":
+            # accroche : jamais d'image figée à la 1re seconde ; une poussée lente vers le sujet
+            cam["move"] = "push_in"
+            warnings.append(f"{s['id']} : 1er plan fixe -> push_in automatique (accroche, [hook] first_shot_move)")
+        if i == 0 and (t1 - t0) > float(hk.get("max_first_shot_s", 2.5)) + 0.05:
+            warnings.append(f"accroche : le 1er plan dure {t1 - t0:.1f} s (> {hk.get('max_first_shot_s', 2.5)} s) : couper plus tôt "
+                            "(le spectateur décide en 1-2 s s'il reste)")
         cam["subject"] = resolve(cam["subject"]) if not isinstance(resolve(cam["subject"]), list) else {"kind": "point", "pos": resolve(cam["subject"]) + [1.0]}
         if cam.get("secondary_subject") is not None:
             sec = resolve(cam["secondary_subject"])
