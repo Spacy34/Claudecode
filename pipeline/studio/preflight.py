@@ -56,6 +56,7 @@ def run(ep_dir, cfg, with_3d=True, only=None, log=lambda *_: None):
         if stats["plans_avec_action"] < 0.6 * len(fr) and (ep_dir / "animation_plan.json").exists():
             advice.append(f"seulement {stats['plans_avec_action']}/{len(fr)} plans ont une action : un plan sans action = personnage qui ne fait que parler")
         advice += hook_advice(ep_dir, man, specs, cfg)
+        advice += loop_advice(ep_dir, man, sb)
         if with_3d:
             shots = [s for s in man["shots"] if not only or s["id"] in only]
             workers = max(1, min(6, (os.cpu_count() or 2) // 2))
@@ -115,6 +116,48 @@ def hook_advice(ep_dir, man, specs, cfg):
     except (OSError, ValueError, KeyError):
         pass
     return out
+
+
+def _content_words(text):
+    import re as _re
+    stop = {"pour", "dans", "avec", "mais", "plus", "tout", "toute", "elle", "ils", "elles", "nous", "vous", "cette", "comme",
+            "alors", "quand", "parce", "était", "avait", "sont", "être", "avoir", "fait", "faire", "très", "bien", "encore"}
+    return {w for w in _re.findall(r"[a-zàâäéèêëîïôöùûüç]+", text.lower()) if len(w) > 3 and w not in stop}
+
+
+def loop_advice(ep_dir, man, sb):
+    """La vidéo est relancée en boucle : la fin doit ramener au début (image, son, texte)."""
+    out = []
+    if not man["shots"] or not cfg_loop(ep_dir):
+        return out
+    last_id = man["shots"][-1]["id"]
+    if not sb.get(last_id, {}).get("loop_to_start"):
+        out.append(f"[boucle] {last_id} : ajouter `\"loop_to_start\": true` (même cadrage que le 1er plan) pour que la relecture "
+                   "enchaîne sans raccord visible")
+    try:
+        tl = read_json(Path(ep_dir) / "audio_timeline.json")
+        last_end = max((w["end_s"] for seg in tl["segments"] for w in seg["words"]), default=tl["duration_s"])
+        if tl["duration_s"] - last_end > 0.7:
+            out.append(f"[boucle] {tl['duration_s'] - last_end:.1f} s de silence après la dernière réplique : la boucle traîne "
+                       "(réduire pause_after_ms de la dernière réplique)")
+        sc = read_json(Path(ep_dir) / "story_script.json")
+        lines = sc.get("lines", [])
+        hook_id = (sc.get("hook") or {}).get("line_id") or (lines[0]["id"] if lines else None)
+        hook = next((l["text"] for l in lines if l["id"] == hook_id), "")
+        if lines and hook and not (_content_words(lines[-1]["text"]) & (_content_words(hook) | _content_words((sc.get("hook") or {}).get("on_screen_text", "")))):
+            out.append("[boucle] la dernière réplique ne rappelle pas l'accroche (aucun mot commun) : une chute qui relance "
+                       "la 1re phrase donne envie de revoir")
+    except (OSError, ValueError, KeyError):
+        pass
+    return out
+
+
+def cfg_loop(ep_dir):
+    try:
+        from .util import load_config
+        return load_config().get("loop", {}).get("enabled", True)
+    except Exception:
+        return True
 
 
 def _done(ep_dir, blocking, advice, stats, t0, level):

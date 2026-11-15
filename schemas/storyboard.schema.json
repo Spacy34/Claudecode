@@ -268,6 +268,25 @@
                 ]
               }
             }
+          },
+          "grade": {
+            "enum": [
+              "auto",
+              "conflict",
+              "cool",
+              "neutral",
+              "night",
+              "romance",
+              "sad",
+              "spooky",
+              "sunset",
+              "warm"
+            ],
+            "description": "Étalonnage voulu (sinon déduit du mood) : conflict = froid et dur, romance = chaud et doux, sad = désaturé…"
+          },
+          "loop_to_start": {
+            "type": "boolean",
+            "description": "Dernier plan : reprend le cadrage (valeur, angle, sujet) du 1er plan pour que la vidéo BOUCLE sans raccord visible."
           }
         }
       }

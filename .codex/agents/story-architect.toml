@@ -19,7 +19,10 @@ RÈGLES D'ÉCRITURE :
 - `hook.on_screen_text` (≤ 40 caractères) : le GROS TITRE affiché automatiquement pendant les 2 premières secondes.
   Il COMPLÈTE la voix au lieu de la répéter (promesse, chiffre, enjeu) : « Mon grille-pain a 2M d'abonnés »,
   « Jour 3 sans wifi », « Il a vendu sa sœur ». Le visual_intent de l001 décrit une ACTION déjà en cours.
-- Escalade par paliers visibles ; un retournement ; payoff + button final qui peut boucler sur le début.
+- Escalade par paliers visibles ; un retournement ; payoff + button final qui BOUCLE sur le début : la dernière
+  réplique relance la 1re (reprend un de ses mots-clés, ou se termine sur une phrase que la 1re réplique complète :
+  « … et c'est comme ça que » -> « Mon coloc a essayé de rendre notre grille-pain célèbre »). `pause_after_ms` de la
+  dernière réplique ≤ 200.
 - Durée : ~2,6 mots/s de narration FR ; viser target_duration_s ± 10 %. Phrases courtes, oralité naturelle.
 - Chaque réplique a un visual_intent FILMABLE avec les capacités du moteur (actions, expressions, accessoires,
   décors listés dans engine-capabilities). Pas d'intention impossible (foule, eau réaliste, véhicule en course…)

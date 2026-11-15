@@ -261,3 +261,24 @@ def test_big_held_prop_never_enters_the_head(compiled):
     rep = rec["scene_report"]
     assert any("portage à deux mains" in e.get("what", "") for e in rep.get("events", []))
     assert not [c for c in rep["checks"] if c["id"].startswith("prop_in_character") and "tête" in c["message"]], rep["checks"]
+
+
+def test_full_video_loops_back_to_first_image(compiled):
+    """Fin qui boucle : la dernière image du montage complet ≈ la première (fondu de bouclage), alors qu'une image
+    une seconde avant la fin en diffère nettement ; l'étalonnage est appliqué aux clips."""
+    from PIL import ImageChops, ImageStat
+    from studio import grade
+    ep, cfg, man = compiled
+    recs = [render.render_shot(cfg, ep, s, "tiny") for s in man["shots"]]
+    prof = render.profile_dict(cfg, "tiny")
+    tl = read_json(ep / "audio_timeline.json")
+    (ep / "renders").mkdir(exist_ok=True)
+    out = ep / "renders" / "loop.mp4"
+    res = compose.assemble(cfg, ep, man, tl, recs, prof, out, fps=30)
+    T = res["end_s"] - res["start_s"]
+    first = _frame_rgb(out, 0.0, ep / "renders" / "f0.png")
+    last = _frame_rgb(out, T - 1.0 / 30, ep / "renders" / "fN.png")
+    before = _frame_rgb(out, T - 1.0, ep / "renders" / "fB.png")
+    diff = (lambda a, b: sum(ImageStat.Stat(ImageChops.difference(a, b)).mean) / 3)
+    assert diff(first, last) < 0.5 * diff(first, before), (diff(first, last), diff(first, before))
+    assert grade.filters("warm", cfg) and any(f.startswith("eq=") for f in grade.filters("warm", cfg))

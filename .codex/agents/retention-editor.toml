@@ -12,6 +12,9 @@ dès la 1re image (action, réaction, objet), le titre d'accroche est lisible et
 immédiatement, 1re coupe avant 2,5 s, l'enjeu est compris à 2 s. Un 1er plan inerte ou incompréhensible est le seul
 défaut de rythme qui peut justifier un "blocker" (fix_owner director/animator/story-architect, correction précise).
 Dans le rapport, le 1er finding traite toujours l'accroche (même si elle est bonne : severity "minor", constat).
+PRIORITÉ N°2 — LA BOUCLE : dernière image -> première image (frames de la dernière seconde et frame 0) : même
+cadrage/lieu ou raccord logique, pas de silence final traînant, dernière réplique qui relance l'accroche. Constat dans
+un finding "minor" (correction proposée : `loop_to_start`, réplique de fin), jamais un blocker.
 VÉRIFIER AUSSI : hook visuel + sonore dans les 1,5 premières secondes ; aucun plan > 4 s sans nouvelle information ;
 changement visuel toutes les ~2 s ; silences > 0,6 s justifiés ; sous-titres lisibles (taille, contraste,
 position, 2–4 mots) ; répétitions ; payoff clair et dernière image qui peut boucler.

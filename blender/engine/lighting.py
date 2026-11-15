@@ -57,4 +57,55 @@ def setup(sc, mood, center=(0, 0, 1.0), interior=False, sky=None):
     sc.collection.objects.link(rim)
     rim.location = c + Vector((-2.5, 2.2 if interior else 4.0, 3.2))
     _look_at(rim, c)
-    return {"sun": sun, "fill": fill, "rim": rim}
+    return {"sun": sun, "fill": fill, "rim": rim, "rim_color": r_col, "rim_energy": r_w}
+
+
+RIM_GAIN = {"night": 1.5, "dramatic": 1.6, "spooky": 1.4, "sunset": 1.3}
+
+
+def character_rims(sc, chars, mood, interior=False, receivers=None):
+    """Lumière de contour PAR personnage : deux petites sources derrière lui (côté fond), en hauteur, qui suivent
+    ses déplacements (enfants de sa racine). Elles dessinent un liseré clair sur la tête et les épaules : le
+    personnage se détache du décor même quand les couleurs sont proches."""
+    _w, _ws, _sc, _ss, _rot, _fc, _fw, r_col, _rw = MOODS[mood]
+    gain = RIM_GAIN.get(mood, 1.0) * (0.8 if interior else 1.0)
+    made = []
+    for cid, ch in chars.items():
+        H = ch.H
+        root = ch.joints["root"]
+        head = ch.joints["head"].matrix_world.translation
+        for side in (1, -1):
+            d = bpy.data.lights.new(f"RIMC_{cid}_{side}", 'AREA')
+            d.energy = 22.0 * H * H * gain * (1.0 if side == 1 else 0.6)
+            d.size = 0.35 * H
+            try:
+                d.spread = math.radians(40)   # faisceau serré : la tête et les épaules, pas la pièce
+            except AttributeError:
+                pass
+            d.color = core.hex_rgb(r_col)
+            try:
+                d.use_shadow = False   # ne projette pas d'ombre : pur liseré, aucun impact sur le décor
+            except AttributeError:
+                pass
+            o = bpy.data.objects.new(f"RIMC_{cid}_{side}", d)
+            sc.collection.objects.link(o)
+            o.parent = root
+            # repère local du personnage : il regarde -Y ; derrière = +Y ; côté = ±X
+            o.location = (side * 0.55 * H, 0.75 * H, 1.55 * H)
+            bpy.context.view_layer.update()
+            tgt = Vector((head.x, head.y, head.z - 0.15 * H))
+            dvec = tgt - o.matrix_world.translation
+            o.matrix_world = _aim_matrix(o.matrix_world.translation.copy(), dvec)
+            if receivers is not None:
+                try:   # « light linking » : seuls les personnages reçoivent ce liseré (le décor n'est jamais éclairé)
+                    o.light_linking.receiver_collection = receivers
+                except (AttributeError, TypeError):
+                    pass
+            made.append(o)
+    return made
+
+
+def _aim_matrix(loc, direction):
+    from mathutils import Matrix
+    q = direction.to_track_quat('-Z', 'Y')
+    return Matrix.Translation(loc) @ q.to_matrix().to_4x4()

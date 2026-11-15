@@ -134,3 +134,34 @@ def test_props_settle_on_support_and_acting_runs(episode, cfg):
     assert any(a["type"] == "prop_settled" for a in rep.get("adjustments", [])), rep.get("adjustments")
     assert not [c for c in rep["checks"] if c["id"].startswith("floating_prop")], [c["id"] for c in rep["checks"]]
     assert any(str(e.get("what", "")).startswith("auto:") for e in rep["events"]), "business automatique entre les répliques"
+
+
+# ------------------------------------------------------------------ étalonnage et boucle
+def test_grade_filters_by_mood_and_switch():
+    from studio import grade
+    assert grade.grade_for("dramatic") == "conflict" and grade.grade_for("interior_warm") == "warm"
+    assert grade.grade_for("interior_warm", "sad") == "sad" and grade.grade_for("night", "auto") == "night"
+    f = grade.filters("conflict", {"grade": {"enabled": True}})
+    assert f[0].startswith("colorbalance=") and any("contrast=1.2" in x for x in f) and f[-1].startswith("vignette")
+    assert grade.filters("warm", {"grade": {"enabled": False}}) == []
+    assert not any(x.startswith("vignette") for x in grade.filters("warm", {"grade": {"vignette": False}}))
+
+
+@needs_voice
+def test_loop_to_start_copies_first_framing_and_removes_final_fade(episode, cfg, tmp_path):
+    from studio import audio, preflight
+    from studio.compile import compile_episode
+    sb = read_json(episode / "storyboard.json")
+    sb["shots"][-1]["transition_out"] = "fade_black"
+    write_json(episode / "storyboard.json", sb)
+    audio.build_voice(episode, cfg)
+    rep = preflight.run(episode, cfg, with_3d=False)
+    assert any(a.startswith("[boucle]") and "loop_to_start" in a for a in rep["advice"])
+    sb["shots"][-1]["loop_to_start"] = True
+    sb["shots"][-1]["characters"] = sb["shots"][0]["characters"]
+    write_json(episode / "storyboard.json", sb)
+    man = compile_episode(episode, cfg, out_dir=tmp_path / "c")
+    first = read_json(tmp_path / "c" / man["shots"][0]["spec_path"])["camera"]
+    last = read_json(tmp_path / "c" / man["shots"][-1]["spec_path"])["camera"]
+    assert last["framing"] == first["framing"] and last["subject"] == first["subject"]
+    assert man["shots"][-1]["transition_out"] == "cut" and any("fondu au noir final" in w for w in man["warnings"])

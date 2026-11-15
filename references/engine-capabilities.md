@@ -153,6 +153,16 @@ Titre d'accroche (`story_script.hook.on_screen_text`, sinon le titre) en haut de
 mot, son d'attaque (whoosh) à 0 s s'il n'y a aucun bruitage dans la 1re demi-seconde, 1er plan fixe -> push_in.
 La pré-vérification signale un 1er plan sans mouvement dans la 1re seconde, trop long (> 2,5 s) ou une voix tardive.
 
+## Étalonnage et lumière (automatiques)
+Étalonnage par plan au montage (config [grade]) : déduit du `mood` (warm, cool, night, conflict, spooky, sunset) ou
+forcé par `storyboard.shots[].grade` (conflict, romance, sad…) : contraste, température, saturation, vignettage léger.
+Lumière de contour par personnage (liseré clair sur tête et épaules, n'éclaire que les personnages).
+
+## Fin qui boucle (config [loop])
+`storyboard.shots[-1].loop_to_start = true` : le dernier plan reprend valeur, angle et sujet du 1er. Au montage
+final, les 6 dernières images se fondent dans la 1re, la musique coupe net (le son d'attaque à 0 s masque la
+reprise), pas de fondu au noir final, silence de fin court (0,4 s).
+
 ## Ambiances (`mood`)
 day_warm, day_cool, night, interior_warm, office_flat, dramatic, spooky, sunset.
 

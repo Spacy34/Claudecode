@@ -55,7 +55,7 @@ music_gain_db = -24.0
 sfx_gain_db = -15.0             # bruitages du script (relatif) : discrets sous la voix
 auto_sfx = "discret"             # bruitages automatiques : "discret" (impacts, notifications, messages), "complet", "aucun"
 lead_in_s = 0.25
-tail_s = 0.8
+tail_s = 0.4                       # silence après la dernière réplique (court : la vidéo boucle)
 
 [subtitles]
 font_family = "Inter ExtraBold"
@@ -65,6 +65,18 @@ max_chars_per_chunk = 22
 vertical_position = 0.68         # 0 = haut, 1 = bas (zone sûre TikTok : éviter > 0.80)
 highlight_color = "&H0000E5FF"   # ASS BGR : jaune
 base_color = "&H00FFFFFF"
+
+[grade]
+# Étalonnage par ambiance au montage (contraste, température, vignettage) ; strength 0 à 1.5
+enabled = true
+strength = 1.0
+vignette = true
+
+[loop]
+# Fin qui boucle (TikTok relance la vidéo) : dernières images fondues dans la 1re, musique coupée net (pas de fondu),
+# pas de fondu au noir final ; `loop_to_start` sur le dernier plan reprend le cadrage du premier.
+enabled = true
+blend_frames = 6
 
 [hook]
 # Accroche des 2 premières secondes (rétention TikTok), appliquée automatiquement :

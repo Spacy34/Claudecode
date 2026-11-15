@@ -12,20 +12,22 @@ from . import sfx as sfxlib
 from .subtitles import build_ass
 from .util import ROOT, cache_dir, run, sha256_json
 
-ENC_VERSION = "clip-v3"
+ENC_VERSION = "clip-v4"
 
 
 def encode_clip(cfg, rec, shot, profile, t_in, t_out, fps):
     w, h = profile["resolution"]
     step = int(profile.get("render_every_n_frames", 1))
-    key = sha256_json({"r": rec["cache_key"], "n": shot["frames"], "in": t_in, "out": t_out, "res": [w, h], "step": step, "v": ENC_VERSION})
+    from . import grade as _grade
+    gf = _grade.filters(_grade.grade_for(shot.get("mood"), shot.get("grade")), cfg)
+    key = sha256_json({"r": rec["cache_key"], "n": shot["frames"], "in": t_in, "out": t_out, "res": [w, h], "step": step, "v": ENC_VERSION, "g": gf})
     out = cache_dir(cfg) / "clips" / f"{key}.mp4"
     if out.exists():
         return out
     out.parent.mkdir(parents=True, exist_ok=True)
     N = shot["frames"]
     T = N / fps
-    vf = [f"fps={fps}", f"scale={w}:{h}:flags=lanczos", "tpad=stop_mode=clone:stop_duration=2", f"trim=end_frame={N}", "setpts=PTS-STARTPTS"]
+    vf = [f"fps={fps}", f"scale={w}:{h}:flags=lanczos"] + gf + ["tpad=stop_mode=clone:stop_duration=2", f"trim=end_frame={N}", "setpts=PTS-STARTPTS"]
     fd = min(0.25, T / 3)
     # transitions DISCRÈTES : flash blanc partiel et très court, flou de « whip » léger sur 2 images
     if t_in == "fade_black":
@@ -102,7 +104,9 @@ def mix_audio(ep_dir, timeline, shots, cfg, t0, t1, out):
     mix_in = ["[nar]"]
     idx = 1
     if music:
-        fo = min(1.5, dur / 4)
+        # vidéo qui BOUCLE (TikTok la relance) : pas de fondu de sortie, coupe nette masquée par le son d'attaque à 0 s
+        whole = abs(t1 - timeline["duration_s"]) < 0.05 and t0 < 0.05
+        fo = 0.12 if (whole and cfg.get("loop", {}).get("enabled", True)) else min(1.5, dur / 4)
         fl.append(f"[1:a]atrim=0:{dur:.3f},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,volume={music['gain_db']}dB,"
                   f"afade=t=in:st=0:d=0.08,afade=t=out:st={max(0.0, dur - fo):.3f}:d={fo:.3f}[mus]")
         fl.append("[mus][sc]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350[duck]")
@@ -193,9 +197,24 @@ def assemble(cfg, ep_dir, manifest, timeline, recs, profile, out_path, fps=30):
     inputs = ["-i", str(Path(video).resolve()), "-i", str(Path(audio).resolve())]
     graph = [f"[0:v]scale={W}:{H}:flags=lanczos[b0]"]
     cur = "b0"
+    lp = cfg.get("loop", {})
+    whole = shots[0]["id"] == manifest["shots"][0]["id"] and shots[-1]["id"] == manifest["shots"][-1]["id"]
+    blend_n = int(lp.get("blend_frames", 6)) if lp.get("enabled", True) and whole else 0
+    if blend_n > 0 and (t1 - t0) > 3.0:
+        # fin qui BOUCLE : les dernières images se fondent dans la toute première (raccord invisible à la relecture)
+        first = Path(video).with_name(Path(video).stem + "_first.png")
+        run(["ffmpeg", "-y", "-v", "error", "-i", str(Path(video).resolve()), "-frames:v", "1", str(first)])
+        inputs += ["-loop", "1", "-framerate", str(fps), "-t", f"{t1 - t0 + 0.5:.3f}", "-i", str(first.resolve())]
+        lf_idx = (len([x for x in inputs if x == "-i"]) - 1)
+        d = blend_n / float(fps)
+        st_ = max(0.0, (t1 - t0) - d)
+        graph.append(f"[{lf_idx}:v]scale={W}:{H}:flags=lanczos,format=yuv420p,setsar=1[lf]")
+        graph.append(f"[{cur}]format=yuv420p,setsar=1[bb];[bb][lf]blend=all_expr='A+(B-A)*clip((T-{st_:.3f})/{d:.3f}\\,0\\,1)':shortest=1[bl]")
+        cur = "bl"
     if overlay:
         inputs += ["-f", "concat", "-safe", "0", "-i", str(Path(overlay).resolve())]
-        graph.append(f"[2:v]format=rgba,setpts=PTS-STARTPTS[ov];[{cur}][ov]overlay=0:0:eof_action=pass:format=auto[b1]")
+        ov_idx = len([x for x in inputs if x == "-i"]) - 1
+        graph.append(f"[{ov_idx}:v]format=rgba,setpts=PTS-STARTPTS[ov];[{cur}][ov]overlay=0:0:eof_action=pass:format=auto[b1]")
         cur = "b1"
     if prog:
         ph = max(4, H // 160)

@@ -98,6 +98,7 @@ class Shot:
         self.sc.camera = self.cam
         col = bpy.data.collections.new("CAST")
         self.sc.collection.children.link(col)
+        self.cast_col = col
         for i, c in enumerate(sp["characters"]):
             ch = characters.Character(c["id"], c["design"], col)
             ch.acting = c.get("acting") or {}
@@ -133,6 +134,8 @@ class Shot:
         self._separate_props_from_characters()
         self._settle_props()
         lighting.setup(self.sc, sp["mood"], center=(0, 0.5, 1.0), interior=self.set["interior"], sky=self.set.get("sky"))
+        if sp.get("rim_lights", True):
+            lighting.character_rims(self.sc, self.chars, sp["mood"], interior=self.set["interior"], receivers=self.cast_col)
 
     EXTRA_SKIN = ["#F2C29B", "#E0A982", "#C68B59", "#8D5524", "#F1D3B6", "#B07850"]
     EXTRA_HAIR = ["#2A1B12", "#3B2416", "#6B4423", "#C9873D", "#1A1A1A", "#9E9E9E"]

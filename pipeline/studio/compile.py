@@ -194,6 +194,20 @@ def compile_episode(ep_dir, cfg, out_dir=None):
                             punches.append({"frame": fr, "strength": 1.0, "word": w["text"]})
         cam = dict(s["camera"])
         cam["framing"] = framings[i]
+        lpc = cfg.get("loop", {})
+        if i == len(shots) - 1 and lpc.get("enabled", True) and s.get("transition_out") == "fade_black":
+            warnings.append(f"{s['id']} : fondu au noir final remplacé par une coupe (la vidéo boucle, [loop])")
+        if i == len(shots) - 1 and i > 0 and s.get("loop_to_start") and lpc.get("enabled", True):
+            # boucle : même valeur de plan, angle et sujet que le 1er plan -> raccord invisible à la relecture
+            c0 = shots[0]["camera"]
+            cam["framing"] = framings[0]
+            for k_ in ("angle", "side_deg", "lens_mm"):
+                if k_ in c0:
+                    cam[k_] = c0[k_]
+            ids_here = {c["id"] for c in s["characters"]} | {p["id"] for p in s.get("props", [])}
+            if isinstance(c0.get("subject"), str) and c0["subject"] in ids_here:
+                cam["subject"] = c0["subject"]
+            cam["move"] = "static" if cam.get("move") in ("crash_zoom", "shake") else cam.get("move", "static")
         hk = cfg.get("hook", {})
         if i == 0 and hk.get("first_shot_move", True) and cam.get("move", "static") == "static" and cam["framing"] != "insert":
             # accroche : jamais d'image figée à la 1re seconde ; une poussée lente vers le sujet
@@ -218,7 +232,9 @@ def compile_episode(ep_dir, cfg, out_dir=None):
         write_json(sp, spec)
         manifest_shots.append({"id": s["id"], "start_frame": f0, "end_frame": f1, "frames": N, "start_s": round(t0, 3), "end_s": round(t1, 3),
                                "spec_sha256": h, "spec_path": str(sp.relative_to(out_root)), "line_ids": s["line_ids"],
-                               "transition_out": s.get("transition_out", "cut")})
+                               "transition_out": (s.get("transition_out", "cut") if not (i == len(shots) - 1 and cfg.get("loop", {}).get("enabled", True)
+                                                                                    and s.get("transition_out") == "fade_black") else "cut"),
+                               "mood": s.get("mood"), "grade": s.get("grade", "auto")})
     tight = [s["id"] for s in shots if s["camera"]["framing"] in ("close_up", "extreme_close_up")]
     if len(shots) >= 5 and len(tight) > 0.35 * len(shots):
         warnings.append(f"{len(tight)}/{len(shots)} plans en gros plan ou très gros plan : trop serré, alterner avec medium / medium_close / wide")
