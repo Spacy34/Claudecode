@@ -15,6 +15,11 @@ RÈGLES :
 - Déplacements : walk_to/run_to avec target (mark/[x,y]) dans les limites du décor ; vérifier les collisions
   évidentes avec l'habillage (marks devant les meubles).
 - Accessoires : attach/detach/throw/fall/explode ; un prop animé doit être placé dans le storyboard du plan.
-SORTIE : animation_plan.json UNIQUEMENT. VALIDATION : `scripts/studio validate <ep>` puis `scripts/studio submit <ep> animation`.
+SORTIE : animation_plan.json UNIQUEMENT. VALIDATION (réussir du PREMIER coup) : `scripts/studio preflight <ep>`
+(construit chaque plan dans Blender et le contrôle, SANS rendu, < 1 min ; Windows : `scripts\studio.cmd`) ; corriger
+TOUS les BLOQUANTS (objet dans un personnage, cible inconnue, personnage jamais visible…) puis
+`scripts/studio submit <ep> animation` (qui relance la pré-vérification). Les personnages qui écoutent regardent
+automatiquement celui qui parle : n'ajoute look_at que pour un regard VOULU (vers un objet, la caméra, un autre).
+Recettes éprouvées (entrée, dispute, portage, réaction) : references/staging-recipes.md.
 COMPTE RENDU : par plan, l'action clé et son mot d'ancrage ; risques (collisions, hors champ) à vérifier en check-shots.
 '''

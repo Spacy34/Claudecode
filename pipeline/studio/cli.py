@@ -202,6 +202,16 @@ def cmd_submit(a):
             st.fail(stage, json.dumps(errs, ensure_ascii=False)[:1500])
             out({"stage": stage, "status": "failed", "errors": errs})
             return 1
+        if stage in ("storyboard", "animation") and cfg()["quality"].get("preflight_on_submit", True):
+            # réussir du premier coup : ce qui ne casserait qu'au rendu est vérifié MAINTENANT (sans rendu)
+            from . import preflight
+            pf = preflight.run(p, cfg(), with_3d=True)
+            if not pf["ok"]:
+                st.fail(stage, "pré-vérification : " + " | ".join(pf["blocking"][:8]))
+                out({"stage": stage, "status": "failed", "preflight_blocking": pf["blocking"], "advice": pf["advice"][:15]})
+                return 1
+            if pf["advice"]:
+                print("Conseils de la pré-vérification (non bloquants) : " + " | ".join(pf["advice"][:10]))
         st.finish(stage)
         out({"stage": stage, "status": "completed"})
         return 0
@@ -999,6 +1009,20 @@ def cmd_install_whisper(a):
     return r.returncode
 
 
+def cmd_preflight(a):
+    """Pré-vérification avant soumission : contrats, compilation à blanc, contrôles 3D sans rendu."""
+    from . import preflight
+    rep = preflight.run(ep_path(a.episode), cfg(), with_3d=not a.no_3d, only=set(a.shots.split(",")) if a.shots else None, log=print)
+    print(f"Pré-vérification ({rep['level']}, {rep['seconds']} s) : " + ("OK, rien de bloquant" if rep["ok"] else f"{len(rep['blocking'])} BLOQUANT(S)"))
+    for b in rep["blocking"]:
+        print("  BLOQUANT  " + b)
+    for x in rep["advice"][:25]:
+        print("  conseil   " + x)
+    if rep["stats"]:
+        print("  stats     " + ", ".join(f"{k} {v}" for k, v in rep["stats"].items()))
+    return 0 if rep["ok"] else 1
+
+
 def cmd_arreter(a):
     from . import launcher
     ep_path(a.episode)
@@ -1122,6 +1146,11 @@ def build_parser():
     x.set_defaults(fn=cmd_retake_done)
     sp.add_parser("whisper-check", help="diagnostic de la synchro Whisper (Python, module, modèle)").set_defaults(fn=cmd_whisper_check)
     sp.add_parser("install-whisper", help="installer faster-whisper dans le Python du studio").set_defaults(fn=cmd_install_whisper)
+    x = sp.add_parser("preflight", help="pré-vérification avant soumission (contrats, compilation à blanc, contrôles 3D sans rendu)")
+    x.add_argument("episode")
+    x.add_argument("--no-3d", action="store_true")
+    x.add_argument("--shots", default="", help="limiter aux plans sh_001,sh_004…")
+    x.set_defaults(fn=cmd_preflight)
     x = sp.add_parser("sync-preview", help="aperçu vidéo du calage d'une voix complète (voix + script, ou épisode)")
     x.add_argument("source", help="fichier audio, ou nom d'épisode")
     x.add_argument("script", nargs="?", help="script .txt (une réplique par ligne) si source est un fichier")

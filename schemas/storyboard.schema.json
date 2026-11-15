@@ -243,6 +243,31 @@
           },
           "continuity_notes": {
             "type": "string"
+          },
+          "extras": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Figurants d'arrière-plan générés (vie du décor : restaurant, rue, soirée, classe…). Ignorés par les contrôles du plan.",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6
+              },
+              "activity": {
+                "enum": [
+                  "idle",
+                  "chat",
+                  "walk"
+                ]
+              },
+              "zone": {
+                "enum": [
+                  "back",
+                  "sides"
+                ]
+              }
+            }
           }
         }
       }

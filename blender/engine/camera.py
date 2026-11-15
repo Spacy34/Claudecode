@@ -26,12 +26,13 @@ def span_for(framing, lm, head_r):
     c = Vector((lm["head"].x, lm["head"].y))
     if framing == "wide":
         return 0.0, top, Vector((lm["hips"].x, lm["hips"].y)), 3.0
+    # marges généreuses : le décor reste lisible autour du personnage (retour : « trop zoomé, on voit peu le décor »)
     if framing == "full":
-        return 0.0, top, Vector((lm["hips"].x, lm["hips"].y)), 1.22
+        return 0.0, top, Vector((lm["hips"].x, lm["hips"].y)), 1.45
     if framing == "medium":
-        return lm["hips"].z - 0.12, top, c, 1.45
+        return lm["hips"].z - 0.12, top, c, 1.75
     if framing in ("medium_close", "over_shoulder"):
-        return lm["chest"].z - 0.05, top, c, 1.62
+        return lm["chest"].z - 0.05, top, c, 1.85
     if framing == "close_up":
         return lm["neck"].z - 0.10, top, c, 1.85   # tête entière + épaules : jamais de crâne coupé
     if framing == "extreme_close_up":
@@ -72,15 +73,25 @@ class CameraRig:
             H_ref = {"wide": 1.55, "full": 1.0, "medium": 0.7, "two_shot": 0.9}.get(framing, 0.5)
             lo, hi, cxy, marg, width = p.z - 1.0, p.z + 0.5, Vector((p.x, p.y)), H_ref * 3.0 / 1.5, 1.0
             facing = Vector((0, -1, 0))
+            pts = subj.get("chars_xy") or []
+            if pts and framing in ("wide", "full", "two_shot"):
+                # « centre de l'action » : le cadre englobe tous les personnages visibles (sinon un bord les coupe)
+                xs = [q.x for q in pts] + [p.x]
+                cxy = Vector(((min(xs) + max(xs)) / 2, p.y))
+                width = max(width, (max(xs) - min(xs)) + 1.5)   # épaules, bras, sauts + perspective
         if framing == "two_shot" and sec is not None and sec["kind"] == "char":
             lo2, hi2, c2, _ = span_for("medium", sec["lm"], sec["head_r"])
             lo, hi = min(lo, lo2), max(hi, hi2)
             width = (cxy - c2).length + sec["head_r"] * 3
             cxy = (cxy + c2) / 2
-            marg = 1.3
+            marg = 1.5
         span = max(hi - lo, 0.15)
         fit_w = 1.15 if framing in ("two_shot", "wide") else (1.9 if subj["kind"] == "bbox" else 0.0)
         H = max(span * marg, width / ASPECT * fit_w)
+        if subj["kind"] == "point" and subj.get("chars_xy"):
+            H = max(span * marg, width / ASPECT)
+            # au-delà, les personnages deviennent minuscules en 9:16 : mieux vaut les rapprocher (conseil de la QA)
+            H = min(H, 8.0 if framing == "wide" else 5.0)
         # direction de base : vers le côté caméra (-Y), tirée vers la face du sujet pour voir les visages
         if self.base_az is None:
             base = Vector((facing.x * 0.45, -1.0 + min(facing.y, 0.0) * 0.45, 0))

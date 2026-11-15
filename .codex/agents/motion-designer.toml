@@ -28,6 +28,6 @@ RÈGLES :
   (`app: "Messages"`, `"Recherche"`), personnes fictives uniquement.
 SORTIE : motion_design.json UNIQUEMENT (rien d'autre). VALIDATION : `scripts/studio validate <ep>`, puis
 `scripts/studio motion-preview <ep>` et REGARDER checks/motion_contact.png (view_image) avant
-`scripts/studio submit <ep> motion`. Pas de rendu vidéo : le pilote s'en charge.
+`scripts/studio preflight <ep> --no-3d` (contrats + compilation, quelques secondes) puis `scripts/studio submit <ep> motion`. Pas de rendu vidéo : le pilote s'en charge.
 COMPTE RENDU : liste des éléments (id, mot d'ancrage, ce qu'ils apportent), ce qui a été vu sur la planche.
 '''

@@ -31,7 +31,7 @@ def parse():
     ap.add_argument("--spec", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--profile", required=True)
-    ap.add_argument("--mode", default="render", choices=["render", "stills", "blend"])
+    ap.add_argument("--mode", default="render", choices=["render", "stills", "blend", "checks"])
     ap.add_argument("--frames", default="", help="liste de frames locales pour --mode stills (ex: 1,24,48)")
     ap.add_argument("--engine", default="cycles", choices=["cycles", "eevee"])
     ap.add_argument("--threads", type=int, default=0)
@@ -128,8 +128,107 @@ class Shot:
             o.rotation_euler = (0, 0, D(p.get("rot_deg", 0.0)))
             self.props[p["id"]] = o
             self.props_state[p["id"]] = {"obj": o, "held": p.get("held_by"), "hand": p.get("hand", "R"), "airborne_at": {}}
+        self._build_extras()
         self._separate_props_from_characters()
         lighting.setup(self.sc, sp["mood"], center=(0, 0.5, 1.0), interior=self.set["interior"], sky=self.set.get("sky"))
+
+    EXTRA_SKIN = ["#F2C29B", "#E0A982", "#C68B59", "#8D5524", "#F1D3B6", "#B07850"]
+    EXTRA_HAIR = ["#2A1B12", "#3B2416", "#6B4423", "#C9873D", "#1A1A1A", "#9E9E9E"]
+    EXTRA_CLOTH = ["#7A8B99", "#8E7F6F", "#6F8A7A", "#9C8AA5", "#B5A48A", "#5F6B7A", "#A07D7D", "#7D8F6B"]
+
+    def _build_extras(self):
+        """Figurants (vie du décor) : silhouettes variées aux couleurs sobres, en fond, hors des repères du plan."""
+        ex = self.spec.get("extras") or {}
+        n = int(ex.get("count", 0))
+        self.extras = {}
+        if n <= 0:
+            return
+        import random as _r
+        rng = _r.Random(ex.get("seed", 1))
+        if self.set.get("kit") == "car_interior":
+            return
+        b = self.set["bounds"]
+        # zone de vie : derrière l'action (côté +y, loin de la caméra) et dans le champ, pas à 20 m
+        anchors = [c.joints["root"].location for c in self.chars.values()] or [Vector((0, 0, 0))]
+        cx = sum(a.x for a in anchors) / len(anchors)
+        cy = max(a.y for a in anchors)
+        xlo, xhi = max(b[0] + 0.5, cx - 3.8), min(b[1] - 0.5, cx + 3.8)
+        yhi = min(b[3] - 0.4, cy + 4.5)
+        ylo = cy + 0.9            # toujours DERRIÈRE les personnages principaux (jamais entre eux et la caméra)
+        if xhi - xlo < 1.0 or yhi < cy + 0.3:
+            self.report.setdefault("adjustments", []).append({"type": "extras_skipped", "reason": "pas de place derrière l'action dans ce décor"})
+            return
+        occupied = [Vector((c.joints["root"].location.x, c.joints["root"].location.y)) for c in self.chars.values()]
+        occupied += [Vector((o.location.x, o.location.y)) for o in self.props.values()]
+        col = bpy.data.collections.new("EXTRAS")
+        self.sc.collection.children.link(col)
+        zone = ex.get("zone", "back")
+        activity = ex.get("activity", "idle")
+        placed = []
+        last = None   # (id, position) du dernier figurant posé, pour former des duos qui discutent
+        for i in range(n):
+            pos = None
+            pair = activity == "chat" and i % 2 == 1 and last is not None
+            for tries in range(120):
+                side = zone == "sides" or tries >= 60   # pas de place au fond (pièce étroite) : sur les côtés
+                if pair:
+                    x, y = last[1].x + rng.uniform(0.8, 0.95), last[1].y + rng.uniform(-0.1, 0.1)
+                elif side:
+                    x = rng.choice((rng.uniform(xlo, xlo + 1.2), rng.uniform(xhi - 1.2, xhi)))
+                    y = rng.uniform(cy + 0.3, yhi)
+                else:
+                    if ylo > yhi:
+                        continue
+                    x = rng.uniform(xlo, xhi)
+                    y = rng.uniform(ylo, yhi)
+                v = Vector((x, y))
+                if any((v - o).length < 1.5 for o in occupied) or any((v - o).length < (0.7 if pair else 1.0) for o in placed):
+                    continue
+                if any(lo.x - 0.25 < x < hi.x + 0.25 and lo.y - 0.25 < y < hi.y + 0.25 for lo, hi in (checks._bbox(so) for so in self.set["solids"])):
+                    continue
+                pos = v
+                break
+            if pos is None:
+                continue
+            design = {"seed": rng.randint(1, 99999),
+                      "body": {"height": rng.uniform(0.88, 1.08), "girth": rng.uniform(0.85, 1.25), "head_scale": rng.uniform(0.95, 1.15), "belly": rng.uniform(0.0, 0.45)},
+                      "skin": rng.choice(self.EXTRA_SKIN), "hair": {"style": rng.choice(["short", "bun", "long", "curly", "bowl", "none"]), "color": rng.choice(self.EXTRA_HAIR)},
+                      "outfit": {"top": {"type": rng.choice(["tshirt", "shirt", "hoodie", "polo", "sweater"]), "color": rng.choice(self.EXTRA_CLOTH)},
+                                 "bottom": {"type": rng.choice(["pants", "jeans", "shorts", "skirt"]), "color": rng.choice(self.EXTRA_CLOTH)},
+                                 "shoes": rng.choice(["#333333", "#5A3A22", "#EEEEEE"])},
+                      "accessories": rng.sample(["glasses", "cap", "scarf", "backpack", "beanie"], k=rng.choice([0, 0, 1]))}
+            ch = characters.Character(f"ex{i}", design, col)
+            if pair:   # face à face, de trois quarts vers la caméra
+                fr = D(-60)
+                self.extras[last[0]].place(last[1].x, last[1].y, D(60))
+            else:
+                fr = D(rng.uniform(-35, 35))
+            ch.place(pos.x, pos.y, fr)
+            self.extras[f"ex{i}"] = ch
+            placed.append(pos)
+            last = None if pair else (f"ex{i}", pos)
+        self.report.setdefault("adjustments", []).append({"type": "extras", "requested": n, "placed": len(self.extras), "activity": activity})
+
+    def _animate_extras(self):
+        if not getattr(self, "extras", None):
+            return
+        ex = self.spec.get("extras") or {}
+        activity = ex.get("activity", "idle")
+        b = self.set["bounds"]
+        for k, (eid, ch) in enumerate(self.extras.items()):
+            ca = animation.CharAnim(self.anim, ch, self.N, seed=100 + k)
+            root = ch.joints["root"]
+            for ax in range(3):
+                self.anim.key(root, 'location', ax, 1, root.location[ax])
+            self.anim.key(root, 'rotation_euler', 2, 1, root.rotation_euler.z)
+            ca.idle(1, self.N, energy=0.7 + 0.1 * (k % 4))
+            if activity == "chat":
+                for f in range(8 + 11 * k % 30, self.N - 30, 70):
+                    ca.act_talk_gesture(f, 36, 0.6, None, None)
+            elif activity == "walk":
+                tx = b[1] - 0.6 if root.location.x < 0 else b[0] + 0.6
+                ca.do("walk_to", 1 + 9 * k, 0, 0.8, Vector((tx, root.location.y)))
+            ca.blinks(1, self.N)
 
     # meubles avec lesquels on interagit (s'asseoir, se tenir derrière) : jamais déplacés automatiquement
     FURNITURE = {"sofa", "chair", "bench", "bed", "toilet", "car", "desk", "school_desk", "table", "restaurant_table", "counter",
@@ -213,7 +312,9 @@ class Shot:
                 if a1 - a0 >= 24 and not any(b0 < a1 and a0 < b1 for b0, b1 in busy):
                     ca.act_talk_gesture(int(a0), int(a1 - a0), 0.8, None, None)
                     self.report["events"].append({"char": t["char"], "frame": a0, "what": "auto:talk_gesture"})
+        self._listener_reactions()
         self._carry_arms()
+        self._animate_extras()
         for ca in self.cas.values():
             ca.follow_through(1, self.N)
         for ca in self.cas.values():
@@ -222,6 +323,53 @@ class Shot:
         self.anim.apply()
 
     # ------------------------------------------------------------ accessoires (cuits frame par frame)
+    def _listener_reactions(self):
+        """Jeu automatique des personnages qui ÉCOUTENT : tête tournée vers celui qui parle (sans pivoter le corps,
+        visage toujours lisible), petit acquiescement sur les longues répliques. Jamais pendant une action prévue."""
+        acts = self.spec.get("actions", [])
+        for t in self.spec.get("talk", []):
+            spk, ws = t["char"], t["words"]
+            if not ws or spk not in self.cas:
+                continue
+            a0, a1 = int(ws[0][0]), int(ws[-1][1])
+            for cid, ca in self.cas.items():
+                if cid == spk:
+                    continue
+                if any(a["char"] == cid and a["frame"] < a1 and a["frame"] + max(int(a.get("duration_frames") or 0), 30) > a0 for a in acts):
+                    continue
+                tgt = self.target_xy({"kind": "char", "id": spk}, a0)
+                if tgt is None:
+                    continue
+                p = ca.root_xy(a0)
+                d = Vector(tgt) - p
+                ang = math.degrees((math.atan2(d.x, -d.y) - ca.root_rz(a0) + math.pi) % (2 * math.pi) - math.pi)
+                ang = max(-40.0, min(40.0, ang))
+                # le corps est souvent déjà « triché » vers la caméra : l'orientation TOTALE du visage reste lisible
+                rz = math.degrees(ca.root_rz(a0))
+                rz = (rz + 180.0) % 360.0 - 180.0
+                want = ang
+                ang = max(-50.0 - rz, min(50.0 - rz, ang))
+                if abs(ang) < 6.0 or ang * want <= 0:   # déjà tourné vers lui (ou impossible sans perdre le visage)
+                    continue
+                f0 = max(1, a0 + 4)
+                f1 = min(self.N, a1 + 14)
+                if f1 - f0 < 16:
+                    continue
+                head = ca.j("head")
+                v0 = ca.a.value_at(head, 'rotation_euler', 2, f0)
+                ca.a.clear(head, 'rotation_euler', 2, f0 + 1, f1 - 1)   # remplace le balancement d'idle sur ce segment
+                ca.rot("head", 2, f0, math.degrees(v0))
+                ca.rot("head", 2, f0 + 6, ang)
+                f = f0 + 30
+                while f < f1 - 14:    # tête vivante : micro-variations autour de la direction d'écoute
+                    ca.rot("head", 2, f, ang + (3.0 if (f // 30) % 2 else -3.0))
+                    f += 30
+                ca.rot("head", 2, max(f0 + 7, f1 - 8), ang)
+                ca.rot("head", 2, f1, 0.0)
+                if a1 - a0 > 60:
+                    ca.act_nod((a0 + a1) // 2, 14, 0.6, None, None)
+                self.report["events"].append({"char": cid, "frame": f0, "what": f"écoute {spk}"})
+
     def is_big(self, pid, cid):
         ch = self.chars.get(cid)
         return ch is not None and self.prop_size.get(pid, 0.0) >= 0.30 * ch.H
@@ -442,7 +590,9 @@ class Shot:
             if k == "prop" and t["id"] in self.props:
                 return {"kind": "bbox", "bbox": core.world_bbox(self.props[t["id"]])}
             p = t.get("pos", [0, 0, 1])
-            return {"kind": "point", "point": Vector((p[0], p[1], p[2] if len(p) > 2 else 1.0))}
+            vis = [c for c in self.spec.get("characters", []) if not c.get("offscreen") and c["id"] in self.chars]
+            return {"kind": "point", "point": Vector((p[0], p[1], p[2] if len(p) > 2 else 1.0)),
+                    "chars_xy": [self.cas[c["id"]].root_xy(f) for c in vis]}
         return fn
 
     _last_occluder = None
@@ -504,7 +654,7 @@ class Shot:
         org = aim + direction * 0.3
         rem = dist - 0.3
         travelled = 0.3
-        char_prefix = tuple(c + "_" for c in self.chars)
+        char_prefix = tuple(c + "_" for c in list(self.chars) + list(getattr(self, "extras", {}) or {}))
         prop_prefix = self._transparent_props()
         for _ in range(16):
             hit, loc, nrm, idx, ob, mw = self.sc.ray_cast(dg, org, direction, distance=rem)
@@ -613,6 +763,8 @@ def main():
         sc = shot.sc
         if args.mode == "blend":
             bpy.ops.wm.save_as_mainfile(filepath=os.path.join(args.out, f"{spec['shot_id']}.blend"))
+        elif args.mode == "checks":
+            pass   # pré-vérification : contrôles géométriques seulement, aucune image
         else:
             if args.mode == "stills":
                 frames = [int(x) for x in args.frames.split(",") if x.strip()] or rep["sample_frames"]

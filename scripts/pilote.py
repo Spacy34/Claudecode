@@ -46,6 +46,7 @@ def nxt(ep):
 def codex_prompt(ep, n):
     lines = [f"Utilise $tiktok-3d-studio sur l'épisode {ep}. Le PILOTE gère tous les rendus et étapes automatiques :",
              "tu ne lances PAS `studio run`, `prototype`, `first-cut`, `final`, `check-shots` ni aucun rendu long.",
+             "`studio preflight` est AUTORISÉ et recommandé avant chaque submit (aucun rendu, < 1 min) : il évite les retours.",
              "Fais UNIQUEMENT les étapes suivantes avec les sous-agents spécialisés, valide chacune avec",
              "`scripts/studio submit`, puis ARRÊTE-TOI (le pilote reprendra la suite) :"]
     for a in n["agent"]:

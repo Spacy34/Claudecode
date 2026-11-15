@@ -128,6 +128,16 @@ Cadrage AUTOMATIQUE sur les positions réelles évaluées ; azimut figé au déb
 lancer de rayons (la caméra MONTE d'abord pour regarder par-dessus un obstacle, puis se rapproche en dernier
 recours) ; un objet posé sur un meuble n'est jamais filmé en contre-plongée.
 
+Cadrages rééquilibrés à la compilation (`quality.framing_balance`) : plan d'installation (full/wide) à chaque
+changement de lieu, jamais deux plans serrés d'affilée, ≥ 40 % de plans ouverts (les plus longs sont élargis).
+
+## Vie du plan (automatique ou presque)
+- Écoute : un personnage présent qui ne parle pas et n'a pas d'action tourne la tête vers celui qui parle
+  (visage toujours lisible) et hoche la tête sur les répliques longues. Rien à écrire.
+- Figurants : `storyboard.shots[].extras = {"count": 0-6, "activity": "idle"|"chat"|"walk", "zone": "back"|"sides"}`.
+  Silhouettes variées aux couleurs sobres, placées DERRIÈRE l'action hors des repères, ignorées par les contrôles.
+  Omis (et signalé) si le décor n'a pas de place. Recettes : references/staging-recipes.md.
+
 ## Ambiances (`mood`)
 day_warm, day_cool, night, interior_warm, office_flat, dramatic, spooky, sunset.
 

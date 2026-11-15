@@ -11,7 +11,7 @@ RÈGLES :
   Les plans suivent l'ordre des répliques ; toutes les répliques sont couvertes.
 - Chaque action importante du récit a un plan où elle est LISIBLE (sujet = personnage/objet concerné).
 - Rythme mobile : 1 plan ≈ 1,5–4 s ; changer de valeur de plan à chaque coupe ; éviter 2 plans quasi identiques
-  consécutifs ; pas plus de ~1 plan large par 10 s ; visage du sujet dans la moitié haute (sous-titres en bas).
+  consécutifs ; visage du sujet dans la moitié haute (sous-titres en bas).
 - Montage nerveux : plans de 1,5–3,5 s (avertissement au-delà de 4 s) ; après chaque gag, un plan de RÉACTION
   court (0,5–0,8 s, gros plan) obtenu en coupant sur un mot (`start` {line, word}). Les zooms punch et les
   secousses d'impact sont automatiques : ne pas les doubler avec crash_zoom/shake sauf intention forte.
@@ -25,10 +25,17 @@ RÈGLES :
 - Accessoires posés : `height` = hauteur du meuble (counter 0.92, table 0.76, desk 0.76).
 - Lumière par plan via `mood` ; garder la continuité d'ambiance dans un même lieu sauf intention.
 SORTIE : storyboard.json UNIQUEMENT. Ne modifie ni le cast, ni les décors (demander au rôle propriétaire).
-VALIDATION : `scripts/studio validate <ep>` (règles croisées) puis `scripts/studio submit <ep> storyboard`.
+VALIDATION (réussir du PREMIER coup) : `scripts/studio preflight <ep> --no-3d` pendant l'écriture (quelques secondes),
+puis `scripts/studio preflight <ep>` (contrôles 3D sans rendu, < 1 min) ; corriger TOUS les BLOQUANTS et les conseils
+qui concernent ton fichier, puis `scripts/studio submit <ep> storyboard` (qui relance la pré-vérification).
+Windows : `scripts\studio.cmd` à la place de `scripts/studio`. Recettes de mise en scène éprouvées :
+references/staging-recipes.md (à suivre plutôt que d'improviser des positions).
 COMPTE RENDU : nombre de plans, durée moyenne estimée, plans clés (hook, climax, payoff) et leur intention.
-CADRAGES (vidéos fluides, jamais « collées ») : base = medium / medium_close / two_shot ; close_up réservé aux réactions
-et punchlines (≤ 1 plan sur 3, jamais deux d'affilée) ; extreme_close_up : 1 ou 2 par vidéo au plus, sur un moment fort.
+CADRAGES (on doit VOIR LE MONDE, pas une suite de visages) — répartition cible sur l'épisode :
+≈ 40 % de plans ouverts (wide / full / two_shot) où le décor se lit ; ≈ 35 % medium / medium_close / over_shoulder ;
+≤ 25 % close_up + insert ; extreme_close_up : 2 au plus, sur un moment fort. Jamais deux plans serrés d'affilée.
+Chaque changement de lieu commence par un plan d'installation (wide ou full). Le compilateur rééquilibre
+automatiquement (il élargit les plans les plus longs) et le signale : viser juste évite ces corrections.
 Le zoom « punch » automatique est déjà appliqué sur les mots forts : ne pas empiler push_in + gros plan.
 Mouvements : préférer static (déjà légèrement vivant), push_in lent, track_subject quand quelqu'un marche ; shake et
 crash_zoom seulement sur un impact. Éviter de placer un meuble entre la caméra (côté -Y) et le sujet.
@@ -37,4 +44,10 @@ OBJETS : ne pas placer un accessoire au sol sur le repère d'un personnage (≥ 
 TÉLÉPHONE ET MOTION DESIGN : quand l'histoire fait LIRE un écran (messages, notification, story), le motion designer
 l'affiche en 2D plein écran ; le plan 3D correspondant montre la RÉACTION du personnage (visage, medium_close),
 pas un insert sur un téléphone 3D (doublon).
+PLANS RICHES (plusieurs couches, jamais « une personne devant un mur ») : premier plan (meuble, accessoire, épaule),
+sujet, arrière-plan vivant. Outils : 2 personnages dans le champ dès que l'histoire le permet (l'écoutant réagit
+tout seul : regard vers celui qui parle, hochements) ; accessoires de décor qui racontent le lieu ; figurants
+`"extras": {"count": 2-5, "activity": "chat"|"idle"|"walk", "zone": "back"|"sides"}` dans les lieux publics
+(rue, restaurant, bureau, soirée, classe, magasin) — ils se placent seuls DERRIÈRE l'action, hors des repères.
+Pas de figurants dans une scène intime ou un huis clos ; pas plus de 5 par plan.
 '''

@@ -33,8 +33,10 @@ def _anchor_time(at, words_by_line, segs, shot_t0, shot_t1):
     return t + at.get("offset_s", 0.0)
 
 
-def compile_episode(ep_dir, cfg):
+def compile_episode(ep_dir, cfg, out_dir=None):
+    """out_dir : compilation « à blanc » (studio preflight) écrite ailleurs ; animation_plan facultatif."""
     ep_dir = Path(ep_dir)
+    out_root = Path(out_dir) if out_dir else ep_dir
     fps = int(cfg["render"]["fps"])
     script = read_json(ep_dir / "story_script.json")
     cast = {c["id"]: c for c in read_json(ep_dir / "cast_bible.json")["characters"]}
@@ -42,7 +44,7 @@ def compile_episode(ep_dir, cfg):
     sets_ = {s["id"]: s for s in assets["sets"]}
     props_ = {p["id"]: p for p in assets["props"]}
     sb = read_json(ep_dir / "storyboard.json")
-    ap = read_json(ep_dir / "animation_plan.json")
+    ap = read_json(ep_dir / "animation_plan.json") if (ep_dir / "animation_plan.json").exists() or not out_dir else {"shots": {}}
     tl = read_json(ep_dir / "audio_timeline.json")
     segs = {s["line_id"]: s for s in tl["segments"]}
     words = {s["line_id"]: s["words"] for s in tl["segments"]}
@@ -86,8 +88,9 @@ def compile_episode(ep_dir, cfg):
             warnings.append(f"{shots[i]['id']} : la coupe ({starts[i]:.2f} s) tombe au milieu du mot « {inside['text']} » : ancrer le plan sur un mot (start.word) ou sur la réplique")
     f_starts = [int(round(t * fps)) for t in starts] + [total_frames]
     manifest_shots = []
-    shots_dir = ep_dir / "shots"
-    shots_dir.mkdir(exist_ok=True)
+    shots_dir = out_root / "shots"
+    shots_dir.mkdir(parents=True, exist_ok=True)
+    framings = balance_framings(shots, cfg, warnings)
     for i, s in enumerate(shots):
         f0, f1 = f_starts[i], f_starts[i + 1]
         N = f1 - f0
@@ -186,6 +189,7 @@ def compile_episode(ep_dir, cfg):
                         if all(abs(fr - q["frame"]) > fps * 1.5 for q in punches) and len(punches) < 2:
                             punches.append({"frame": fr, "strength": 1.0, "word": w["text"]})
         cam = dict(s["camera"])
+        cam["framing"] = framings[i]
         cam["subject"] = resolve(cam["subject"]) if not isinstance(resolve(cam["subject"]), list) else {"kind": "point", "pos": resolve(cam["subject"]) + [1.0]}
         if cam.get("secondary_subject") is not None:
             sec = resolve(cam["secondary_subject"])
@@ -194,11 +198,14 @@ def compile_episode(ep_dir, cfg):
                 "set": set_spec, "mood": s["mood"], "characters": chars, "props": props, "camera": cam, "actions": actions,
                 "expressions": exprs, "prop_actions": pacts, "fx": fxs, "talk": talk, "punches": punches, "auto_idle": block.get("auto_idle", True),
                 "transition_out": s.get("transition_out", "cut")}
+        if s.get("extras", {}).get("count"):
+            spec["extras"] = {"count": int(s["extras"]["count"]), "activity": s["extras"].get("activity", "idle"),
+                              "zone": s["extras"].get("zone", "back"), "seed": int(sha256_json(s["id"])[:6], 16)}
         h = sha256_json(spec)
         sp = shots_dir / f"{s['id']}.json"
         write_json(sp, spec)
         manifest_shots.append({"id": s["id"], "start_frame": f0, "end_frame": f1, "frames": N, "start_s": round(t0, 3), "end_s": round(t1, 3),
-                               "spec_sha256": h, "spec_path": str(sp.relative_to(ep_dir)), "line_ids": s["line_ids"],
+                               "spec_sha256": h, "spec_path": str(sp.relative_to(out_root)), "line_ids": s["line_ids"],
                                "transition_out": s.get("transition_out", "cut")})
     tight = [s["id"] for s in shots if s["camera"]["framing"] in ("close_up", "extreme_close_up")]
     if len(shots) >= 5 and len(tight) > 0.35 * len(shots):
@@ -216,8 +223,45 @@ def compile_episode(ep_dir, cfg):
            "provenance": {"created_by": "studio compile", "created_at": now(),
                           "depends_on": provenance_deps(ep_dir, ["story_script", "cast_bible", "asset_manifest", "storyboard", "animation_plan", "audio_timeline"])},
            "fps": fps, "total_frames": total_frames, "shots": manifest_shots, "warnings": warnings}
-    write_json(ep_dir / "shot_manifest.json", man)
+    write_json(out_root / "shot_manifest.json", man)
     return man
+
+
+OPEN = ("wide", "full", "two_shot")            # cadrages où le DÉCOR se lit
+WIDER = {"extreme_close_up": "close_up", "close_up": "medium_close", "medium_close": "medium", "medium": "full", "over_shoulder": "two_shot"}
+
+
+def balance_framings(shots, cfg, warnings):
+    """Équilibre des valeurs de plan (quality.framing_balance, défaut activé) : -> cadrage effectif de chaque plan.
+    - chaque nouveau décor s'ouvre sur un plan qui le montre (full/wide), hors 1er plan (accroche) ;
+    - jamais deux plans serrés d'affilée ;
+    - au moins `min_open_ratio` (40 %) de plans où le décor se lit : les plans serrés les plus longs sont élargis.
+    Le storyboard n'est pas modifié ; chaque élargissement est signalé."""
+    fr = [s["camera"]["framing"] for s in shots]
+    q = cfg.get("quality", {})
+    if not q.get("framing_balance", True) or len(shots) < 3:
+        return fr
+    tight = ("close_up", "extreme_close_up", "medium_close")
+    orig = list(fr)
+    for i in range(1, len(shots)):
+        if shots[i]["set_id"] != shots[i - 1]["set_id"] and fr[i] in tight + ("medium", "over_shoulder", "insert"):
+            fr[i] = "wide" if len(shots[i]["characters"]) > 1 else "full"
+    for i in range(1, len(shots)):
+        if fr[i] in tight and fr[i - 1] in tight and fr[i] != "extreme_close_up":
+            while fr[i] in tight:
+                fr[i] = WIDER[fr[i]]
+    target = float(q.get("min_open_ratio", 0.4))
+    order = sorted(range(len(shots)), key=lambda i: -len(shots[i]["line_ids"]))   # plans longs d'abord
+    for i in order:
+        if sum(f in OPEN for f in fr) >= target * len(fr):
+            break
+        if i == 0 or fr[i] in OPEN or fr[i] in ("insert", "extreme_close_up"):
+            continue
+        fr[i] = "two_shot" if len(shots[i]["characters"]) > 1 and shots[i]["camera"].get("secondary_subject") else "full"
+    for s, a, b in zip(shots, orig, fr):
+        if a != b:
+            warnings.append(f"{s['id']} : cadrage élargi automatiquement {a} → {b} (décor visible, rythme des valeurs de plan)")
+    return fr
 
 
 def _marks(set_spec):
