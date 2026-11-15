@@ -19,14 +19,31 @@ FX_SFX = {"impact_star": ("bonk", 0, -6), "sparkles": ("sparkle", 0, -8), "heart
           "question_marks": ("pop", 0, -12), "sweat_drops": ("blip", 0, -14)}
 
 
+# niveau « discret » : seulement ce qui raconte quelque chose (choc, notification, message, sonnerie), bien sous la voix
+DISCRET = {"thud", "bonk", "boing", "explosion", "ding", "blip", "ring", "pop"}
+AUTO_OFFSET_DB = -10.0   # les automatiques restent nettement sous les bruitages écrits par le scénariste
+
+
+def level(cfg):
+    v = cfg["audio"].get("auto_sfx", "discret")
+    if v is True:
+        return "discret"
+    if v in (False, None, "aucun", "off", "none"):
+        return "aucun"
+    return v if v in ("discret", "complet") else "discret"
+
+
 def auto_cues(ep_dir, shots, timeline, cfg, existing=()):
     ep_dir = Path(ep_dir)
     sfx_dir = ROOT / cfg["paths"]["assets_dir"] / "sfx"
-    base = float(cfg["audio"]["sfx_gain_db"])
+    base = float(cfg["audio"]["sfx_gain_db"]) + AUTO_OFFSET_DB
+    lvl = level(cfg)
     out = []
+    if lvl == "aucun":
+        return out
 
     def add(name, t, rel_db, source):
-        if t < 0:
+        if t < 0 or (lvl == "discret" and name not in DISCRET):
             return
         out.append({"name": name, "file": str((sfx_dir / f"{name}.wav").relative_to(ROOT)), "start_s": round(t, 3),
                     "gain_db": base + rel_db, "source": f"auto:{source}"})
@@ -67,7 +84,7 @@ def auto_cues(ep_dir, shots, timeline, cfg, existing=()):
     md = motion.load(ep_dir)
     if md:
         try:
-            els = motion.resolve(md, timeline)
+            els, _ = motion.prepare(md, timeline, ep_dir)   # seulement ce qui est réellement affiché
         except (KeyError, ValueError, IndexError):
             els = []
         for e in els:

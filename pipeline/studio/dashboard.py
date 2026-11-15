@@ -357,6 +357,7 @@ class Handler(BaseHTTPRequestHandler):
                 libd = _audio.music_library_dir(cfg)
                 library = {m: len([q for q in (libd / m).glob("*") if q.suffix.lower() in tts.AUDIO_EXT]) if (libd / m).is_dir() else 0 for m in _audio.MUSIC_MOODS}
                 return self._send(200, {"autonomous": bool(cfg["quality"].get("autonomous")), "model": cfg.get("codex", {}).get("model", ""), "economy": eco, "music_library": library,
+                                        "sfx_level": (lambda v: "aucun" if v in (False, "aucun", "off") else ("complet" if v == "complet" else "discret"))(cfg["audio"].get("auto_sfx", "discret")),
                                         "final_profile": cfg["render"].get("final_profile"), "codex": bool(launcher.codex_path()),
                                         "doctor": _DOCTOR, "episodes": [episode_overview(p) for p in _episodes(cfg)],
                                         "inbox": sorted(x.name for x in inbox.glob("*.txt")) if inbox.is_dir() else []})
@@ -508,6 +509,8 @@ class Handler(BaseHTTPRequestHandler):
                     # Économe : orchestrateur en effort bas + 1 seul tour de correction par revue ; Normal : défauts du studio
                     set_local_value("codex", "orchestrator_effort", "low" if body["economy"] else "medium")
                     set_local_value("quality", "max_revision_rounds", 1 if body["economy"] else 2)
+                if body.get("sfx_level") in ("aucun", "discret", "complet"):
+                    set_local_value("audio", "auto_sfx", body["sfx_level"])
                 if body.get("final_profile") in ("draft", "preview", "final"):
                     set_local_value("render", "final_profile", body["final_profile"])
                 return self._send(200, {"ok": True})

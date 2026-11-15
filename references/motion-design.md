@@ -27,6 +27,13 @@ name_tag 2,2 s, counter 2 s, arrow 1,6 s). Le téléphone reste au moins jusqu'a
 Positions : top, center, left, right, top_left, top_right (zones choisies hors sous-titres et hors boutons TikTok).
 `scale` 0.5–1.6. `globals.progress_bar` (défaut true) : barre de progression en haut de l'image.
 
+## Lisibilité imposée par le studio (automatique)
+- un seul élément à l'écran à la fois (le plus important gagne : téléphone > compteur > étiquette > texte > sticker/flèche) ;
+- un text_pop qui répète la voix est retiré (les sous-titres l'affichent déjà) ;
+- les petits éléments respirent (1,2 s mini après le précédent) ;
+- écran de téléphone pendant un plan qui montre un téléphone 3D : plein écran, 3D assombrie (`layout: "fullscreen"`
+  pour le forcer). Les éléments écartés sont listés par `studio motion-preview`.
+
 ## Bonnes pratiques
 - Un élément = une information que la voix donne au même instant. Sans le son, la vidéo doit rester compréhensible.
 - 1 élément toutes les 3–8 s, 2 simultanés au maximum ; un élément fort sur le hook.

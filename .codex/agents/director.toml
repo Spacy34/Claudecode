@@ -34,4 +34,7 @@ Mouvements : préférer static (déjà légèrement vivant), push_in lent, track
 crash_zoom seulement sur un impact. Éviter de placer un meuble entre la caméra (côté -Y) et le sujet.
 OBJETS : ne pas placer un accessoire au sol sur le repère d'un personnage (≥ 0,6 m d'écart) ; un objet tenu doit
 être petit (téléphone, tasse, assiette…) ; les gros objets se posent sur un meuble ou au sol à côté.
+TÉLÉPHONE ET MOTION DESIGN : quand l'histoire fait LIRE un écran (messages, notification, story), le motion designer
+l'affiche en 2D plein écran ; le plan 3D correspondant montre la RÉACTION du personnage (visage, medium_close),
+pas un insert sur un téléphone 3D (doublon).
 '''

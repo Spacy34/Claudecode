@@ -270,7 +270,12 @@ def p_computer(r, n, c, coll, ink, label):
 
 def p_phone(r, n, c, coll, ink, label):
     core.box(n + "_body", (0.08, 0.012, 0.16), M(n + "_m", c), (0, 0, 0.08), parent=r, coll=coll, ink=0.003, bevel=0.008)
-    core.box(n + "_scr", (0.07, 0.002, 0.14), core.emit_mat(n + "_scr", "#5AC8FA", 1.5), (0, -0.007, 0.08), parent=r, coll=coll)
+    core.box(n + "_scr", (0.07, 0.002, 0.14), core.emit_mat(n + "_scr", "#EAF4FF", 1.2), (0, -0.007, 0.08), parent=r, coll=coll)
+    # écran allumé avec une conversation : un téléphone tenu ne paraît pas « vide »
+    for k, (x, z, w, col) in enumerate(((-0.012, 0.125, 0.04, "#D9D9DE"), (0.012, 0.10, 0.038, "#2F8CFF"), (-0.01, 0.075, 0.045, "#D9D9DE"),
+                                         (0.014, 0.05, 0.03, "#2F8CFF"))):
+        core.box(n + f"_bubble{k}", (w, 0.001, 0.016), core.emit_mat(n + f"_bub{col}", col, 1.0), (x, -0.0085, z), parent=r, coll=coll)
+    core.box(n + "_hdr", (0.07, 0.001, 0.012), core.emit_mat(n + "_hdr", "#F2F2F7", 1.0), (0, -0.0085, 0.145), parent=r, coll=coll)
 
 
 def p_mug(r, n, c, coll, ink, label):

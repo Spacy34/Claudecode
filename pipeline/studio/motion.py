@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from .util import ROOT, cache_dir, read_json, sha256_json
 
-MOTION_VERSION = "motion-v1"
+MOTION_VERSION = "motion-v2"
 TYPES = ["phone", "text_pop", "sticker", "name_tag", "counter", "arrow"]
 PHONE_SCREENS = ["chat", "notification", "call", "post", "search"]
 TEXT_STYLES = ["impact", "label", "typewriter"]
@@ -156,6 +156,80 @@ def resolve(md, timeline):
         e["_t0"], e["_t1"] = t0, t1
         out.append(e)
     return sorted(out, key=lambda e: e["_t0"])
+
+
+# ------------------------------------------------------------------ lisibilité : jamais d'écran surchargé
+PRIORITY = {"phone": 5, "counter": 4, "name_tag": 3, "text_pop": 2, "sticker": 1, "arrow": 1}
+SMALL = ("sticker", "text_pop", "arrow")
+
+
+def _norm_word(w):
+    import unicodedata as _u
+    t = _u.normalize("NFKD", w.lower())
+    return re.sub(r"[^a-z0-9]", "", "".join(c for c in t if not _u.combining(c)))
+
+
+def phone_ranges(ep_dir):
+    """Intervalles de temps des plans où un téléphone 3D est visible (tenu, posé, ou sujet du plan)."""
+    ep_dir = Path(ep_dir)
+    try:
+        man = read_json(ep_dir / "shot_manifest.json")
+    except (OSError, ValueError):
+        return []
+    out = []
+    for s_ in man["shots"]:
+        try:
+            spec = read_json(ep_dir / s_["spec_path"])
+        except (OSError, ValueError, KeyError):
+            continue
+        if any(p.get("type") == "phone" for p in spec.get("props", [])):
+            out.append((s_["start_s"], s_["end_s"]))
+    return out
+
+
+def declutter(els, timeline, phones=()):
+    """-> (éléments gardés, [(id, raison)] écartés).
+    - un text_pop qui RÉPÈTE ce que dit la voix est retiré (les sous-titres l'affichent déjà) ;
+    - UN seul élément à l'écran à la fois (le plus important gagne, l'autre est raccourci ou retiré) ;
+    - les petits éléments (sticker, texte, flèche) respirent : 1,2 s mini après le précédent ;
+    - un écran de téléphone pendant un plan qui montre déjà un téléphone 3D passe en plein écran (un seul téléphone)."""
+    spoken = [(_norm_word(w["text"]), w["start_s"]) for seg in timeline["segments"] for w in seg["words"]]
+    kept, dropped = [], []
+    for e in sorted(els, key=lambda x: x["_t0"]):
+        if e["type"] == "text_pop":
+            tw = [x for x in (_norm_word(w) for w in str(e.get("text", "")).split()) if x]
+            near = {w for w, t in spoken if e["_t0"] - 2.5 <= t <= e["_t1"] + 1.0}
+            if tw and sum(1 for x in tw if x in near) >= 0.7 * len(tw):
+                dropped.append((e["id"], "répète ce que dit la voix (déjà dans les sous-titres)"))
+                continue
+        if kept and e["_t0"] < kept[-1]["_t1"]:
+            prev = kept[-1]
+            if PRIORITY[e["type"]] > PRIORITY[prev["type"]]:
+                prev["_t1"] = e["_t0"]
+                if prev["_t1"] - prev["_t0"] < 0.8:
+                    kept.pop()
+                    dropped.append((prev["id"], f"chevauchait {e['id']} (plus important)"))
+            else:
+                new_t0 = prev["_t1"] + 0.25
+                if e["_t1"] - new_t0 < 0.8 or e["type"] in SMALL:
+                    dropped.append((e["id"], f"chevauchait {prev['id']} : un seul élément à la fois"))
+                    continue
+                e["_t0"] = new_t0
+                for m in e["_msgs"]:
+                    m["t"] = max(m["t"], new_t0 + 0.3)
+        if kept and e["type"] in SMALL and e["_t0"] - kept[-1]["_t1"] < 1.2:
+            dropped.append((e["id"], "trop rapproché de l'élément précédent"))
+            continue
+        if e["type"] == "phone" and any(a < e["_t1"] and e["_t0"] < b for a, b in phones):
+            e["_takeover"] = True
+        kept.append(e)
+    return kept, dropped
+
+
+def prepare(md, timeline, ep_dir=None):
+    """resolve + declutter : ce qui sera RÉELLEMENT affiché (montage, aperçu, bruitages)."""
+    els = resolve(md, timeline)
+    return declutter(els, timeline, phone_ranges(ep_dir) if ep_dir else ())
 
 
 # ------------------------------------------------------------------ éléments graphiques
@@ -676,6 +750,9 @@ def render_canvas(elements, t, W, H, base=None):
         if el["type"] == "arrow":
             draw_arrow(canvas, el, t, sc, W, H)
             continue
+        takeover = el["type"] == "phone" and (el.get("_takeover") or el.get("layout") == "fullscreen")
+        if takeover:
+            sc = s * 1.08
         spr = SPRITES[el["type"]](el, t, sc)
         pin = clamp((t - t0) / T_IN)
         pout = clamp((t1 - t) / T_OUT)
@@ -683,12 +760,21 @@ def render_canvas(elements, t, W, H, base=None):
         cx, cy = ZONES[pos]
         cx, cy = cx * s, cy * s
         k, alpha, dx = 1.0, 1.0, 0.0
-        if el["type"] in ("phone", "name_tag"):
+        dy = 0.0
+        if takeover:
+            # on « zoome » dans le téléphone : la 3D s'assombrit derrière, un seul téléphone à l'écran
+            dim = Image.new("RGBA", (W, H), (8, 8, 12, int(150 * ease_out(pin) * min(1.0, pout * 1.5))))
+            canvas.alpha_composite(dim)
+            cx, cy = W / 2, 790 * s
+            dy = (1 - ease_out(pin)) * H * 0.55
+            if pout < 1:
+                alpha = pout
+        elif el["type"] in ("phone", "name_tag"):
             side = -1 if (pos.endswith("left") or (el["type"] == "phone" and pos == "center")) else 1
             dx = side * (1 - ease_out(pin)) * (W * 0.6)
         else:
             k = 0.35 + 0.65 * ease_out_back(pin)
-        if pout < 1:
+        if pout < 1 and not takeover:
             k *= 0.85 + 0.15 * pout
             alpha = pout
         if k != 1.0:
@@ -696,7 +782,7 @@ def render_canvas(elements, t, W, H, base=None):
         if alpha < 1:
             spr.putalpha(spr.getchannel("A").point(lambda v, a=alpha: int(v * a)))
         x = int(cx - spr.width / 2 + dx)
-        y = int(cy - spr.height / 2)
+        y = int(cy - spr.height / 2 + dy)
         x = max(-spr.width, min(W, x))
         canvas.alpha_composite(spr, (max(0, x), max(0, y)), (max(0, -x), max(0, -y)))
     return canvas, active
@@ -713,10 +799,11 @@ def build_overlay(cfg, ep_dir, timeline, W, H, fps, t0, t1):
     md = load(ep_dir)
     if not md or not md.get("elements"):
         return None
-    els = [e for e in resolve(md, timeline) if e["_t1"] > t0 and e["_t0"] < t1]
+    els, _dropped = prepare(md, timeline, ep_dir)
+    els = [e for e in els if e["_t1"] > t0 and e["_t0"] < t1]
     if not els:
         return None
-    key = sha256_json({"v": MOTION_VERSION, "md": md, "segs": [(s["line_id"], s["start_s"], s["end_s"], [(w["start_s"], w["end_s"]) for w in s["words"]]) for s in timeline["segments"]],
+    key = sha256_json({"v": MOTION_VERSION, "md": md, "phones": phone_ranges(ep_dir), "segs": [(s["line_id"], s["start_s"], s["end_s"], [(w["start_s"], w["end_s"]) for w in s["words"]]) for s in timeline["segments"]],
                        "res": [W, H], "fps": fps, "t": [round(t0, 3), round(t1, 3)], "font": _font_path(True), "font2": _font_path(False)})
     d = cache_dir(cfg) / "motion" / key
     lst = d / "overlay.ffconcat"
@@ -808,7 +895,7 @@ def preview(ep_dir, timeline, out_png, W=540, H=960):
     """Planche de contrôle : chaque élément au milieu de sa fenêtre, sur un fond neutre avec les zones TikTok."""
     from .qa import frames as qframes
     md = load(ep_dir)
-    els = resolve(md, timeline) if md else []
+    els, dropped = prepare(md, timeline, ep_dir) if md else ([], [])
     out_png = Path(out_png)
     tmpd = out_png.parent / "motion_preview"
     tmpd.mkdir(parents=True, exist_ok=True)
@@ -826,7 +913,7 @@ def preview(ep_dir, timeline, out_png, W=540, H=960):
         cv, _ = render_canvas([e], t, W, H, base=bg)
         p = tmpd / f"{e['id']}.png"
         cv.convert("RGB").save(p)
-        items.append((p, f"{e['id']} {e['type']} {e['_t0']:.1f}-{e['_t1']:.1f}s"))
+        items.append((p, f"{e['id']} {e['type']}{' PLEIN ÉCRAN' if e.get('_takeover') else ''} {e['_t0']:.1f}-{e['_t1']:.1f}s"))
     if not items:
         return None
     return qframes.contact_sheet(items, out_png, cols=4, title="MOTION DESIGN — un instant par élément (gris = zones TikTok/sous-titres)")

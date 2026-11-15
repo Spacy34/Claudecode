@@ -70,14 +70,14 @@ def sfx_cues(timeline, shots, cfg, ep_dir=None):
     cues = list(timeline["sfx"])
     sfx_dir = ROOT / cfg["paths"]["assets_dir"] / "sfx"
     sfxlib.ensure_library(sfx_dir)
-    if ep_dir is not None and cfg["audio"].get("auto_sfx", True):
+    if ep_dir is not None and cfg["audio"].get("auto_sfx", "discret") not in (False, "aucun", "off"):
         from .sound_design import auto_cues
         cues += auto_cues(ep_dir, shots, timeline, cfg, existing=list(cues))
     for s in shots[:-1]:
         name = sfxlib.TRANSITION_SFX.get(s.get("transition_out", "cut"))
         if name:
             cues.append({"name": name, "file": str((sfx_dir / f"{name}.wav").relative_to(ROOT)), "start_s": max(0, s["end_s"] - (0.18 if name == "whoosh" else 0.0)),
-                         "gain_db": cfg["audio"]["sfx_gain_db"] - 3, "source": "transition"})
+                         "gain_db": cfg["audio"]["sfx_gain_db"] - 6, "source": "transition"})
     return cues
 
 
