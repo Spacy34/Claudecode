@@ -44,9 +44,10 @@ def _noise_filtered(n, rng, cutoff_fn):
 
 
 def whoosh(rng):
-    n = int(SR * 0.45)
-    s = _noise_filtered(n, rng, lambda u: 300 + 5000 * math.sin(math.pi * u))
-    return [v * math.sin(math.pi * i / n) ** 2 for i, v in enumerate(s)]
+    """Souffle doux et grave (v2) : l'ancien balayait jusqu'à 5 kHz et paraissait bien plus fort que les autres sons."""
+    n = int(SR * 0.42)
+    s = _noise_filtered(n, rng, lambda u: 150 + 1500 * math.sin(math.pi * u))
+    return [v * math.sin(math.pi * i / n) ** 3 for i, v in enumerate(s)]
 
 
 def boing(rng):
@@ -221,6 +222,15 @@ def count_roll(rng):   # défilement de compteur (≈ 1 s, de plus en plus lent)
 LIBRARY = {"whoosh": whoosh, "boing": boing, "pop": pop, "thud": thud, "ding": ding, "slide_whistle": slide_whistle,
            "record_scratch": record_scratch, "explosion": explosion, "crash": crash, "sparkle": sparkle, "splat": splat,
            "blip": blip, "swish": swish, "step": step, "tick": tick, "ring": ring, "bonk": bonk, "typing": typing, "count_roll": count_roll}
+
+# correction de volume par son, appliquée au mixage quelle que soit l'origine (script, automatique, transition) :
+# à niveau de crête égal, un souffle de bruit paraît beaucoup plus fort qu'un son tonal
+SFX_TRIM_DB = {"whoosh": -10.0, "swish": -4.0}
+
+
+def trim_db(name):
+    return SFX_TRIM_DB.get(str(name), 0.0)
+
 
 TRANSITION_SFX = {"whip": "whoosh", "smash_cut": "thud", "flash_white": "pop"}
 

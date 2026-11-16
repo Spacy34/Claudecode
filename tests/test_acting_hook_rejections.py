@@ -82,14 +82,28 @@ def test_hook_title_survives_declutter_even_if_it_echoes_the_voice():
     assert [e["id"] for e in kept] == ["mo_hook"] and not dropped
 
 
-def test_hook_sound_at_zero(tmp_path):
+def test_no_sound_at_opening_by_default(tmp_path):
+    """Retour utilisateur : le premier bruit (son d'attaque) était beaucoup trop fort -> aucun bruitage auto en ouverture."""
     from studio import sound_design
     from studio.util import load_config
     cfg = load_config()
     cues = sound_design.auto_cues(tmp_path, [], {"segments": [], "duration_s": 5}, cfg)
+    assert not any(c["source"] == "auto:accroche" for c in cues)
+    cfg.setdefault("hook", {})["sound"] = True   # réactivable volontairement
+    cues = sound_design.auto_cues(tmp_path, [], {"segments": [], "duration_s": 5}, cfg)
     assert any(c["source"] == "auto:accroche" and c["start_s"] == 0.0 for c in cues)
-    cues = sound_design.auto_cues(tmp_path, [], {"segments": [], "duration_s": 5}, cfg, existing=[{"start_s": 0.1}])
-    assert not any(c["source"] == "auto:accroche" for c in cues), "un bruitage écrit en ouverture a la priorité"
+
+
+def test_hook_title_appears_silently(episode, cfg):
+    from studio import audio, sound_design
+    from studio.compile import compile_episode
+    if shutil.which("espeak-ng") is None:
+        pytest.skip("espeak-ng absent")
+    audio.build_voice(episode, cfg)
+    man = compile_episode(episode, cfg)
+    tl = read_json(episode / "audio_timeline.json")
+    cues = sound_design.auto_cues(episode, man["shots"], tl, cfg)
+    assert not [c for c in cues if c["start_s"] < 0.6], [c for c in cues if c["start_s"] < 0.6]
 
 
 needs_voice = pytest.mark.skipif(shutil.which("espeak-ng") is None, reason="espeak-ng absent")

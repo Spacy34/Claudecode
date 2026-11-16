@@ -65,3 +65,9 @@ def test_motion_declutter_and_phone_fullscreen(episode, cfg):
     ordered = sorted(kept, key=lambda e: e["_t0"])
     assert all(a["_t1"] <= b["_t0"] + 1e-6 for a, b in zip(ordered, ordered[1:])), "un seul élément à la fois"
     assert ids["mo_tiktok_post"].get("_takeover"), "Kevin tient un téléphone 3D dans ce plan : écran 2D en plein écran"
+
+
+def test_whoosh_is_attenuated_everywhere():
+    """Retour utilisateur : le whoosh était beaucoup trop fort tout le temps -> correction au mixage, toutes origines."""
+    from studio import sfx
+    assert sfx.trim_db("whoosh") <= -10 and sfx.trim_db("swish") < 0 and sfx.trim_db("pop") == 0

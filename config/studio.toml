@@ -80,9 +80,10 @@ blend_frames = 6
 
 [hook]
 # Accroche des 2 premières secondes (rétention TikTok), appliquée automatiquement :
-# titre à l'écran (story_script.hook.on_screen_text, sinon le titre), son d'attaque, caméra jamais fixe au 1er plan.
+# titre à l'écran (story_script.hook.on_screen_text, sinon le titre), caméra jamais fixe au 1er plan.
+# sound = son d'attaque à 0 s (désactivé : trop fort ; le titre d'accroche apparaît aussi sans bruit)
 title = true
-sound = true
+sound = false
 first_shot_move = true
 max_first_shot_s = 2.5
 

@@ -47,7 +47,7 @@ pas un insert sur un téléphone 3D (doublon).
 ACCROCHE (le 1er plan décide si le spectateur reste) : sh_001 dure ≤ 2,5 s (couper sur un mot), montre une ACTION
 déjà en cours ou une réaction forte (pas un personnage immobile qui commence à parler), cadrage medium/medium_close
 plein de vie ; jamais un plan d'installation lent. Un 1er plan fixe reçoit automatiquement un push_in ; le titre
-d'accroche s'affiche en haut pendant ~2 s (laisser le haut du cadre respirer) et un son d'attaque est posé à 0 s.
+d'accroche s'affiche en haut pendant ~2 s (laisser le haut du cadre respirer).
 FIN QUI BOUCLE (TikTok relance la vidéo) : le dernier plan porte `"loop_to_start": true` (il reprend la valeur de plan,
 l'angle et le sujet du 1er plan) ; idéalement même décor que sh_001. Pas de fondu au noir final (remplacé par une
 coupe). Les dernières images se fondent automatiquement dans la 1re et la musique coupe net.

@@ -79,8 +79,8 @@ def auto_cues(ep_dir, shots, timeline, cfg, existing=()):
             add("swish", at(pn["frame"]) - 0.05, -12, "zoom")
         if spec.get("camera", {}).get("move") == "crash_zoom":
             add("whoosh", at(max(2, int(spec["frames"] * 0.35))) - 0.1, -6, "crash_zoom")
-    # accroche : un son d'attaque dès la première image (le cerveau décide en 1 s s'il reste)
-    if cfg.get("hook", {}).get("sound", True) and not any(float(c.get("start_s", 9)) < 0.5 for c in list(existing) + out):
+    # accroche : son d'attaque à 0 s — DÉSACTIVÉ par défaut (jugé beaucoup trop fort), réactivable par [hook] sound = true
+    if cfg.get("hook", {}).get("sound", False) and not any(float(c.get("start_s", 9)) < 0.5 for c in list(existing) + out):
         out.append({"name": "whoosh", "file": str((sfx_dir / "whoosh.wav").relative_to(ROOT)), "start_s": 0.0,
                     "gain_db": base - 4, "source": "auto:accroche"})
     # motion design
@@ -106,7 +106,8 @@ def auto_cues(ep_dir, shots, timeline, cfg, existing=()):
                 for m in e["_msgs"]:
                     add("ding" if scr == "notification" else "blip", m["t"], -8 if scr == "notification" else -9, f"message:{scr}")
             elif typ in ("text_pop", "sticker"):
-                add("pop", t, -7, typ)
+                if not e.get("_hook"):   # le titre d'accroche apparaît en silence (aucun bruit en ouverture)
+                    add("pop", t, -7, typ)
             elif typ == "name_tag":
                 add("swish", t, -10, typ)
             elif typ == "counter":

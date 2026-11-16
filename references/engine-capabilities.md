@@ -150,7 +150,7 @@ changement de lieu, jamais deux plans serrés d'affilée, ≥ 40 % de plans ouve
 
 ## Accroche automatique (config [hook])
 Titre d'accroche (`story_script.hook.on_screen_text`, sinon le titre) en haut de l'image pendant ~1,9 s dès le 1er
-mot, son d'attaque (whoosh) à 0 s s'il n'y a aucun bruitage dans la 1re demi-seconde, 1er plan fixe -> push_in.
+mot (sans bruit), 1er plan fixe -> push_in. Aucun bruitage automatique en ouverture (son d'attaque désactivé).
 La pré-vérification signale un 1er plan sans mouvement dans la 1re seconde, trop long (> 2,5 s) ou une voix tardive.
 
 ## Étalonnage et lumière (automatiques)
@@ -160,8 +160,7 @@ Lumière de contour par personnage (liseré clair sur tête et épaules, n'écla
 
 ## Fin qui boucle (config [loop])
 `storyboard.shots[-1].loop_to_start = true` : le dernier plan reprend valeur, angle et sujet du 1er. Au montage
-final, les 6 dernières images se fondent dans la 1re, la musique coupe net (le son d'attaque à 0 s masque la
-reprise), pas de fondu au noir final, silence de fin court (0,4 s).
+final, les 6 dernières images se fondent dans la 1re, la musique coupe net, pas de fondu au noir final, silence de fin court (0,4 s).
 
 ## Ambiances (`mood`)
 day_warm, day_cool, night, interior_warm, office_flat, dramatic, spooky, sunset.
