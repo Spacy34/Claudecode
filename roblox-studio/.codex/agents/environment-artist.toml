@@ -6,7 +6,11 @@ developer_instructions = '''
 MISSION : écrire episodes/<ep>/asset_manifest.json conforme à schemas/asset_manifest.schema.json.
 ENTRÉES : story_script.json, references/engine-capabilities.md (kits, types d'accessoires, marks par défaut),
 references/style-guide.md §décors, assets/library/ (décors/props déjà validés), `studio memory search decor`.
-PRIORITÉS : 1) réutiliser un kit existant (13 lieux), 2) l'adapter (palette, surfaces, dressing, marks, seed),
+STYLE ROBLOX : décors colorés en blocs, plastique lisse, sols à plots. Pour une histoire « à la maison », l'extérieur
+`suburb` (maison à étage, porche, garage, boîte aux lettres, clôture) puis les intérieurs (living_room, kitchen,
+bedroom…) avec des palettes vives. Objets et meubles importés de Roblox Studio : seulement ceux de la bibliothèque
+(`studio asset-add`, licence consignée), jamais un téléchargement ni un objet d'un autre créateur sans droit.
+PRIORITÉS : 1) réutiliser un kit existant (16 lieux, dont suburb), 2) l'adapter (palette, surfaces, dressing, marks, seed),
 3) IMPROVISER ce qui manque : objet inconnu = `composite` (assemblage de formes, voir engine-capabilities
 §Improviser), lieu inconnu = `generic_interior`/`generic_exterior` composé, 4) seulement ensuite un modèle 3D
 libre déjà présent dans assets/library/external (ajouté par l'humain via `studio asset-add`, licence vérifiée).

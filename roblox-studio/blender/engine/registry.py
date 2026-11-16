@@ -20,7 +20,7 @@ EXPRESSIONS = ["neutral", "happy", "laugh", "sad", "angry", "shocked", "scared",
 POSTURES = ["neutral", "confident", "shy", "arrogant", "nervous", "energetic", "lazy", "grumpy", "sneaky"]
 ACTIONS = ["idle", "walk_to", "run_to", "turn_to", "look_at", "wave", "point", "shrug", "facepalm", "jump", "shocked_jump",
            "fall_back", "slip_fall", "cower", "stomp", "celebrate", "dance", "sit", "stand_up", "throw", "flail", "nod",
-           "shake_head", "take_hit", "faint", "arms_crossed", "hands_on_hips", "lean_in", "talk_gesture"]
+           "shake_head", "take_hit", "faint", "arms_crossed", "hands_on_hips", "lean_in", "talk_gesture", "clap", "think", "salute", "laugh", "cry", "dance_groove", "dance_robot", "cheer"]
 PROP_ACTIONS = ["attach", "detach", "appear", "disappear", "throw", "fall", "shake", "explode", "spin"]
 FX = ["smoke_puff", "explosion", "sparkles", "impact_star", "sweat_drops", "question_marks", "hearts"]
 KITS = ["living_room", "kitchen", "bedroom", "bathroom", "office", "street", "park", "supermarket", "studio_void",

@@ -59,8 +59,13 @@ Animaux (rebond automatique, jamais figés) : pigeon, cat, dog, chicken, duck, r
   + avertissement (jamais un trou silencieux).
 `scale` 0.2–5, `color`. Un objet sans type dédié = `box`/`sign` + `label` (ex : enceinte « BASS »).
 
-## Personnages (cast_bible.design)
-Corps : height, girth, head_scale, leg_length, arm_length, belly. Coiffures : none, short, spiky, bowl, mohawk,
+## Personnages (cast_bible.design) — avatars R15 style jeu en blocs
+Chaque personnage est un **avatar R15** (tête, torse haut/bas, bras, avant-bras, mains, cuisses, jambes, pieds en
+blocs arrondis, plastique lisse), visage plat (yeux ovales, sourcils, bouches en décalques). Deux sources :
+- `design.roblox_avatar = "<id>"` : avatar exporté de Roblox Studio et ajouté par `studio avatar-add`
+  (voir references/roblox-assets.md) ; le reste de la fiche sert de repli.
+- sinon, avatar en blocs construit depuis la fiche ci-dessous (personnage ORIGINAL).
+Corps : height, girth (largeur), head_scale, leg_length, arm_length, belly. Coiffures : none, short, spiky, bowl, mohawk,
 bun, long, curly. Hauts : tshirt, shirt, hoodie, suit, dress, tank, polo, sweater, jersey. Bas : pants, jeans, shorts, skirt.
 Garde-robe : `top.pattern` / `bottom.pattern` / `layer.pattern` (plain, stripes, pinstripes, dots, plaid, checker,
 denim) + `pattern_color` ; `top.print` (inscription ≤ 12 caractères) + `print_color` ; `top.sleeves` (none/short/long),
@@ -71,12 +76,18 @@ Accessoires : cap, glasses, sunglasses, tie, bowtie, mustache, beard, chef_hat, 
 necklace, gold_chain, watch, backpack, shoulder_bag, beanie, top_hat, headphones, bandana, badge, flower_pin
 (`accessory_colors` : couleur par accessoire). Un chapeau couvrant (beanie, top_hat, chef_hat) aplatit les
 coiffures en volume (spiky, curly, mohawk, bun).
-Nez : round, long, pointy, potato. Rig : hiérarchie d'articulations rigides (low-poly segmenté), pas de skinning.
+Le nez n'est pas affiché (visage plat). Rig : articulations rigides R15 (épaules, coudes, poignets, hanches,
+genoux, chevilles, cou), pas de skinning. Pas de contour noir (style plastique, pas cartoon).
 
 ## Expressions
 neutral, happy, laugh, sad, angry, shocked, scared, smug, disgusted, confused, deadpan, crying (larmes),
-evil_grin, love (joues roses). Transition 3 images. Clignements automatiques. Lip-flap automatique sur les
+evil_grin, love (joues roses). Transition 3 images. Clignements automatiques. Bouche par son (visèmes A/E/O/U/M/F calés sur les mots exacts) sur les
 mots des répliques du personnage présent dans le plan (approximation syllabique, pas de phonèmes).
+
+## Emotes et gestes de jeu en blocs (actions supplémentaires)
+clap (applaudit), think (main au menton), salute, laugh (se tient le ventre, expression laugh automatique),
+cry (mains au visage, sanglots, larmes), cheer (saute bras levés), dance_groove (pas chaloupé), dance_robot
+(danse saccadée). La marche est celle des jeux en blocs : bras quasi tendus en grand balancier, petit rebond.
 
 ## Actions (animation_plan.actions)
 | action | effet | durée typique | `target` |
@@ -162,6 +173,13 @@ Lumière de contour par personnage (liseré clair sur tête et épaules, n'écla
 `storyboard.shots[-1].loop_to_start = true` : le dernier plan reprend valeur, angle et sujet du 1er. Au montage
 final, les 6 dernières images se fondent dans la 1re, la musique coupe net (le son d'attaque à 0 s masque la
 reprise), pas de fondu au noir final, silence de fin court (0,4 s).
+
+## Décor maison `suburb`
+Maison de banlieue à étage (toit à deux pans, porche éclairé, fenêtres à volets, garage), pelouse à plots,
+trottoir, allée, boîte aux lettres, clôture, haies, massifs, arbres, voiture, maisons voisines.
+Repères : porch, door, mailbox, driveway, lawn_left, lawn_right, sidewalk (+ center, left, right…).
+Tous les décors : matériaux plastique lisse, sols extérieurs à plots, halo lumineux (bloom) sur lampes et fenêtres,
+plafonnier doux en intérieur, soleil à ombres nettes.
 
 ## Ambiances (`mood`)
 day_warm, day_cool, night, interior_warm, office_flat, dramatic, spooky, sunset.

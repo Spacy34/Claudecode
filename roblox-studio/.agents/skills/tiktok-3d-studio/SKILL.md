@@ -1,6 +1,6 @@
 ---
 name: tiktok-3d-studio
-description: Produire un épisode TikTok narratif en 3D cartoon low-poly (français, 9:16) à partir d'une histoire ou d'une idée — script, personnages, décors, storyboard, animation Blender, voix, sous-titres, previews, critiques indépendantes, rendu final après validation humaine. À utiliser pour « crée une vidéo/épisode TikTok 3D… », reprendre un épisode en cours ou corriger un épisode existant.
+description: Produire un épisode TikTok narratif dans le style des histoires Roblox (avatars R15 en blocs, rendu Blender, français, 9:16) à partir d'une histoire ou d'une idée — script, personnages, décors, storyboard, animation Blender, voix, sous-titres, previews, critiques indépendantes, rendu final après validation humaine. À utiliser pour « crée une vidéo/épisode TikTok 3D… », reprendre un épisode en cours ou corriger un épisode existant.
 ---
 
 # tiktok-3d-studio — workflow de l'orchestrateur

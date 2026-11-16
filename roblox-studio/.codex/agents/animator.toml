@@ -21,6 +21,9 @@ TOUS les BLOQUANTS (objet dans un personnage, cible inconnue, personnage jamais 
 `scripts/studio submit <ep> animation` (qui relance la pré-vérification). Les personnages qui écoutent regardent
 automatiquement celui qui parle : n'ajoute look_at que pour un regard VOULU (vers un objet, la caméra, un autre).
 Recettes éprouvées (entrée, dispute, portage, réaction) : references/staging-recipes.md.
+EMOTES (style jeu en blocs) : clap, think, salute, laugh, cry, cheer, dance_groove, dance_robot en plus des actions
+classiques ; une réaction forte = une emote (le spectateur des histoires Roblox les reconnaît). Pas plus d'une
+emote par personnage et par plan, sur le mot qui la justifie.
 ACCROCHE : dans sh_001, une action ou une expression forte démarre dans les 0,5 PREMIÈRES secondes (mot 0 ou 1 de
 la 1re réplique) : sursaut, chute, geste, objet qui vole… La pré-vérification le signale sinon ([accroche]).
 COMPTE RENDU : par plan, l'action clé et son mot d'ancrage ; risques (collisions, hors champ) à vérifier en check-shots.

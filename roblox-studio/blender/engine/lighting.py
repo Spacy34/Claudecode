@@ -72,7 +72,7 @@ def post_effects(sc, mood, interior=False):
         ng.interface.new_socket("Image", in_out='OUTPUT', socket_type='NodeSocketColor')
         rl = ng.nodes.new("CompositorNodeRLayers")
         gl = ng.nodes.new("CompositorNodeGlare")
-        for k, v in (("Type", 'Bloom'), ("Quality", 'High'), ("Threshold", 1.0), ("Strength", strength), ("Size", 0.6)):
+        for k, v in (("Type", 'Bloom'), ("Quality", 'High'), ("Threshold", 1.25), ("Strength", strength), ("Size", 0.6)):
             try:
                 gl.inputs[k].default_value = v
             except (KeyError, TypeError, ValueError):
@@ -121,7 +121,7 @@ def character_rims(sc, chars, mood, interior=False, receivers=None):
         head = ch.joints["head"].matrix_world.translation
         for side in (1, -1):
             d = bpy.data.lights.new(f"RIMC_{cid}_{side}", 'AREA')
-            d.energy = 22.0 * H * H * gain * (1.0 if side == 1 else 0.6)
+            d.energy = 11.0 * H * H * gain * (1.0 if side == 1 else 0.6)
             d.size = 0.35 * H
             try:
                 d.spread = math.radians(40)   # faisceau serré : la tête et les épaules, pas la pièce

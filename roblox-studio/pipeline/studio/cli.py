@@ -860,6 +860,10 @@ def cmd_asset_add(a):
     dst_dir.mkdir(parents=True, exist_ok=True)
     dst = dst_dir / f"model{src.suffix.lower()}"
     _sh.copy2(src, dst)
+    if src.suffix.lower() == ".obj":    # export Roblox Studio : matériaux et textures voisins
+        for f in src.parent.iterdir():
+            if f.suffix.lower() in (".mtl", ".png", ".jpg", ".jpeg", ".tga", ".webp"):
+                _sh.copy2(f, dst_dir / f.name)
     if src.suffix.lower() == ".gltf":   # fichiers .bin / textures voisins
         for f in src.parent.iterdir():
             if f.suffix.lower() in (".bin", ".png", ".jpg", ".jpeg", ".webp", ".ktx2"):
@@ -877,6 +881,24 @@ def cmd_asset_add(a):
     out({"status": meta["status"], "issues": issues, "inspection": {k: rep.get(k) for k in ("faces", "materials", "textures", "dimensions_m", "armatures")},
          "thumbnail": str(dst_dir / "thumbnail.png"), "asset_manifest_prop": snippet})
     return 1 if meta["status"] == "rejected" else 0
+
+
+def cmd_avatar_add(a):
+    """Ajoute un avatar exporté de Roblox Studio (OBJ + textures) : contrôle des pièces R15/R6 et licence consignée."""
+    from . import rbx_assets
+    if not a.commercial_confirmed:
+        sys.exit("Confirmez que vous avez le droit d'utiliser cet avatar et ses accessoires dans des vidéos publiées "
+                 "(vos propres créations, ou licence le permettant) : relancez avec --commercial-confirmed. "
+                 "Voir references/roblox-assets.md.")
+    rep = rbx_assets.add(a.source_path, a.id, a.license, source=a.source, face=a.face, force=a.force)
+    out(rep)
+    return 0 if rep["status"] == "ok" else 1
+
+
+def cmd_avatar_list(a):
+    from . import rbx_assets
+    out({"avatars": rbx_assets.listing()})
+    return 0
 
 
 def cmd_tts_test(a):
@@ -1214,6 +1236,18 @@ def build_parser():
     x.add_argument("--commercial-confirmed", action="store_true")
     x.add_argument("--force", action="store_true", help="accepter malgré les problèmes d'inspection")
     x.set_defaults(fn=cmd_asset_add)
+    x = sp.add_parser("avatar-add", help="ajouter un avatar exporté de Roblox Studio (OBJ + textures) à la bibliothèque")
+    x.add_argument("source_path", help="fichier .obj exporté (ses .mtl et textures à côté) ou dossier")
+    x.add_argument("--id", required=True, help="identifiant (ex. kevin_rbx) à mettre dans cast_bible design.roblox_avatar")
+    x.add_argument("--license", required=True, help="ex. « création personnelle », « licence du créateur … »")
+    x.add_argument("--source", default="", help="d'où vient l'avatar (compte, lien du catalogue…)")
+    x.add_argument("--face", choices=["procedural", "original"], default="procedural",
+                   help="procedural = le moteur dessine visage, expressions et bouche (recommandé)")
+    x.add_argument("--commercial-confirmed", action="store_true")
+    x.add_argument("--force", action="store_true")
+    x.set_defaults(fn=cmd_avatar_add)
+    x = sp.add_parser("avatar-list", help="avatars de la bibliothèque")
+    x.set_defaults(fn=cmd_avatar_list)
     x = sp.add_parser("tts-test", help="écouter la voix configurée sur une phrase")
     x.add_argument("--text", default="Mon coloc a essayé de rendre notre grille-pain célèbre sur TikTok.")
     x.add_argument("--out", default="test_voix.wav")

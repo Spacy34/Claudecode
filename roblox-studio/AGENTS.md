@@ -4,8 +4,9 @@ Instructions permanentes pour tout agent Codex travaillant dans ce dépôt. Elle
 par défaut. Les détails sont dans `references/` : ne les charger que lorsque la tâche l'exige.
 
 ## Mission du dépôt
-Produire des vidéos TikTok narratives françaises (9:16, 1080×1920, H.264/AAC, 60–120 s par défaut) en 3D
-cartoon low-poly « goofy », où **chaque plan illustre réellement ce que dit la voix**. Production
+Produire des vidéos TikTok narratives françaises (9:16, 1080×1920, H.264/AAC, 60–120 s par défaut) dans le style
+des « histoires Roblox » (avatars R15 en blocs pleins d'accessoires, décors à plots, emotes), rendues dans Blender,
+où **chaque plan illustre réellement ce que dit la voix**. Production
 reproductible par épisode, contrôlée par des critiques indépendants et des validations humaines.
 
 ## Carte du dépôt
@@ -70,6 +71,9 @@ Un agent ne modifie jamais l'artefact d'un autre rôle : il signale le problème
 5. **Les tests techniques verts ne prouvent pas qu'une vidéo est réussie.** Toujours une revue visuelle.
 6. **Droits** : personnages, décors, sons et musiques originaux ou sous licence compatible usage commercial,
    licence consignée dans `asset_manifest.json`. Pas de personnage, marque ou style protégé copié.
+   Contenus Roblox : uniquement les avatars/objets de la bibliothèque (`studio avatar-add`, `studio asset-add`),
+   ajoutés par l'utilisateur avec leur licence ; jamais de logo Roblox, jamais de téléchargement automatique depuis
+   le catalogue, jamais de personnage d'un jeu existant. Voir `references/roblox-assets.md`.
 7. **Secrets** : aucune clé dans les fichiers versionnés ; variables d'environnement uniquement. Toute dépense
    (TTS externe, GPU loué) est journalisée avec `scripts/studio cost`.
 8. **Pas de code externe non vérifié** : aucun téléchargement/exécution de script tiers sans le montrer à l'utilisateur.

@@ -67,12 +67,12 @@ fi
 "${BLENDER_DIR}/blender" -b --factory-startup -noaudio --version | head -1
 
 echo "== 4/6 Variables d'environnement (~/.bashrc)"
-grep -q "BLENDER_BIN=" ~/.bashrc || cat >> ~/.bashrc <<RC
-# --- studio TikTok 3D ---
-export BLENDER_BIN="${BLENDER_DIR}/blender"
-export STUDIO_PYTHON="${ROOT}/.venv/bin/python"
+# Peut cohabiter avec le studio Blender sur la même machine : commande `rstudio`, son propre Python.
+grep -q "studio TikTok Roblox" ~/.bashrc || cat >> ~/.bashrc <<RC
+# --- studio TikTok Roblox ---
+export BLENDER_BIN="\${BLENDER_BIN:-${BLENDER_DIR}/blender}"
 export STUDIO_BLENDER_MODE=binary
-alias studio="${ROOT}/scripts/studio"
+alias rstudio="STUDIO_PYTHON=${ROOT}/.venv/bin/python ${ROOT}/scripts/studio"
 RC
 export BLENDER_BIN="${BLENDER_DIR}/blender" STUDIO_PYTHON="${ROOT}/.venv/bin/python" STUDIO_BLENDER_MODE=binary
 

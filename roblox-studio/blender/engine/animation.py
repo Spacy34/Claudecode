@@ -106,6 +106,14 @@ POSES = {
     "lying": P(armL=(0, 75, 20), armR=(0, 75, 20), legL=(5, 10), legR=(-5, 10), head=(-10, 0, 0)),
     "talk_a": P(armR=(35, 14, 70), armL=(8, 12, 20), head=(-3, 4, 0)),
     "talk_b": P(armR=(25, 25, 55), armL=(30, 18, 60), head=(3, -4, 0)),
+    "clap_open": P(armL=(72, 28, 45), armR=(72, 28, 45), head=(-4, 0, 0)),
+    "clap_shut": P(armL=(80, 2, 62), armR=(80, 2, 62), head=(-2, 0, 0)),
+    "think": P(armR=(98, 10, 138), armL=(35, 6, 95), head=(-6, 12, -8), spine=(4, 0, 0)),
+    "salute": P(armR=(96, 42, 132), spine=(-4, 0, 0), head=(-6, 0, 0)),
+    "laugh": P(armL=(42, -14, 75), armR=(42, -14, 75), spine=(-14, 0, 0), head=(-18, 0, 0)),
+    "cry": P(armL=(108, 10, 138), armR=(108, 10, 138), spine=(14, 0, 0), head=(22, 0, 0), shrug=0.04),
+    "robot_a": P(armL=(90, 10, 90), armR=(0, 10, 90), head=(0, 0, 25), spine=(0, 0, 10)),
+    "robot_b": P(armL=(0, 10, 90), armR=(90, 10, 90), head=(0, 0, -25), spine=(0, 0, -10)),
     "talk_c": P(armL=(32, 38, 45), armR=(32, 38, 45), head=(-4, 0, 0), spine=(-3, 0, 0)),      # mains ouvertes
     "talk_d": P(armR=(55, 6, 100), armL=(12, 14, 35), head=(4, -6, 0), spine=(4, 0, 0)),        # main sur le cœur
     "talk_e": P(armL=(60, 8, 30), armR=(10, 16, 25), head=(-2, 8, 0), spine=(2, 0, -6)),        # désigne devant soi
@@ -699,6 +707,77 @@ class CharAnim:
             self.pose(p, f, blend=k)
         self.pose("rest", f0 + max(dur, 24))
 
+    # ---------------- emotes (style jeu en blocs : nets, rythmés, lisibles à taille téléphone)
+    def act_clap(self, f0, dur, k, target, world):
+        f1 = f0 + max(dur, 30)
+        self.hold_current(f0)
+        self.claim(f0 + 1, f1, joints=["upper_arm_L", "upper_arm_R", "forearm_L", "forearm_R", "head"])
+        self.pose("clap_open", f0 + 4, blend=k)
+        f, i = f0 + 7, 0
+        while f < f1 - 5:
+            self.pose("clap_shut" if i % 2 == 0 else "clap_open", f, blend=k, interp='LINEAR' if i % 2 == 0 else 'BEZIER')
+            f += 3 if i % 2 == 0 else 4
+            i += 1
+        self.pose("rest", f1 + 4)
+
+    def act_think(self, f0, dur, k, target, world):
+        f1 = self._hold_pose("think", f0, max(dur, 40), k)
+        for i, f in enumerate(range(f0 + 14, f1 - 6, 10)):   # tapote le menton
+            self.rot("forearm_R", 0, f, -(140 + (8 if i % 2 else 0)) * k)
+
+    def act_salute(self, f0, dur, k, target, world):
+        self._hold_pose("salute", f0, max(dur, 30), k)
+        self.squash(f0 + 2, 0.05, stretch_first=True)
+
+    def act_laugh(self, f0, dur, k, target, world):
+        f1 = self._hold_pose("laugh", f0, max(dur, 40), k)
+        self.expression(f0, "laugh", 1.0)
+        for i, f in enumerate(range(f0 + 8, f1 - 4, 3)):   # secousses du rire
+            s = 1 if i % 2 else -1
+            self.rot("spine", 0, f, (-14 + 4 * s) * k)
+            self.a.key(self.j("shoulder_L"), 'location', 2, f, self.c.rest["shoulder_L"][0][2] + (0.012 * s) * self.c.H)
+            self.a.key(self.j("shoulder_R"), 'location', 2, f, self.c.rest["shoulder_R"][0][2] + (0.012 * s) * self.c.H)
+
+    def act_cry(self, f0, dur, k, target, world):
+        f1 = self._hold_pose("cry", f0, max(dur, 40), k)
+        self.expression(f0, "crying", 1.0)
+        for i, f in enumerate(range(f0 + 8, f1 - 4, 4)):   # sanglots
+            s = 1 if i % 2 else -1
+            self.rot("head", 0, f, (18 + 3 * s) * k)
+            self.a.key(self.j("shoulder_L"), 'location', 2, f, self.c.rest["shoulder_L"][0][2] + (0.02 + 0.01 * s) * self.c.H)
+            self.a.key(self.j("shoulder_R"), 'location', 2, f, self.c.rest["shoulder_R"][0][2] + (0.02 + 0.01 * s) * self.c.H)
+
+    def act_cheer(self, f0, dur, k, target, world):
+        self._jump(f0, k, pose_air="celebrate", height=0.3)
+        self.act_celebrate(f0 + 14, max(dur - 14, 24), k, target, world)
+
+    def act_dance_groove(self, f0, dur, k, target, world):
+        """Pas chaloupé : balancier de hanches, bras qui pompent, tête sur le temps (8 images par temps)."""
+        f1 = f0 + max(dur, 48)
+        self.hold_current(f0)
+        self.claim(f0 + 1, f1, loc=True)
+        for i, f in enumerate(range(f0 + 4, f1 - 4, 8)):
+            s = 1 if i % 2 else -1
+            p = P(armL=(55 if s > 0 else 15, 30, 100 if s > 0 else 60), armR=(15 if s > 0 else 55, 30, 60 if s > 0 else 100),
+                  spine=(4, 6 * s, 12 * s), head=(6, -8 * s, -6 * s), legL=(10 if s > 0 else 0, 25 if s > 0 else 8),
+                  legR=(0 if s > 0 else 10, 8 if s > 0 else 25), hip_dz=-0.035)
+            self.pose(p, f, blend=k)
+            self.pose(P(**{**p, "hip_dz": -0.01}), f + 4, blend=k)
+            self._sq(f, -0.04)
+            self._sq(f + 4, 0.02)
+        self._sq(f1, 0.0)
+        self.pose("rest", f1 + 4)
+
+    def act_dance_robot(self, f0, dur, k, target, world):
+        """Danse du robot : poses nettes enchaînées sans adoucissement, tête qui pivote en saccades."""
+        f1 = f0 + max(dur, 48)
+        self.hold_current(f0)
+        self.claim(f0 + 1, f1, loc=True)
+        for i, f in enumerate(range(f0 + 3, f1 - 3, 6)):
+            self.pose("robot_a" if i % 2 == 0 else "robot_b", f, blend=k, interp='LINEAR')
+            self.pose("robot_a" if i % 2 == 0 else "robot_b", f + 4, blend=k, interp='CONSTANT')
+        self.pose("rest", f1 + 4)
+
     def act_take_hit(self, f0, dur, k, target, world):
         self.hold_current(f0)
         self.claim(f0 + 1, f0 + max(dur, 20), loc=True)
@@ -797,13 +876,14 @@ class CharAnim:
             sw = math.sin(ph)
             self.rot("thigh_L", 0, f, -amp * sw)
             self.rot("thigh_R", 0, f, amp * sw)
-            self.rot("shin_L", 0, f, (55 if run else 30) * max(0.0, -math.cos(ph)))
-            self.rot("shin_R", 0, f, (55 if run else 30) * max(0.0, math.cos(ph)))
-            self.rot("upper_arm_L", 0, f, amp * sw * (1.3 if run else 0.9))
-            self.rot("upper_arm_R", 0, f, -amp * sw * (1.3 if run else 0.9))
-            self.rot("forearm_L", 0, f, -(70 if run else 20))
-            self.rot("forearm_R", 0, f, -(70 if run else 20))
-            self.rot("spine", 0, f, 14 if run else 4)
+            self.rot("shin_L", 0, f, (50 if run else 18) * max(0.0, -math.cos(ph)))
+            self.rot("shin_R", 0, f, (50 if run else 18) * max(0.0, math.cos(ph)))
+            self.rot("upper_arm_L", 0, f, amp * sw * (1.5 if run else 1.25))
+            self.rot("upper_arm_R", 0, f, -amp * sw * (1.5 if run else 1.25))
+            self.rot("forearm_L", 0, f, -(55 if run else 6))
+            self.rot("forearm_R", 0, f, -(55 if run else 6))
+            self.rot("spine", 0, f, 12 if run else 2)
+            self.rot("head", 2, f, 3 * sw)
             bob = abs(math.cos(ph)) * (0.05 if run else 0.025) * self.c.H
             self.a.key(self.j("hips"), 'location', 2, f, self.c.hip_z - (0.03 * self.c.H if run else 0) + bob)
         self.pose("rest", f_end + 6)

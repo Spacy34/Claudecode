@@ -1,4 +1,8 @@
-# Déployer le studio sur un VPS (plan d'action)
+# Déployer le Studio TikTok Roblox sur un VPS (plan d'action)
+
+Ce logiciel vit dans le dossier `roblox-studio/` du dépôt et s'installe **à côté** du studio 3D sans le gêner :
+son propre `.venv`, la commande **`rstudio`** (au lieu de `studio`), le tableau de bord sur le port **8766**.
+Rendu : Blender sans écran (CPU) ; le halo lumineux est calculé sur CPU, aucun GPU n'est nécessaire.
 
 Cible recommandée : **Ubuntu 24.04**, accès SSH. Tout tourne en ligne de commande : Blender sans écran,
 Codex en terminal, vidéos récupérées sur ton PC. Aucun port web n'est ouvert sur Internet.
@@ -12,7 +16,7 @@ Codex en terminal, vidéos récupérées sur ton PC. Aucun port web n'est ouvert
 
 Évite les VPS « OpenVZ/LXC » bas de gamme : le bac à sable de Codex a besoin d'un noyau Linux complet (KVM).
 Astuce coût : un petit VPS CPU permanent pour écrire/valider, et un serveur GPU loué à l'heure uniquement
-pour les rendus `final` (journaliser la dépense : `studio cost`).
+pour les rendus `final` (journaliser la dépense : `rstudio cost`).
 
 ## 1. Sécuriser le serveur (une fois, en root)
 ```bash
@@ -36,7 +40,7 @@ l'utilisateur `studio` fonctionne. Petit VPS : ajoute 4 Go de swap pour éviter 
 git clone -b claude/awesome-rubin-fftz1l https://github.com/Spacy34/Claudecode.git studio
 ```
 ```bash
-cd studio && bash scripts/setup_vps.sh
+cd studio/roblox-studio && bash scripts/setup_vps.sh
 ```
 ```bash
 source ~/.bashrc
@@ -48,7 +52,7 @@ lance `doctor` et les tests (rapides + rendus Blender réels). Il doit finir ave
 ## 3. Voix de production (Piper)
 Commandes vérifiées sur le code de piper-tts 1.8.0 (synthèse non testable dans l'environnement de développement).
 ```bash
-cd /opt/studio && .venv/bin/python -m pip install piper-tts
+cd ~/studio/roblox-studio && .venv/bin/python -m pip install piper-tts
 ```
 Lister les voix françaises disponibles :
 ```bash
@@ -62,7 +66,7 @@ Télécharger une voix (exemple) dans `assets/voices/` :
 Ne garde que les voix dont la fiche autorise l'usage commercial.
 Écouter avant de produire :
 ```bash
-studio tts-test --backend piper --model assets/voices/fr_FR-siwis-medium.onnx --out test_voix.wav
+rstudio tts-test --backend piper --model assets/voices/fr_FR-siwis-medium.onnx --out test_voix.wav
 ```
 Puis l'activer pour tout le studio dans `config/local.toml` (ignoré par git) :
 ```toml
@@ -90,10 +94,10 @@ Toujours dans **tmux** (la session survit à une déconnexion SSH ; un rendu int
 ```bash
 tmux new -A -s studio
 ```
-Dans Codex : « Crée un épisode TikTok 3D de 60 secondes à partir de cette histoire : … ».
+Dans Codex, lancé dans `~/studio/roblox-studio` : « Crée un épisode TikTok Roblox de 60 secondes à partir de cette histoire : … ».
 Les validations humaines se font dans un **second panneau tmux** (`Ctrl+b` puis `%`) :
 ```bash
-studio approve ep_mon_histoire gate_script
+rstudio approve ep_mon_histoire gate_script
 ```
 Détacher sans arrêter : `Ctrl+b` puis `d`. Revenir : `tmux attach -t studio`.
 
@@ -112,19 +116,19 @@ voix et sons, lancer/arrêter. Le tableau de bord n'écoute que sur 127.0.0.1 (j
 ## 6. Récupérer et visionner les vidéos sur ton PC
 Copie simple (depuis ton PC, PowerShell ou terminal) :
 ```bash
-scp studio@IP_DU_VPS:studio/episodes/ep_mon_histoire/renders/prototype.mp4 .
+scp studio@IP_DU_VPS:studio/roblox-studio/episodes/ep_mon_histoire/renders/prototype.mp4 .
 ```
 Tout un épisode (rendus + planches de contrôle) :
 ```bash
-rsync -av studio@IP_DU_VPS:studio/episodes/ep_mon_histoire/ ./ep_mon_histoire/
+rsync -av studio@IP_DU_VPS:studio/roblox-studio/episodes/ep_mon_histoire/ ./ep_mon_histoire/
 ```
-Aperçu dans le navigateur sans rien exposer : sur le VPS `cd ~/studio/episodes && python3 -m http.server 8766 --bind 127.0.0.1`,
+Aperçu dans le navigateur sans rien exposer : sur le VPS `cd ~/studio/roblox-studio/episodes && python3 -m http.server 8766 --bind 127.0.0.1`,
 puis sur ton PC `ssh -L 8766:127.0.0.1:8766 studio@IP_DU_VPS` et ouvre `http://localhost:8766`.
 
 ## 7. Entretien
-- Mise à jour : `git pull` puis `studio doctor` et `.venv/bin/python -m pytest -q -m "not blender"`.
-- Cache des rendus : `studio cache` (taille), purge auto chaque nuit :
-  `crontab -e` → `30 3 * * * cd ~/studio && ./scripts/studio cache --prune >/dev/null 2>&1`
+- Mise à jour : `git pull` puis `rstudio doctor` et `.venv/bin/python -m pytest -q -m "not blender"`.
+- Cache des rendus : `rstudio cache` (taille), purge auto chaque nuit :
+  `crontab -e` → `30 3 * * * cd ~/studio/roblox-studio && ./scripts/studio cache --prune >/dev/null 2>&1`
 - Sauvegarde : les artefacts d'épisode (JSON) se versionnent avec git ; les vidéos se rapatrient (§6).
 - Rendus parallèles : `config/local.toml [limits] max_parallel_renders` = valeur recommandée par `doctor`.
 

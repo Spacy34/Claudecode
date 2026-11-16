@@ -10,7 +10,7 @@ from pathlib import Path
 from .util import ROOT, read_json
 
 # (bruitage, décalage en images après le début de l'action, gain relatif en dB)
-ACTION_SFX = {"jump": ("boing", 6, -4), "shocked_jump": ("boing", 4, -3), "fall_back": ("thud", 12, -2), "slip_fall": ("thud", 12, -2),
+ACTION_SFX = {"clap": ("pop", 7, -10), "cheer": ("sparkle", 14, -8), "salute": ("swish", 2, -14),"jump": ("boing", 6, -4), "shocked_jump": ("boing", 4, -3), "fall_back": ("thud", 12, -2), "slip_fall": ("thud", 12, -2),
               "faint": ("thud", 14, -4), "take_hit": ("bonk", 0, -2), "stomp": ("thud", 8, -6), "throw": ("swish", 10, -6),
               "celebrate": ("sparkle", 2, -8), "turn_to": ("swish", 0, -14)}
 PROP_SFX = {"appear": ("pop", 0, -4), "disappear": ("pop", 0, -6), "explode": ("explosion", 3, 0), "fall": ("thud", 8, -4),

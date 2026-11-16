@@ -1,9 +1,16 @@
 # Studio TikTok Roblox pour Codex
 
-Environnement Codex qui fabrique des vidéos TikTok narratives **françaises** en **3D cartoon low-poly**
-(9:16, 1080×1920, H.264/AAC) : script, personnages et décors procéduraux Blender, animation pilotée par la
-voix, sous-titres, previews, critiques indépendantes et validations humaines avant tout rendu final.
-Rien n'est jamais publié automatiquement.
+Environnement Codex qui fabrique des vidéos TikTok narratives **françaises** dans le **style des jeux en blocs
+façon Roblox** (9:16, 1080×1920, H.264/AAC) : avatars R15 (construits depuis une fiche ou **importés depuis Roblox
+Studio**), maisons et décors à plots en plastique lisse, lumière soignée (soleil franc, halo, liseré), emotes et
+gestes, bouche synchronisée sur la voix, sous-titres, critiques indépendantes. Le rendu se fait dans **Blender**
+(sans écran, idéal sur VPS). Rien n'est jamais publié automatiquement.
+
+Logiciel **indépendant** du studio 3D cartoon (dossier parent) : il évolue séparément (port 8766, commande `rstudio`
+sur le VPS, son propre `.venv`, ses épisodes et son cache).
+
+- Avatars et objets Roblox (export depuis Studio, droits) : [`references/roblox-assets.md`](references/roblox-assets.md)
+- Capacités du moteur (avatars, décors, emotes, lumière) : [`references/engine-capabilities.md`](references/engine-capabilities.md)
 
 - Workflow et DAG : [`references/workflow.md`](references/workflow.md)
 - Architecture : [`references/architecture.md`](references/architecture.md)
@@ -34,8 +41,8 @@ ses voix, sa musique et ses bruitages, lancer / arrêter la production (pilote e
 ## 2. Utilisation avec Codex
 Ouvrir Codex à la racine du dépôt (le marquer « trusted » pour charger `.codex/config.toml`), puis :
 
-> Crée un épisode TikTok 3D de 90 secondes à partir de cette histoire : [TEXTE]. Style cartoon low-poly goofy,
-> humour absurde, personnages originaux, mises en scène dynamiques. Génère le script, les personnages, les
+> Crée un épisode TikTok Roblox de 90 secondes à partir de cette histoire : [TEXTE]. Style histoire Roblox,
+> avatars pleins d'accessoires, décors maison/école/ville, emotes, mises en scène dynamiques. Génère le script, les personnages, les
 > décors et une preview de validation.
 
 Le skill `tiktok-3d-studio` s'active (ou `$tiktok-3d-studio …`). L'orchestrateur crée l'épisode, délègue aux
