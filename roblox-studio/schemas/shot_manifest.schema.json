@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/shot_manifest.schema.json",
+  "title": "shot_manifest.json — GÉNÉRÉ par `studio compile`. Plans résolus en frames, entrée exacte du moteur Blender.",
+  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "type": "object",
+  "required": ["contract", "fps", "total_frames", "shots"],
+  "properties": {
+    "contract": {"const": "shot_manifest"},
+    "fps": {"type": "integer", "minimum": 12, "maximum": 60},
+    "total_frames": {"type": "integer", "minimum": 1},
+    "shots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "start_frame", "end_frame", "frames", "spec_sha256", "spec_path"],
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/shot_id"},
+          "start_frame": {"type": "integer", "minimum": 0},
+          "end_frame": {"type": "integer", "minimum": 1},
+          "frames": {"type": "integer", "minimum": 1},
+          "start_s": {"type": "number"},
+          "end_s": {"type": "number"},
+          "spec_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+          "spec_path": {"type": "string"},
+          "line_ids": {"type": "array", "items": {"type": "string"}},
+          "transition_out": {"type": "string"}
+        }
+      }
+    },
+    "warnings": {"type": "array", "items": {"type": "string"}}
+  }
+}

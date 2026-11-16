@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/qa_report.schema.json",
+  "title": "qa_report.json — GÉNÉRÉ. Contrôles automatiques réellement exécutés (aucun contrôle subjectif).",
+  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "type": "object",
+  "required": ["contract", "target", "checks", "summary"],
+  "properties": {
+    "contract": {"const": "qa_report"},
+    "target": {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}, "sha256": {"type": "string"}, "kind": {"type": "string"}}},
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "category", "severity", "status", "message", "method"],
+        "properties": {
+          "id": {"type": "string"},
+          "category": {"enum": ["technical", "contract", "scene", "audio", "subtitles", "sync"]},
+          "severity": {"$ref": "common.schema.json#/$defs/severity"},
+          "status": {"enum": ["pass", "fail", "warn", "skipped"]},
+          "message": {"type": "string"},
+          "method": {"enum": ["ffprobe", "ffmpeg_filter", "jsonschema", "blender_scene_check", "python"]},
+          "evidence": {"type": "object"}
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["passed", "failed", "warnings", "blocking"],
+      "properties": {"passed": {"type": "integer"}, "failed": {"type": "integer"}, "warnings": {"type": "integer"}, "skipped": {"type": "integer"}, "blocking": {"type": "boolean"}}
+    }
+  }
+}

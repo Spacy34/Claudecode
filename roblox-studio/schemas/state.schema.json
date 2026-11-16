@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/state.schema.json",
+  "title": "state.json — état persistant du job de production (géré exclusivement par `studio`)",
+  "type": "object",
+  "required": ["episode_id", "state_version", "stages", "approvals", "history"],
+  "properties": {
+    "episode_id": {"$ref": "common.schema.json#/$defs/episode_id"},
+    "state_version": {"const": 1},
+    "stages": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {"enum": ["pending", "running", "needs_review", "failed", "approved", "completed", "stale", "interrupted"]},
+          "inputs": {"type": "object", "additionalProperties": {"type": "string"}},
+          "outputs": {"type": "object", "additionalProperties": {"type": "string"}},
+          "attempts": {"type": "integer"},
+          "revision_rounds": {"type": "integer"},
+          "pid": {"type": ["integer", "null"]},
+          "started_at": {"type": ["string", "null"]},
+          "finished_at": {"type": ["string", "null"]},
+          "error": {"type": ["string", "null"]},
+          "note": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "approvals": {"type": "array", "items": {"type": "object", "required": ["gate", "by", "at"], "properties": {"gate": {"type": "string"}, "by": {"type": "string"}, "at": {"type": "string"}, "note": {"type": "string"}, "artifact_hashes": {"type": "object"}}}},
+    "history": {"type": "array", "items": {"type": "object"}},
+    "cost_log": {"type": "array", "items": {"type": "object"}}
+  }
+}

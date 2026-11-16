@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/episode_manifest.schema.json",
+  "title": "episode_manifest.json — GÉNÉRÉ à la livraison : rapport final vérifiable",
+  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "type": "object",
+  "required": ["contract", "deliverables", "gates", "qa_summary", "limitations"],
+  "properties": {
+    "contract": {"const": "episode_manifest"},
+    "deliverables": {
+      "type": "array",
+      "items": {"type": "object", "required": ["path", "sha256", "kind"], "properties": {"path": {"type": "string"}, "sha256": {"type": "string"}, "kind": {"type": "string"}, "spec": {"type": "object"}}}
+    },
+    "gates": {
+      "type": "array",
+      "items": {"type": "object", "required": ["gate", "status"], "properties": {"gate": {"type": "string"}, "status": {"type": "string"}, "approved_by": {"type": "string"}, "at": {"type": "string"}, "note": {"type": "string"}}}
+    },
+    "qa_summary": {"type": "object"},
+    "reviews": {"type": "array", "items": {"type": "string"}},
+    "licenses": {"type": "array", "items": {"type": "object"}},
+    "cost_log": {"type": "array", "items": {"type": "object"}},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "publication": {"const": "NOT_PUBLISHED", "description": "Le pipeline ne publie jamais : publication manuelle uniquement."}
+  }
+}

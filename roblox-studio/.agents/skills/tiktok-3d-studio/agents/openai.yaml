@@ -1,0 +1,7 @@
+interface:
+  display_name: "TikTok 3D Studio"
+  short_description: "Épisodes TikTok 3D low-poly, du script au MP4"
+  default_prompt: "Utilise $tiktok-3d-studio pour créer un épisode TikTok 3D de 90 secondes à partir de cette histoire : "
+
+policy:
+  allow_implicit_invocation: true

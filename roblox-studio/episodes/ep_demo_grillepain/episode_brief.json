@@ -1,0 +1,41 @@
+{
+  "contract": "episode_brief",
+  "contract_version": "1.0",
+  "episode_id": "ep_demo_grillepain",
+  "status": "approved",
+  "provenance": {
+    "created_by": "human",
+    "created_at": "2026-11-10T09:00:00+00:00",
+    "revision": 1
+  },
+  "title_hint": "Toasty le grille-pain",
+  "source_story": "Mon coloc Kevin, 28 ans, sans emploi, a décidé que notre grille-pain deviendrait une star de TikTok. Il l'a posé sur une enceinte à fond pour le faire 'danser'. Le grille-pain a fumé, sautillé, puis éjecté une tartine en pleine tête du propriétaire venu réclamer le loyer. La vidéo a fait 3 millions de vues, on a été expulsés, et le grille-pain a plus d'abonnés que nous.",
+  "source_kind": "original_user_story",
+  "target_duration_s": 40,
+  "duration_tolerance_s": 15,
+  "language": "fr-FR",
+  "style": {
+    "visual": "cartoon 3D low-poly goofy, couleurs saturées, contours encrés, expressions exagérées",
+    "tone": [
+      "absurde",
+      "WTF",
+      "humour noir léger"
+    ],
+    "references_to_avoid_copying": [
+      "personnages et assets de chaînes existantes"
+    ]
+  },
+  "voice": {
+    "narrator_gender": "female",
+    "energy": "lively"
+  },
+  "deliverables": [
+    "script",
+    "storyboard",
+    "lookdev",
+    "prototype",
+    "first_cut",
+    "final"
+  ],
+  "stop_after": "prototype"
+}

@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/common.schema.json",
+  "title": "Définitions communes à tous les contrats",
+  "$defs": {
+    "episode_id": {"type": "string", "pattern": "^ep_[a-z0-9_]{3,48}$"},
+    "character_id": {"type": "string", "pattern": "^ch_[a-z0-9_]{2,32}$"},
+    "set_id": {"type": "string", "pattern": "^set_[a-z0-9_]{2,32}$"},
+    "prop_id": {"type": "string", "pattern": "^pr_[a-z0-9_]{2,32}$"},
+    "shot_id": {"type": "string", "pattern": "^sh_[0-9]{3}[a-z]?$"},
+    "line_id": {"type": "string", "pattern": "^l[0-9]{3}$"},
+    "beat_id": {"type": "string", "pattern": "^b[0-9]{2}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+    "vec2": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+    "vec3": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+    "status": {"enum": ["draft", "needs_review", "approved", "rejected", "generated", "stale"]},
+    "severity": {"enum": ["blocker", "major", "minor", "info"]},
+    "license": {
+      "type": "object",
+      "required": ["spdx", "commercial_use"],
+      "properties": {
+        "spdx": {"type": "string", "description": "Identifiant SPDX ou 'original' (créé par le pipeline)"},
+        "commercial_use": {"type": "boolean"},
+        "attribution": {"type": "string"},
+        "source_url": {"type": "string"}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["created_by", "created_at"],
+      "properties": {
+        "created_by": {"type": "string", "description": "Rôle (agent) ou outil ayant produit l'artefact"},
+        "created_at": {"type": "string"},
+        "tool": {"type": "string"},
+        "revision": {"type": "integer", "minimum": 1},
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "sha256"],
+            "properties": {"path": {"type": "string"}, "sha256": {"$ref": "#/$defs/sha256"}}
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "validated_at": {"type": "string"},
+        "ok": {"type": "boolean"},
+        "errors": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "required": ["contract", "contract_version", "episode_id", "status", "provenance"],
+      "properties": {
+        "contract": {"type": "string"},
+        "contract_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"},
+        "episode_id": {"$ref": "#/$defs/episode_id"},
+        "status": {"$ref": "#/$defs/status"},
+        "provenance": {"$ref": "#/$defs/provenance"},
+        "validation": {"$ref": "#/$defs/validation"}
+      }
+    },
+    "time_anchor": {
+      "description": "Ancrage temporel indépendant des timecodes : un mot d'une réplique, ou une fraction du plan.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["line"],
+          "additionalProperties": false,
+          "properties": {
+            "line": {"$ref": "#/$defs/line_id"},
+            "word": {"type": "integer", "minimum": 0, "description": "Index du mot (0 = premier). Absent = début de la réplique."},
+            "edge": {"enum": ["start", "end"], "default": "start"},
+            "offset_s": {"type": "number", "minimum": -2, "maximum": 2}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["shot_t"],
+          "additionalProperties": false,
+          "properties": {"shot_t": {"type": "number", "minimum": 0, "maximum": 1}}
+        }
+      ]
+    }
+  }
+}

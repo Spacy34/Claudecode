@@ -1,0 +1,7 @@
+interface:
+  display_name: "Revue visuelle"
+  short_description: "Inspection image par image et rapport de critique"
+  default_prompt: "Utilise $visual-review pour inspecter le prototype de l'épisode et écrire le rapport."
+
+policy:
+  allow_implicit_invocation: true

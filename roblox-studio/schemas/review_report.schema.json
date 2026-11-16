@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studio.local/schemas/review_report.schema.json",
+  "title": "reviews/<role>_<gate>_r<N>.json — rapport d'un critique indépendant (script, visuel, continuité, rétention)",
+  "allOf": [{"$ref": "common.schema.json#/$defs/envelope"}],
+  "type": "object",
+  "required": ["contract", "reviewer", "gate", "round", "target", "inspected", "scores", "findings", "verdict", "limitations"],
+  "properties": {
+    "contract": {"const": "review_report"},
+    "reviewer": {"enum": ["script-critic", "visual-critic", "continuity-auditor", "retention-editor", "human"]},
+    "gate": {"enum": ["script", "storyboard", "lookdev", "prototype", "shots", "first_cut", "final"]},
+    "round": {"type": "integer", "minimum": 1},
+    "target": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {"path": {"type": "string"}, "sha256": {"$ref": "common.schema.json#/$defs/sha256"}}
+    },
+    "inspected": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ce qui a RÉELLEMENT été inspecté et comment. Un critique visuel qui n'a pas pu voir d'image doit le dire ici.",
+      "items": {
+        "type": "object",
+        "required": ["path", "method"],
+        "properties": {
+          "path": {"type": "string"},
+          "method": {"enum": ["view_image", "read_text", "ffprobe", "contact_sheet", "audio_stats", "human_viewing"]}
+        }
+      }
+    },
+    "scores": {
+      "type": "object",
+      "description": "Notes subjectives 0-10 : indicatives, jamais présentées comme des mesures.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["score", "rationale"],
+        "properties": {"score": {"type": "number", "minimum": 0, "maximum": 10}, "rationale": {"type": "string"}}
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "category", "description", "recommendation", "fix_owner"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^F[0-9]{2,3}$"},
+          "severity": {"$ref": "common.schema.json#/$defs/severity"},
+          "category": {"type": "string"},
+          "shot_id": {"$ref": "common.schema.json#/$defs/shot_id"},
+          "line_id": {"$ref": "common.schema.json#/$defs/line_id"},
+          "time_s": {"type": "number", "minimum": 0},
+          "description": {"type": "string"},
+          "evidence": {"type": "string", "description": "Chemin de frame/planche + observation précise"},
+          "recommendation": {"type": "string"},
+          "fix_owner": {"enum": ["story-architect", "director", "character-artist", "environment-artist", "animator", "voice-sound", "pipeline-engineer", "human"]},
+          "confidence": {"enum": ["low", "medium", "high"]}
+        }
+      }
+    },
+    "verdict": {"enum": ["approve", "revise", "block"]},
+    "limitations": {"type": "string"}
+  }
+}

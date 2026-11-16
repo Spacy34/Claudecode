@@ -1,0 +1,89 @@
+"""Test D — les contrats d'exemple traversent la validation ; les erreurs sont réellement détectées."""
+import copy
+import json
+
+from studio import contracts
+from conftest import DEMO
+
+
+def test_demo_episode_valid():
+    rep = contracts.validate_episode(DEMO)
+    assert {k: v for k, v in rep.items() if v} == {}
+
+
+def test_schema_vocab_matches_engine():
+    assert contracts.capability_errors() == []
+
+
+def test_schema_rejects_unknown_action():
+    ap = json.loads((DEMO / "animation_plan.json").read_text())
+    ap["shots"]["sh_001"]["actions"][0]["action"] = "moonwalk"
+    assert any("moonwalk" in e for e in contracts.schema_errors("animation_plan", ap))
+
+
+def test_cross_rules_detect_desync():
+    arts = contracts.load_episode(DEMO)
+    a = copy.deepcopy(arts)
+    a["story_script"]["lines"] = a["story_script"]["lines"][:-1]          # réplique supprimée
+    errs = contracts.cross_errors(a)
+    assert any("réplique inconnue l009" in e for e in errs)
+    b = copy.deepcopy(arts)
+    b["animation_plan"]["shots"]["sh_002"]["actions"][0]["at"]["word"] = 99   # mot hors réplique
+    assert any("mot 99" in e for e in contracts.cross_errors(b))
+    c = copy.deepcopy(arts)
+    c["storyboard"]["shots"][0]["characters"][0]["id"] = "ch_inconnu"
+    assert any("personnage inconnu" in e for e in contracts.cross_errors(c))
+
+
+def test_review_report_schema():
+    r = {"contract": "review_report", "contract_version": "1.0", "episode_id": "ep_demo_grillepain", "status": "draft",
+         "provenance": {"created_by": "visual-critic", "created_at": "2026-11-10T00:00:00Z"}, "reviewer": "visual-critic",
+         "gate": "prototype", "round": 1, "target": {"path": "renders/prototype.mp4", "sha256": "0" * 64},
+         "inspected": [{"path": "checks/frames_prototype/contact.png", "method": "view_image"}],
+         "scores": {"lisibilite_mobile": {"score": 6, "rationale": "ok"}},
+         "findings": [{"id": "F01", "severity": "major", "category": "cadrage", "shot_id": "sh_001", "time_s": 1.2,
+                       "description": "x", "recommendation": "y", "fix_owner": "director"}],
+         "verdict": "revise", "limitations": "aucune"}
+    assert contracts.schema_errors("review_report", r) == []
+    r["inspected"] = []
+    assert contracts.schema_errors("review_report", r)
+
+
+def test_cross_rules_composite_external_generic():
+    arts = contracts.load_episode(DEMO)
+    a = copy.deepcopy(arts)
+    lic = {"spdx": "CC-BY-NC-4.0", "commercial_use": False}
+    a["asset_manifest"]["props"].append({"id": "pr_x", "type": "composite", "source": "procedural", "license": {"spdx": "original", "commercial_use": True}})
+    a["asset_manifest"]["props"].append({"id": "pr_y", "type": "custom", "source": "external", "external_path": "library/external/absent/model.glb", "license": lic})
+    a["asset_manifest"]["sets"].append({"id": "set_z", "kit": "generic_interior", "source": "procedural", "license": {"spdx": "original", "commercial_use": True}})
+    errs = contracts.cross_errors(a)
+    assert any("pr_x" in e and "parts" in e for e in errs)
+    assert any("pr_y" in e and "introuvable" in e for e in errs)
+    assert any("pr_y" in e and "commercial" in e for e in errs)
+    assert any("set_z" in e and "surfaces" in e for e in errs)
+
+
+def test_asset_add_refuses_non_commercial_license(tmp_path):
+    import pytest
+    from studio import cli
+    f = tmp_path / "m.obj"
+    f.write_text("o x\nv 0 0 0\n")
+    with pytest.raises(SystemExit):
+        cli.main(["asset-add", str(f), "--name", "x", "--license", "CC-BY-NC-4.0"])
+
+
+def test_unknown_mark_and_absent_target_caught_by_validate():
+    """Repère inconnu / cible absente : erreur dès `validate` (avant la compilation)."""
+    import copy
+    from studio import contracts
+    from studio.util import read_json
+    from pathlib import Path
+    demo = Path(__file__).resolve().parents[1] / "episodes" / "ep_demo_grillepain"
+    arts = {k: read_json(demo / f) for k, f in contracts.ARTIFACTS.items() if (demo / f).exists()}
+    assert not [e for e in contracts.cross_errors(arts) if "repère" in e or "n'est pas" in e]
+    bad = copy.deepcopy(arts)
+    bad["storyboard"]["shots"][0]["characters"][0]["mark"] = "balcon_imaginaire"
+    bad["storyboard"]["shots"][0]["camera"]["subject"] = "ch_inexistant"
+    errs = contracts.cross_errors(bad)
+    assert any("repère inconnu 'balcon_imaginaire'" in e for e in errs)
+    assert any("ch_inexistant" in e for e in errs)
