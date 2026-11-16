@@ -5,6 +5,9 @@ Environnement Codex qui fabrique des vidéos TikTok narratives **françaises** e
 voix, sous-titres, previews, critiques indépendantes et validations humaines avant tout rendu final.
 Rien n'est jamais publié automatiquement.
 
+> Version « histoires Roblox » (avatars R15, décors en blocs, emotes) : logiciel séparé, dans son propre dépôt
+> [Spacy34/Robloxstudioshorts](https://github.com/Spacy34/Robloxstudioshorts). Les deux évoluent indépendamment.
+
 - Workflow et DAG : [`references/workflow.md`](references/workflow.md)
 - Architecture : [`references/architecture.md`](references/architecture.md)
 - Audit Codex (sourcé) : [`references/codex-capabilities-audit.md`](references/codex-capabilities-audit.md)
