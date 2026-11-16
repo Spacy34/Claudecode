@@ -53,6 +53,7 @@ target_lufs = -14.0
 true_peak_db = -1.5
 music_gain_db = -24.0
 sfx_gain_db = -15.0             # bruitages du script (relatif) : discrets sous la voix
+script_sfx_max_db = -15.0       # plafond : un bruitage écrit dans le script ne dépasse jamais ce niveau
 auto_sfx = "discret"             # bruitages automatiques : "discret" (impacts, notifications, messages), "complet", "aucun"
 lead_in_s = 0.25
 tail_s = 0.4                       # silence après la dernière réplique (court : la vidéo boucle)

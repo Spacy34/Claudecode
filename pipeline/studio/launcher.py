@@ -160,6 +160,45 @@ def start_pilot(ep, model=""):
     return proc.pid
 
 
+REMIX_END = "### FIN DU NOUVEAU MONTAGE"
+
+
+def remix_log(ep):
+    return episode_dir(load_config(), ep) / "checks" / "remix.log"
+
+
+def remix_status(ep):
+    """-> {running, ok, log} du dernier « Refaire le montage » lancé depuis le tableau de bord."""
+    f = remix_log(ep)
+    if not f.exists():
+        return {"running": False, "ok": None, "log": ""}
+    txt = f.read_text(encoding="utf-8", errors="replace")
+    end = [l for l in txt.splitlines() if l.startswith(REMIX_END)]
+    if not end:
+        return {"running": True, "ok": None, "log": txt[-3000:]}
+    return {"running": False, "ok": end[-1].endswith("code 0"), "log": txt[-3000:]}
+
+
+def start_remix(ep):
+    """Lance `studio remix <ep>` détaché (le tableau de bord reste réactif). Refuse pendant une production."""
+    if pilot_running(ep):
+        raise RuntimeError("une production de cet épisode tourne : attendez la fin avant de refaire le montage")
+    if remix_status(ep)["running"]:
+        raise RuntimeError("un nouveau montage est déjà en cours")
+    p = episode_dir(load_config(), ep)
+    (p / "checks").mkdir(parents=True, exist_ok=True)
+    code = ("import sys\nfrom studio.cli import main\nrc = 1\ntry:\n    main(['remix', sys.argv[1]])\n    rc = 0\n"
+            "except SystemExit as e:\n    rc = e.code if isinstance(e.code, int) else (0 if e.code is None else (print(e.code) or 1))\n"
+            "except Exception as e:\n    print('ERREUR', type(e).__name__, e)\n"
+            f"finally:\n    print('{REMIX_END} code', rc, flush=True)\n")
+    log = open(remix_log(ep), "w", encoding="utf-8")
+    kw = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | 0x08000000} if os.name == "nt" else {"start_new_session": True}
+    proc = subprocess.Popen([sys.executable, "-u", "-c", code, ep], cwd=ROOT, env=studio_env(), stdin=subprocess.DEVNULL,
+                            stdout=log, stderr=subprocess.STDOUT, **kw)
+    log.close()
+    return proc.pid
+
+
 def stop_pilot(ep):
     """Arrête le pilote et tous ses processus enfants. -> True si un processus a été arrêté."""
     pidf = episode_dir(load_config(), ep) / "checks" / "pilote.pid"

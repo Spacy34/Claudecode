@@ -392,6 +392,19 @@ class Handler(BaseHTTPRequestHandler):
                 except FileNotFoundError:
                     return self._err(404, "pas encore d'image pour ce plan")
                 return self._file(p, str(f.relative_to(p)))
+            if u.path == "/api/mix":
+                from . import mixer
+                p = self._ep(q.get("ep"))
+                lm = mixer.latest_montage(p)
+                tl = {}
+                try:
+                    tl = read_json(p / "audio_timeline.json")
+                except (OSError, ValueError):
+                    pass
+                return self._send(200, {"mix": mixer.load(p), "cues": mixer.list_cues(p, load_config()),
+                                        "latest": {k: lm[k] for k in ("kind", "profile", "output")} | {"mtime": int(lm["mtime"])} if lm else None,
+                                        "music": Path((tl.get("music") or {}).get("file", "")).name or None,
+                                        "remix": launcher.remix_status(p.name), "running": launcher.pilot_running(p.name)})
             if u.path == "/api/log":
                 p = self._ep(q.get("ep"))
                 return self._send(200, {"log": tail(p / "checks" / "codex_journal.log", int(q.get("n", 300)))})
@@ -491,6 +504,15 @@ class Handler(BaseHTTPRequestHandler):
                 st.log("retry", stage=stage, by="human:dashboard")
                 st.save()
                 return self._send(200, {"ok": True})
+            if u.path == "/api/mix":
+                from . import mixer
+                p = self._ep(body.get("ep"))
+                m = mixer.save(p, body.get("mix") or {})
+                return self._send(200, {"ok": True, "mix": m})
+            if u.path == "/api/remix":
+                p = self._ep(body.get("ep"))
+                pid = launcher.start_remix(p.name)
+                return self._send(200, {"ok": True, "pid": pid, "note": "Nouveau montage lancé (le son seulement, quelques dizaines de secondes à quelques minutes)."})
             if u.path == "/api/retake":
                 from . import retakes as _rt
                 p = self._ep(body.get("ep"))

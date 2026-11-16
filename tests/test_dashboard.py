@@ -94,3 +94,24 @@ def test_recorded_line_replaces_synthesis(episode, cfg):
     assert res["recorded_lines"] == ["l003"]
     seg = next(s for s in read_json(episode / "audio_timeline.json")["segments"] if s["line_id"] == "l003")
     assert 2.3 < seg["end_s"] - seg["start_s"] < 2.6
+
+
+def test_mix_tab_api(server):
+    port, token, ep = server
+    st, j = req(port, "GET", f"/api/mix?ep={ep.name}")
+    j = json.loads(j)
+    assert st == 200 and j["mix"]["voice_db"] == 0 and j["latest"] is None and j["remix"]["running"] is False
+    st, r = req(port, "POST", "/api/mix", {"ep": ep.name, "mix": {"sfx_db": -9, "mute": {"music": True}}}, token=token)
+    assert st == 200 and json.loads(r)["mix"]["sfx_db"] == -9
+    assert json.loads(req(port, "GET", f"/api/mix?ep={ep.name}")[1])["mix"]["mute"]["music"] is True
+    assert req(port, "POST", "/api/mix", {"ep": ep.name, "mix": {}})[0] == 403, "sans jeton"
+    st, r = req(port, "POST", "/api/remix", {"ep": ep.name}, token=token)
+    assert st == 200
+    import time
+    from studio import launcher
+    for _ in range(60):
+        s = launcher.remix_status(ep.name)
+        if not s["running"]:
+            break
+        time.sleep(0.5)
+    assert s["ok"] is False and "aucun montage" in s["log"], s

@@ -214,7 +214,7 @@ function renderEpisode(){
       <div class="panel"><div class="head"><div><h2 id="epTitle"></h2><div class="id">${esc(d.id)}</div></div>
         <div class="actions"><button class="primary" id="bLaunch">Lancer / reprendre</button><button class="danger" id="bStop">Arrêter</button></div></div>
         <div class="bar" style="margin-top:12px"><i id="epBar"></i></div><div class="banner" id="epBanner"></div></div>
-      <div class="tabs" id="tabs">${[["progress","Avancement"],["shots","Plans"],["checks","Vérifications"],["media","Vidéos & images"],["audio","Voix & sons"],["log","Journal"]]
+      <div class="tabs" id="tabs">${[["progress","Avancement"],["shots","Plans"],["checks","Vérifications"],["media","Vidéos & images"],["audio","Voix & sons"],["mix","Mixage"],["log","Journal"]]
         .map(([k,l])=>`<button data-t="${k}">${l}</button>`).join("")}</div>
       <div id="tabBody"></div></div>`;
     $("bLaunch").onclick = async () => { try { await post("/api/launch",{ep:S.ep}); toast("Production lancée en arrière-plan."); setTimeout(loadDetail,800); refresh(); } catch(e){ toast("Erreur : "+e.message); } };
@@ -227,8 +227,68 @@ function renderEpisode(){
   $("epBanner").innerHTML = `${d.running?'<span class="dot"></span>':""}<b>${esc(d.phase)}</b> — ${esc(d.message)} <span class="hint">(${d.done}/${d.total} étapes${d.brief.imposed?" · script imposé":""}${d.brief.duration?` · ~${d.brief.duration} s`:""}${d.tokens?` · Codex : ${fmtTok(d.tokens)} tokens`:""})</span>`;
   $("bLaunch").disabled = d.running; $("bStop").disabled = !d.running;
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === S.tab));
-  const views = {progress: tabProgress, shots: tabShots, checks: tabChecks, media: tabMedia, audio: tabAudio, log: tabLog};
+  const views = {progress: tabProgress, shots: tabShots, checks: tabChecks, media: tabMedia, audio: tabAudio, mix: tabMix, log: tabLog};
   views[S.tab](d);
+}
+// ------------------------------------------------------------------ onglet Mixage
+function mixRow(label, key, val, muted, hint){
+  return `<tr><td><b>${esc(label)}</b>${hint?`<div class="note">${esc(hint)}</div>`:""}</td>
+    <td style="min-width:220px"><input type="range" min="-30" max="6" step="0.5" value="${val}" data-mixtrack="${key}" style="width:100%"></td>
+    <td class="note" style="width:70px"><span data-mixval="${key}">${val>0?"+":""}${val} dB</span></td>
+    <td><label class="note"><input type="checkbox" data-mixmute="${key}" ${muted?"checked":""}> couper</label></td></tr>`;
+}
+async function tabMix(d){
+  let j;
+  try { j = await api("/api/mix?ep=" + encodeURIComponent(d.id)); } catch(e){ return; }
+  if (S.tab !== "mix") return;
+  if (!S.mixDraft || S.mixDraft.ep !== d.id) S.mixDraft = {ep: d.id, mix: JSON.parse(JSON.stringify(j.mix))};
+  const m = S.mixDraft.mix, r = j.remix || {}, L = j.latest;
+  const status = r.running ? `<span class="dot"></span><b>Nouveau montage en cours…</b> (le son seulement ; l'image vient du cache)`
+    : r.ok === true ? `✔ Dernier montage refait avec ce mixage.` : r.ok === false ? `<span class="st failed">✘ Le nouveau montage a échoué</span> (journal ci-dessous)` : "";
+  const sig = {L, run: r.running, ok: r.ok, n: j.cues.length, busy: j.running};
+  if ($("mixStatus") && S.sig.mix === JSON.stringify(sig)) { return; }
+  setBody("mix", sig, `
+    <div class="panel"><div class="row" style="align-items:flex-start;gap:20px">
+      ${L?`<video id="mixVid" controls preload="metadata" style="width:300px;max-height:540px;background:#000;border-radius:10px" src="${fileUrl(d, L.output, L.mtime)}"></video>`:""}
+      <div style="flex:1;min-width:280px">
+        <p><b>Dernier montage</b> : ${L?`${esc(L.output)} <span class="note">(${esc(L.kind)}, profil ${esc(L.profile||"")})</span>`:`<span class="note">aucun pour l'instant (produisez d'abord un prototype ou un montage)</span>`}</p>
+        <p class="hint">Réglez l'équilibre des pistes puis « Refaire le dernier montage » : seul le son est recalculé (les rendus 3D sont réutilisés),
+        quelques dizaines de secondes à quelques minutes. Le volume général reste normalisé : baisser les bruitages fait ressortir la voix.</p>
+        <div id="mixStatus" class="banner" style="${status?"":"display:none"}">${status}</div>
+        ${r.log && (r.running || r.ok === false)?`<pre class="log" style="max-height:180px">${esc(r.log)}</pre>`:""}
+        <div class="row" style="gap:8px;margin-top:10px">
+          <button class="primary" id="bRemix" ${(!L||r.running||j.running)?"disabled":""}>Enregistrer et refaire le dernier montage</button>
+          <button id="bMixSave">Enregistrer</button><button id="bMixReset">Tout remettre à 0</button></div>
+        ${j.running?`<p class="hint">Une production tourne : attendez qu'elle se termine pour refaire le montage.</p>`:""}
+      </div></div></div>
+    <div class="panel"><b>Pistes</b><table>
+      ${mixRow("Voix", "voice_db", m.voice_db, m.mute.voice, "narration et dialogues")}
+      ${mixRow("Musique", "music_db", m.music_db, m.mute.music, j.music||"aucune musique")}
+      ${mixRow("Bruitages", "sfx_db", m.sfx_db, m.mute.sfx, `${j.cues.length} bruitage(s) au total`)}
+    </table></div>
+    <div class="panel"><b>Bruitages un par un</b> <span class="note">(clic sur l'instant = l'écouter dans la vidéo)</span>
+      ${j.cues.length?`<table><tr><th>Instant</th><th>Son</th><th>Origine</th><th>Réglage</th><th></th><th></th></tr>
+      ${j.cues.map(c=>{ const o = m.cues[c.key] || {gain_db:0, mute:false};
+        return `<tr><td><button class="small" data-seek="${c.t}">${c.t.toFixed(2)} s</button></td><td>${esc(c.name)}</td>
+          <td class="note">${esc(c.source)}<div class="note">niveau studio ${c.base_db} dB</div></td>
+          <td style="min-width:160px"><input type="range" min="-30" max="6" step="0.5" value="${o.gain_db}" data-cue="${esc(c.key)}" style="width:100%"></td>
+          <td class="note" style="width:60px"><span data-cueval="${esc(c.key)}">${o.gain_db>0?"+":""}${o.gain_db} dB</span></td>
+          <td><label class="note"><input type="checkbox" data-cuemute="${esc(c.key)}" ${o.mute?"checked":""}> couper</label></td></tr>`;}).join("")}</table>`
+      :`<p class="hint">Aucun bruitage dans ce montage.</p>`}</div>`, () => {
+    const fmt = v => `${v>0?"+":""}${v} dB`;
+    document.querySelectorAll("[data-mixtrack]").forEach(i => i.oninput = () => { m[i.dataset.mixtrack] = +i.value; document.querySelector(`[data-mixval="${i.dataset.mixtrack}"]`).textContent = fmt(+i.value); });
+    document.querySelectorAll("[data-mixmute]").forEach(i => i.onchange = () => { m.mute[i.dataset.mixmute.replace("_db","")] = i.checked; });
+    document.querySelectorAll("[data-cue]").forEach(i => i.oninput = () => { const k = i.dataset.cue; m.cues[k] = Object.assign({gain_db:0, mute:false}, m.cues[k], {gain_db:+i.value});
+      document.querySelector(`[data-cueval="${CSS.escape(k)}"]`).textContent = fmt(+i.value); });
+    document.querySelectorAll("[data-cuemute]").forEach(i => i.onchange = () => { const k = i.dataset.cuemute; m.cues[k] = Object.assign({gain_db:0, mute:false}, m.cues[k], {mute:i.checked}); });
+    document.querySelectorAll("[data-seek]").forEach(b => b.onclick = () => { const v = $("mixVid"); if (v){ v.currentTime = Math.max(0, +b.dataset.seek - 0.6); v.play(); } });
+    const save = async () => { const r_ = await post("/api/mix", {ep: S.ep, mix: m}); S.mixDraft.mix = r_.mix; return r_; };
+    $("bMixSave").onclick = async () => { try { await save(); toast("Mixage enregistré (appliqué au prochain montage)."); } catch(e){ toast("Erreur : " + e.message); } };
+    $("bMixReset").onclick = async () => { if(!confirm("Remettre tous les réglages de son à 0 ?")) return;
+      S.mixDraft.mix = {voice_db:0, music_db:0, sfx_db:0, mute:{voice:false, music:false, sfx:false}, cues:{}}; S.sig = {}; renderEpisode(); };
+    $("bRemix").onclick = async () => { try { await save(); const r_ = await post("/api/remix", {ep: S.ep}); toast(r_.note, 6000); S.sig = {}; setTimeout(renderEpisode, 1200); } catch(e){ toast("Erreur : " + e.message); } };
+  });
+  if (r.running) { clearTimeout(S.mixTimer); S.mixTimer = setTimeout(() => { if (S.tab === "mix") { S.sig = {}; renderEpisode(); } }, 3000); }
 }
 function setBody(key, sigObj, html, after){
   const sig = JSON.stringify(sigObj);

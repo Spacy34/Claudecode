@@ -33,6 +33,9 @@ scripts/studio doctor
 `scripts/studio dashboard` (Windows : `scripts\dashboard.cmd`) ouvre http://127.0.0.1:8765 : créer une vidéo depuis un
 script ou une histoire, suivre l'avancement et les vérifications, regarder prototype / montage / vidéo finale, fournir
 ses voix, sa musique et ses bruitages, lancer / arrêter la production (pilote en arrière-plan, Windows/macOS/Linux).
+Onglet **Mixage** : volume de la voix, de la musique et des bruitages (et de chaque bruitage), pistes à couper, puis
+« Refaire le dernier montage » : seul le son est recalculé, les rendus 3D sont réutilisés (`scripts/studio mix` /
+`scripts/studio remix <ep>` en ligne de commande).
 
 ## 2. Utilisation avec Codex
 Ouvrir Codex à la racine du dépôt (le marquer « trusted » pour charger `.codex/config.toml`), puis :

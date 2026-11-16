@@ -70,7 +70,10 @@ def concat(clips, out):
 
 
 def sfx_cues(timeline, shots, cfg, ep_dir=None):
-    cues = list(timeline["sfx"])
+    # plafond des bruitages écrits dans le script (ils étaient mixés jusqu'à -8 dB : trop forts sous la voix) ;
+    # appliqué au mixage, donc aussi aux épisodes existants
+    cap = float(cfg["audio"].get("script_sfx_max_db", cfg["audio"]["sfx_gain_db"]))
+    cues = [dict(c, gain_db=min(float(c.get("gain_db", cap)), cap)) if c.get("source") == "script" else c for c in timeline["sfx"]]
     sfx_dir = ROOT / cfg["paths"]["assets_dir"] / "sfx"
     sfxlib.ensure_library(sfx_dir)
     if ep_dir is not None and cfg["audio"].get("auto_sfx", "discret") not in (False, "aucun", "off"):
@@ -88,11 +91,15 @@ def sfx_cues(timeline, shots, cfg, ep_dir=None):
 def mix_audio(ep_dir, timeline, shots, cfg, t0, t1, out):
     ep_dir = Path(ep_dir)
     dur = t1 - t0
+    from . import mixer
+    mix = mixer.load(ep_dir)   # réglages de l'onglet « Mixage » (audio/mix.json)
     inputs = ["-i", str(ep_dir / timeline["narration_wav"])]
     music = timeline.get("music")
+    if music and mix["mute"].get("music"):
+        music = None
     if music:
         inputs += ["-stream_loop", "-1", "-i", str(ROOT / music["file"])]
-    cues = [c for c in sfx_cues(timeline, shots, cfg, ep_dir) if t0 - 0.05 <= c["start_s"] < t1]
+    cues = mixer.apply([c for c in sfx_cues(timeline, shots, cfg, ep_dir) if t0 - 0.05 <= c["start_s"] < t1], mix)
     # un fichier son = une seule entrée FFmpeg, dupliquée dans le graphe (ligne de commande courte, même sous Windows)
     files = []
     for c in cues:
@@ -100,14 +107,15 @@ def mix_audio(ep_dir, timeline, shots, cfg, t0, t1, out):
             files.append(c["file"])
     for f in files:
         inputs += ["-i", str(ROOT / f)]
-    fl = [f"[0:a]atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,asplit=2[nar][sc]"]
+    voice_db = -120.0 if mix["mute"].get("voice") else mix["voice_db"]
+    fl = [f"[0:a]atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,volume={voice_db:.1f}dB,asplit=2[nar][sc]"]
     mix_in = ["[nar]"]
     idx = 1
     if music:
         # vidéo qui BOUCLE (TikTok la relance) : pas de fondu de sortie, coupe nette
         whole = abs(t1 - timeline["duration_s"]) < 0.05 and t0 < 0.05
         fo = 0.12 if (whole and cfg.get("loop", {}).get("enabled", True)) else min(1.5, dur / 4)
-        fl.append(f"[1:a]atrim=0:{dur:.3f},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,volume={music['gain_db']}dB,"
+        fl.append(f"[1:a]atrim=0:{dur:.3f},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,volume={music['gain_db'] + mix['music_db']:.1f}dB,"
                   f"afade=t=in:st=0:d=0.08,afade=t=out:st={max(0.0, dur - fo):.3f}:d={fo:.3f}[mus]")
         fl.append("[mus][sc]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350[duck]")
         mix_in.append("[duck]")

@@ -1044,6 +1044,54 @@ def cmd_rejets(a):
     return 0
 
 
+def cmd_mix(a):
+    """Affiche ou règle le mixage de l'épisode (audio/mix.json) : voix, musique, bruitages (dB), pistes coupées."""
+    from . import mixer
+    p = ep_path(a.episode)
+    m = mixer.load(p)
+    changed = False
+    for k, v in (("voice_db", a.voice), ("music_db", a.music), ("sfx_db", a.sfx)):
+        if v is not None:
+            m[k], changed = v, True
+    for track in ("voice", "music", "sfx"):
+        if track in (a.mute or []):
+            m["mute"][track], changed = True, True
+        if track in (a.unmute or []):
+            m["mute"][track], changed = False, True
+    if changed:
+        m = mixer.save(p, m)
+    out({"mix": m, "cues": len(mixer.list_cues(p, cfg())), "next": "scripts/studio remix " + a.episode + " pour refaire le dernier montage"})
+    return 0
+
+
+def cmd_remix(a):
+    """Refait le DERNIER montage avec le mixage actuel, à partir des rendus 3D en cache (seul le son change)."""
+    from . import launcher, mixer
+    from .state import DONE, _hash_inputs
+    p = ep_path(a.episode)
+    if launcher.pilot_running(a.episode) and not a.force:
+        sys.exit("une production de cet épisode tourne : attendez la fin (ou `studio arreter`) avant de refaire le montage")
+    lm = mixer.latest_montage(p)
+    if lm is None:
+        sys.exit("aucun montage à refaire : produisez d'abord un prototype, un premier montage ou la vidéo finale")
+    print(f"Nouveau montage de {lm['output']} ({lm['kind']}, profil {lm['profile']}) avec le mixage actuel…", flush=True)
+    res = _render_and_assemble(p, lm["shots"], lm["profile"], lm["output"], lm["kind"])
+    # l'image n'a pas changé : les étapes qui dépendent de cette vidéo restent valides (pas de nouvelle revue)
+    st = State(p)
+    for name, (owner, kind, ins, outs, deps, _) in STAGES.items():
+        s_ = st.st(name)
+        if s_["status"] in DONE and (lm["output"] in ins or lm["output"] in outs):
+            s_["inputs"] = _hash_inputs(p, ins)
+            s_["outputs"] = _hash_inputs(p, outs)
+    st.log("remix", output=lm["output"], by="human")
+    st.save()
+    if lm["kind"] == "final" and st.st("delivery")["status"] in DONE:
+        stage_delivery(p, st)   # empreinte de la vidéo livrée à jour
+    out({"remix": lm["output"], "kind": lm["kind"], "duration_s": res["duration_s"], "timings_s": res["timings_s"],
+         "rendered": res["rendered"], "cached": res["cached"]})
+    return 0
+
+
 def cmd_arreter(a):
     from . import launcher
     ep_path(a.episode)
@@ -1178,6 +1226,18 @@ def build_parser():
     x.add_argument("--top", type=int, default=12)
     x.add_argument("--json", action="store_true")
     x.set_defaults(fn=cmd_rejets)
+    x = sp.add_parser("mix", help="voir ou régler le mixage (voix, musique, bruitages en dB ; pistes coupées)")
+    x.add_argument("episode")
+    x.add_argument("--voice", type=float)
+    x.add_argument("--music", type=float)
+    x.add_argument("--sfx", type=float)
+    x.add_argument("--mute", nargs="*", choices=["voice", "music", "sfx"])
+    x.add_argument("--unmute", nargs="*", choices=["voice", "music", "sfx"])
+    x.set_defaults(fn=cmd_mix)
+    x = sp.add_parser("remix", help="refaire le dernier montage avec le mixage actuel (sans refaire les rendus 3D)")
+    x.add_argument("episode")
+    x.add_argument("--force", action="store_true")
+    x.set_defaults(fn=cmd_remix)
     x = sp.add_parser("sync-preview", help="aperçu vidéo du calage d'une voix complète (voix + script, ou épisode)")
     x.add_argument("source", help="fichier audio, ou nom d'épisode")
     x.add_argument("script", nargs="?", help="script .txt (une réplique par ligne) si source est un fichier")
